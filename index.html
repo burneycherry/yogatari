@@ -168,6 +168,19 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 .cb-nxt{width:auto;padding:0 12px;border-radius:10px;font-family:var(–mono);font-size:11px;letter-spacing:0.05em}
 .cb-nxt:not(:disabled){border-color:var(–gold);color:var(–gold)}
 
+/* ── CONFIRM MODAL ── */
+.cfm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:600;display:none;align-items:center;justify-content:center;padding:24px}
+.cfm-overlay.show{display:flex}
+.cfm-box{background:var(–bg1);border:1px solid var(–tx2);border-radius:16px;width:100%;max-width:320px;padding:24px 20px 16px;display:flex;flex-direction:column;gap:0}
+.cfm-title{font-family:var(–disp);font-size:17px;color:var(–gold2);letter-spacing:0.08em;margin-bottom:12px;text-align:center}
+.cfm-msg{font-size:13px;color:var(–tx1);line-height:1.85;text-align:center;white-space:pre-line;margin-bottom:20px}
+.cfm-btns{display:flex;gap:10px}
+.cfm-btn{flex:1;font-family:var(–serif);font-size:14px;padding:13px 0;border-radius:10px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s;text-align:center}
+.cfm-btn-ok{background:var(–gold);border-color:var(–gold);color:var(–bg);font-weight:700}
+.cfm-btn-ok:active{background:var(–gold2)}
+.cfm-btn-cancel{background:none;border-color:var(–tx3);color:var(–tx1)}
+.cfm-btn-cancel:active{border-color:var(–tx1);color:var(–tx0)}
+
 /* ── README BUTTON ── */
 .readme-btn{width:28px;height:28px;border-radius:50%;background:none;border:1px solid var(–tx3);color:var(–tx2);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0}
 .readme-btn:active{border-color:var(–gold);color:var(–gold)}
@@ -239,7 +252,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v5</span></div>
+  <div class="app-name">夜語り <span class="ver">v6</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -429,6 +442,19 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
   </div>
 </div>
 
+<!-- CONFIRM MODAL -->
+
+<div class="cfm-overlay" id="cfmOverlay">
+  <div class="cfm-box">
+    <div class="cfm-title" id="cfmTitle">確認</div>
+    <div class="cfm-msg" id="cfmMsg"></div>
+    <div class="cfm-btns">
+      <button class="cfm-btn cfm-btn-cancel" onclick="closeConfirm()">キャンセル</button>
+      <button class="cfm-btn cfm-btn-ok" id="cfmOkBtn">OK</button>
+    </div>
+  </div>
+</div>
+
 <!-- README MODAL -->
 
 <div class="rdm-overlay" id="rdmOverlay" onclick="if(event.target===this)closeReadme()">
@@ -469,11 +495,23 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
   </ul>
 
   <h3>// Google TTS 高品質音声（任意）</h3>
-  <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt">PCかスマホで <b>Google Cloud Console</b> にGoogleアカウントでログイン<br><span style="font-family:var(--mono);font-size:10px;color:var(--tx2)">https://console.cloud.google.com/</span></div></div>
-  <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt">「新しいプロジェクト」を作成 → 「Text-to-Speech API」を検索して有効化</div></div>
-  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt">「APIとサービス」→「認証情報」→「APIキーを作成」<br>表示された <b>AIzaSy…</b> のキーをコピー</div></div>
-  <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt">このアプリの「設定」タブにキーを貼り付けて「保存して使う」</div></div>
-  <div class="rdm-note">⚠ キーはこの端末のみに保存。外部サーバーには送信しません。<br>月100万文字まで無料（Neural2・WaveNet）。上限に近づくとアプリが警告します。</div>
+  <p style="color:var(--tx2);font-size:12px;">PCやAndroidで取得してiPhoneに貼るだけでOKです</p>
+
+  <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt"><b>Google Cloud Consoleを開く</b><br>ブラウザで下記にアクセスしGoogleアカウントでログイン<br><span style="font-family:var(--mono);font-size:10px;color:var(--gold)">console.cloud.google.com</span></div></div>
+
+  <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt"><b>プロジェクトを作成</b><br>画面上部「プロジェクトを選択」→「新しいプロジェクト」→ 名前は何でもOK（例: novel-reader）→「作成」</div></div>
+
+  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>Text-to-Speech APIを有効化</b><br>左メニュー「APIとサービス」→「ライブラリ」→ 検索欄に <b>text to speech</b> と入力 →「Cloud Text-to-Speech API」→「有効にする」</div></div>
+
+  <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt"><b>請求先を設定</b>（無料利用でも必要）<br>クレジットカードを登録しますが <b>月100万文字まで無料</b> です。このアプリは90万文字で警告・100万文字で自動停止するので通常は課金されません</div></div>
+
+  <div class="rdm-step"><div class="rdm-step-num">5</div><div class="rdm-step-txt"><b>APIキーを発行</b><br>「APIとサービス」→「認証情報」→「＋認証情報を作成」→「APIキー」<br>→ <b>AIzaSy…</b> で始まるキーが表示される → コピー</div></div>
+
+  <div class="rdm-step"><div class="rdm-step-num">6</div><div class="rdm-step-txt"><b>（推奨）キーを制限</b><br>「キーを制限する」→「APIの制限」→「Cloud Text-to-Speech API」のみ選択 → 保存。他のAPIに使われなくなり安全</div></div>
+
+  <div class="rdm-step"><div class="rdm-step-num">7</div><div class="rdm-step-txt"><b>このアプリに貼り付け</b><br>「設定」タブ → APIキー欄にペースト →「保存して使う」→ 完了！</div></div>
+
+  <div class="rdm-note">🔒 キーはこの端末にのみ保存。外部サーバーには送信しません。<br>📊 使用量は「設定」タブで確認できます。<br>💰 90万文字で警告 / 100万文字でKyokoに自動切替（課金防止）<br>🔄 翌月1日に自動リセット。課金プランの場合は手動リセット可</div>
 
   <h3>// 対応サイト</h3>
   <ul>
@@ -508,7 +546,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v5';
+const APP_VER = 'v6';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1289,6 +1327,23 @@ function delHist(novelId) {
 }
 
 
+
+// ═══════════════════════════════════════════
+//  CONFIRM DIALOG
+// ═══════════════════════════════════════════
+let _cfmCallback = null;
+function openConfirm(title, msg, onOk) {
+  _cfmCallback = onOk;
+  document.getElementById('cfmTitle').textContent = title;
+  document.getElementById('cfmMsg').textContent = msg;
+  document.getElementById('cfmOkBtn').onclick = () => { closeConfirm(); if(_cfmCallback) _cfmCallback(); };
+  document.getElementById('cfmOverlay').classList.add('show');
+}
+function closeConfirm() {
+  document.getElementById('cfmOverlay').classList.remove('show');
+  _cfmCallback = null;
+}
+
 // ═══════════════════════════════════════════
 //  README
 // ═══════════════════════════════════════════
@@ -1313,9 +1368,15 @@ function addUsage(chars) {
   return cur;
 }
 function resetUsage() {
-  localStorage.setItem(usageKey(), '0');
-  updUsageDisplay();
-  toast('使用量をリセットしました');
+  openConfirm(
+    '使用量をリセット',
+    '月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',
+    () => {
+      localStorage.setItem(usageKey(), '0');
+      updUsageDisplay();
+      toast('使用量をリセットしました');
+    }
+  );
 }
 function checkUsageAlert(cur) {
   if (cur >= USAGE_LIMIT) {
