@@ -39,9 +39,9 @@ body{background:var(--bg);color:var(--tx0);font-family:var(--serif);display:flex
 .app-name{font-family:var(–disp);font-size:22px;color:var(–gold);letter-spacing:0.12em;text-shadow:0 0 24px rgba(200,153,30,0.35);display:flex;align-items:baseline;gap:7px}
 .ver{font-size:11px;color:var(–tx2);font-family:var(–mono);letter-spacing:0.1em}
 .topbar-right{display:flex;align-items:center;gap:12px}
-.badge{font-family:var(–mono);font-size:10px;letter-spacing:0.14em;color:var(–tx2);display:flex;align-items:center;gap:5px;transition:color 0.3s}
-.badge.on{color:var(–gold2)}
-.bdot{width:6px;height:6px;border-radius:50%;background:var(–tx2);transition:all 0.3s}
+.badge{font-family:var(–mono);font-size:12px;letter-spacing:0.12em;color:var(–tx2);display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(–tx3);background:var(–bg2);transition:all 0.3s}
+.badge.on{color:var(–gold2);border-color:rgba(200,153,30,0.4);background:rgba(200,153,30,0.1);box-shadow:0 0 12px rgba(200,153,30,0.15)}
+.bdot{width:7px;height:7px;border-radius:50%;background:var(–tx2);transition:all 0.3s;flex-shrink:0}
 .badge.on .bdot{background:var(–gold2);box-shadow:0 0 8px var(–gold2);animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
 .hist-btn{font-family:var(–mono);font-size:11px;color:var(–tx1);background:none;border:1px solid var(–tx3);border-radius:8px;padding:5px 10px;cursor:pointer;transition:all 0.15s}
@@ -146,22 +146,25 @@ body{background:var(--bg);color:var(--tx0);font-family:var(--serif);display:flex
 .bg-tip.show{display:block}
 
 /* ── BOTTOM CONTROLS ── */
-.ctrl-bar{flex-shrink:0;background:var(–bg1);border-top:1px solid var(–tx3);padding:12px 16px;padding-bottom:calc(12px + var(–safe-b))}
-.slider-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:10px}
-.sl{display:flex;align-items:center;gap:8px}
-.sl-l{font-family:var(–mono);font-size:10px;color:var(–tx2);width:44px;flex-shrink:0}
-.sl-v{font-family:var(–mono);font-size:10px;color:var(–gold);width:32px;text-align:right;flex-shrink:0}
-input[type=range]{flex:1;-webkit-appearance:none;height:3px;background:var(–tx3);border-radius:2px;outline:none;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(–gold);box-shadow:0 0 6px rgba(200,153,30,0.4)}
-.voice-sl{display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.voice-sl .sl-l{width:44px}
-select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–tx0);font-family:var(–serif);font-size:12px;padding:8px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
-.btn-row{display:flex;align-items:center;justify-content:center;gap:10px}
-.cb{width:46px;height:46px;border-radius:50%;background:none;border:1px solid var(–tx3);color:var(–tx1);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;user-select:none;-webkit-appearance:none}
+.ctrl-bar{flex-shrink:0;background:var(–bg1);border-top:1px solid var(–tx3);padding:10px 14px;padding-bottom:calc(10px + var(–safe-b))}
+/* ステッパー行 */
+.stepper-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:8px}
+.stepper-row{display:flex;align-items:center;gap:6px}
+.st-label{font-family:var(–mono);font-size:10px;color:var(–tx2);width:36px;flex-shrink:0}
+.st-val{font-family:var(–mono);font-size:13px;color:var(–gold);width:34px;text-align:center;flex-shrink:0;font-weight:bold}
+.st-btn{width:32px;height:32px;border-radius:8px;background:var(–bg2);border:1px solid var(–tx3);color:var(–tx1);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;user-select:none;-webkit-appearance:none;transition:all 0.12s}
+.st-btn:active{background:var(–goldf);border-color:var(–gold);color:var(–gold)}
+/* 音声選択 */
+.voice-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.voice-lbl{font-family:var(–mono);font-size:10px;color:var(–tx2);width:36px;flex-shrink:0}
+select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–tx0);font-family:var(–serif);font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
+/* 再生ボタン */
+.btn-row{display:flex;align-items:center;justify-content:center;gap:8px}
+.cb{width:44px;height:44px;border-radius:50%;background:none;border:1px solid var(–tx3);color:var(–tx1);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;user-select:none;-webkit-appearance:none}
 .cb:active:not(:disabled){border-color:var(–gold);color:var(–gold);background:var(–goldf)}
 .cb:disabled{opacity:0.2;pointer-events:none}
-.cb-play{width:58px;height:58px;font-size:21px;border-color:var(–gold);color:var(–gold)}
-.cb-play.on{background:var(–goldf);box-shadow:0 0 20px rgba(200,153,30,0.2)}
+.cb-play{width:54px;height:54px;font-size:20px;border-color:var(–gold);color:var(–gold)}
+.cb-play.on{background:var(–goldf);box-shadow:0 0 18px rgba(200,153,30,0.2)}
 .cb-nxt{width:auto;padding:0 12px;border-radius:10px;font-family:var(–mono);font-size:11px;letter-spacing:0.05em}
 .cb-nxt:not(:disabled){border-color:var(–gold);color:var(–gold)}
 
@@ -176,7 +179,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v2</span></div>
+  <div class="app-name">夜語り <span class="ver">v3</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
   </div>
@@ -269,25 +272,22 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- BOTTOM CONTROLS -->
 
 <div class="ctrl-bar">
-  <div class="slider-grid">
-    <div class="sl">
-      <span class="sl-l">速度</span>
-      <input type="range" id="slRate" min="0.5" max="2.5" step="0.1" value="1.1" oninput="onRate(this.value)">
-      <span class="sl-v" id="vRate">1.1×</span>
+  <div class="stepper-grid">
+    <div class="stepper-row">
+      <span class="st-label">速度</span>
+      <button class="st-btn" onclick="stepRate(-1)">－</button>
+      <span class="st-val" id="vRate">1.1×</span>
+      <button class="st-btn" onclick="stepRate(1)">＋</button>
     </div>
-    <div class="sl">
-      <span class="sl-l">音量</span>
-      <input type="range" id="slVol" min="0" max="1" step="0.05" value="1" oninput="onVol(this.value)">
-      <span class="sl-v" id="vVol">100%</span>
-    </div>
-    <div class="sl">
-      <span class="sl-l">ピッチ</span>
-      <input type="range" id="slPitch" min="0.5" max="2.0" step="0.1" value="1.0" oninput="onPitch(this.value)">
-      <span class="sl-v" id="vPitch">1.0</span>
+    <div class="stepper-row">
+      <span class="st-label">ピッチ</span>
+      <button class="st-btn" onclick="stepPitch(-1)">－</button>
+      <span class="st-val" id="vPitch">1.0</span>
+      <button class="st-btn" onclick="stepPitch(1)">＋</button>
     </div>
   </div>
-  <div class="voice-sl">
-    <span class="sl-l">音声</span>
+  <div class="voice-row">
+    <span class="voice-lbl">音声</span>
     <select id="voiceSel" onchange="onVoice()"><option>読み込み中…</option></select>
   </div>
   <div class="btn-row">
@@ -317,7 +317,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v2';
+const APP_VER = 'v3';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -792,9 +792,9 @@ function speakIdx(i) {
 
   const utt = new SpeechSynthesisUtterance(segs[i]);
   if (selVoice) utt.voice = selVoice;
-  utt.rate  = +document.getElementById('slRate').value;
-  utt.volume= +document.getElementById('slVol').value;
-  utt.pitch = +document.getElementById('slPitch').value;
+  utt.rate  = getRate();
+  utt.volume= 1.0;
+  utt.pitch = getPitch();
   utt.lang  = 'ja-JP';
   utt.onstart = () => startWatchdog(utt.rate);
   utt.onend   = () => { clearWatchdog(); if(playing) speakIdx(idx+1); };
@@ -803,7 +803,7 @@ function speakIdx(i) {
 }
 
 function startWatchdog(rate) {
-  const ms = Math.min((segs[idx]?.length||20)/(rate*4)*1000+4000, 35000);
+  const ms = Math.min((segs[idx]?.length||20)/(getRate()*4)*1000+4000, 35000);
   watchdog = setTimeout(()=>{ if(playing&&!SS.speaking&&!SS.pending){SS.cancel();speakIdx(idx);} }, ms);
 }
 function clearWatchdog() { if(watchdog){clearTimeout(watchdog);watchdog=null;} }
@@ -812,7 +812,7 @@ function startPlay() { playing=true; updBtn(); setBadge(true); SS.cancel(); spea
 function togglePlay() {
   if (!segs.length) return;
   if (playing) { playing=false; SS.pause(); updBtn(); setBadge(false); clearWatchdog(); }
-  else { if(SS.paused){playing=true;SS.resume();updBtn();setBadge(true);startWatchdog(+document.getElementById('slRate').value);}else startPlay(); }
+  else { if(SS.paused){playing=true;SS.resume();updBtn();setBadge(true);startWatchdog(getRate());}else startPlay(); }
 }
 function stop() { playing=false; SS.cancel(); clearWatchdog(); updBtn(); setBadge(false); cancelNext(); }
 function prevSeg() { SS.cancel(); clearWatchdog(); const i=Math.max(0,idx-1); if(playing) speakIdx(i); else{idx=i;updHighlight();updProg();} }
@@ -1034,9 +1034,21 @@ function toast(msg) {
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2600);
 }
-function onRate(v)  { document.getElementById('vRate').textContent=(+v).toFixed(1)+'×'; }
-function onVol(v)   { document.getElementById('vVol').textContent=Math.round(v*100)+'%'; }
-function onPitch(v) { document.getElementById('vPitch').textContent=(+v).toFixed(1); }
+// ステッパー状態
+let _rate = 1.1, _pitch = 1.0;
+const RATE_MIN=0.5, RATE_MAX=2.5, RATE_STEP=0.1;
+const PITCH_MIN=0.5, PITCH_MAX=2.0, PITCH_STEP=0.1;
+
+function stepRate(dir) {
+  _rate = Math.round(Math.min(RATE_MAX, Math.max(RATE_MIN, _rate + dir*RATE_STEP)) * 10) / 10;
+  document.getElementById('vRate').textContent = _rate.toFixed(1)+'×';
+}
+function stepPitch(dir) {
+  _pitch = Math.round(Math.min(PITCH_MAX, Math.max(PITCH_MIN, _pitch + dir*PITCH_STEP)) * 10) / 10;
+  document.getElementById('vPitch').textContent = _pitch.toFixed(1);
+}
+function getRate()  { return _rate; }
+function getPitch() { return _pitch; }
 function onVoice()  { const i=+document.getElementById('voiceSel').value; if(!isNaN(i)) selVoice=voices[i]; }
 </script>
 
