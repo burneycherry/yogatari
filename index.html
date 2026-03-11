@@ -168,6 +168,66 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 .cb-nxt{width:auto;padding:0 12px;border-radius:10px;font-family:var(–mono);font-size:11px;letter-spacing:0.05em}
 .cb-nxt:not(:disabled){border-color:var(–gold);color:var(–gold)}
 
+/* ── README BUTTON ── */
+.readme-btn{width:28px;height:28px;border-radius:50%;background:none;border:1px solid var(–tx3);color:var(–tx2);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0}
+.readme-btn:active{border-color:var(–gold);color:var(–gold)}
+
+/* ── README MODAL ── */
+.rdm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;display:none;align-items:flex-end}
+.rdm-overlay.show{display:flex}
+.rdm-sheet{background:var(–bg1);border-radius:16px 16px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+.rdm-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(–tx3);flex-shrink:0}
+.rdm-title{font-family:var(–disp);font-size:18px;color:var(–gold2);letter-spacing:0.1em}
+.rdm-close{font-size:20px;color:var(–tx1);cursor:pointer;padding:4px 8px;background:none;border:none}
+.rdm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px 24px}
+.rdm-body h3{font-family:var(–mono);font-size:10px;letter-spacing:0.18em;color:var(–gold);margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid var(–tx3)}
+.rdm-body h3:first-child{margin-top:0}
+.rdm-body p{font-size:13px;line-height:1.9;color:var(–tx1);margin-bottom:8px}
+.rdm-body ul{padding-left:0;list-style:none}
+.rdm-body ul li{font-size:13px;line-height:1.9;color:var(–tx1);padding:2px 0;padding-left:14px;position:relative}
+.rdm-body ul li::before{content:’›’;position:absolute;left:0;color:var(–gold)}
+.rdm-step{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start}
+.rdm-step-num{width:22px;height:22px;border-radius:50%;background:var(–gold);color:var(–bg);font-family:var(–mono);font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rdm-step-txt{font-size:13px;line-height:1.8;color:var(–tx1);flex:1}
+.rdm-note{background:var(–bg2);border:1px solid var(–tx3);border-radius:8px;padding:10px 14px;font-family:var(–mono);font-size:11px;color:var(–tx2);line-height:1.7;margin-top:8px}
+
+/* ── USAGE METER ── */
+.usage-bar-wrap{background:var(–bg2);border:1px solid var(–tx3);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.usage-bar-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.usage-bar-label{font-family:var(–mono);font-size:10px;color:var(–tx2);letter-spacing:0.1em}
+.usage-bar-val{font-family:var(–mono);font-size:11px;color:var(–gold)}
+.usage-track{height:6px;background:var(–bg3);border-radius:3px;overflow:hidden}
+.usage-fill{height:100%;background:linear-gradient(90deg,#4a9,var(–gold));border-radius:3px;transition:width 0.5s}
+.usage-fill.warn{background:linear-gradient(90deg,var(–gold),#e07030)}
+.usage-fill.over{background:linear-gradient(90deg,#e05050,#c02020)}
+.usage-reset-btn{font-family:var(–mono);font-size:10px;color:var(–tx2);background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;margin-top:6px;display:block}
+.usage-reset-btn:active{color:var(–tx1)}
+
+/* ── SETTINGS PANEL ── */
+.sett-section{margin-bottom:20px}
+.sett-title{font-family:var(–mono);font-size:10px;letter-spacing:0.18em;color:var(–tx2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(–tx3)}
+.sett-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.sett-label{font-size:13px;color:var(–tx0);flex:1}
+.sett-sub{font-family:var(–mono);font-size:10px;color:var(–tx2);margin-top:3px;line-height:1.5}
+.api-input{width:100%;background:var(–bg2);border:1px solid var(–tx3);border-radius:10px;color:var(–tx0);font-family:var(–mono);font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
+.api-input:focus{border-color:var(–gold)}
+.api-input::placeholder{color:var(–tx2)}
+.api-btns{display:flex;gap:8px}
+.sett-btn{font-family:var(–mono);font-size:12px;padding:9px 16px;border-radius:8px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s}
+.sett-btn-save{background:var(–gold);border-color:var(–gold);color:var(–bg);font-weight:bold}
+.sett-btn-save:active{background:var(–gold2)}
+.sett-btn-clear{background:none;border-color:var(–tx3);color:var(–tx1)}
+.sett-btn-clear:active{border-color:var(–red);color:#e05050}
+.api-status{display:none;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;font-family:var(–mono);font-size:11px;margin-bottom:8px}
+.api-status.show{display:flex}
+.api-status.ok{background:var(–greenb);border:1px solid rgba(42,200,80,0.2);color:#7abf8a}
+.api-status.ng{background:rgba(139,32,32,0.15);border:1px solid rgba(139,32,32,0.3);color:#e07070}
+.gv-select{width:100%;background:var(–bg2);border:1px solid var(–tx3);color:var(–tx0);font-family:var(–serif);font-size:13px;padding:9px 12px;border-radius:10px;outline:none;-webkit-appearance:none;margin-bottom:8px}
+.howto-link{display:block;font-family:var(–mono);font-size:11px;color:var(–tx1);text-decoration:none;padding:8px 0}
+.howto-link:active{color:var(–gold)}
+.mode-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(–mono);font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid var(–tx3);color:var(–tx2);background:var(–bg2)}
+.mode-badge.google{border-color:rgba(66,133,244,0.4);color:#74a8f8;background:rgba(66,133,244,0.08)}
+
 /* ── TOAST ── */
 .toast{position:fixed;bottom:calc(120px + var(–safe-b));left:50%;transform:translateX(-50%) translateY(10px);background:var(–bg3);border:1px solid var(–tx2);font-family:var(–mono);font-size:12px;color:var(–tx0);padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -179,9 +239,10 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v3</span></div>
+  <div class="app-name">夜語り <span class="ver">v5</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
+    <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
   </div>
 </div>
 
@@ -190,6 +251,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <div class="tab-bar">
   <button class="tab active" id="tab-read" onclick="switchTab('read')">読む</button>
   <button class="tab"        id="tab-hist" onclick="switchTab('hist')">履歴</button>
+  <button class="tab"        id="tab-sett" onclick="switchTab('sett')">設定</button>
 </div>
 
 <!-- SCROLL AREA -->
@@ -267,6 +329,70 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
     <div id="histList"></div>
   </div>
 
+  <!-- ═══ SETTINGS PANEL ═══ -->
+
+  <div class="panel" id="panel-sett">
+
+```
+<div class="sett-section">
+  <div class="sett-title">// 音声エンジン</div>
+  <div id="modeDisplay" style="margin-bottom:12px"></div>
+
+  <div class="sett-title">// 今月の使用量（Google TTS）</div>
+  <div class="usage-bar-wrap" id="usageWrap">
+    <div class="usage-bar-header">
+      <span class="usage-bar-label">文字数</span>
+      <span class="usage-bar-val" id="usageVal">0 / 900,000文字</span>
+    </div>
+    <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
+    <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
+  </div>
+  <div class="sett-sub" style="margin-bottom:14px">
+    900,000文字に達すると警告。1,000,000文字でKyokoに自動切替（無料枠超過防止）。<br>
+    カウントは毎月1日に自動リセットされます。
+  </div>
+
+  <div class="sett-title">// Google Cloud TTS（高品質）</div>
+  <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">
+    GoogleアカウントのAPIキーを入力すると<br>
+    Kyokoより自然な日本語音声になります。<br>
+    月100万文字まで無料（標準音声）
+  </div>
+  <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
+
+  <div class="api-status" id="apiStatus"></div>
+
+  <input class="api-input" id="apiKeyInput" type="password"
+    placeholder="AIzaSy…（APIキーを貼り付け）"
+    autocomplete="off" autocorrect="off" spellcheck="false">
+
+  <div class="api-btns">
+    <button class="sett-btn sett-btn-save" onclick="saveApiKey()">保存して使う</button>
+    <button class="sett-btn sett-btn-clear" onclick="clearApiKey()">クリア</button>
+  </div>
+</div>
+
+<div class="sett-section" id="googleVoiceSection" style="display:none">
+  <div class="sett-title">// Google音声を選ぶ</div>
+  <select class="gv-select" id="googleVoiceSel">
+    <option value="ja-JP-Neural2-B">Neural2-B（男性・最高品質）</option>
+    <option value="ja-JP-Neural2-C">Neural2-C（男性）</option>
+    <option value="ja-JP-Neural2-D" selected>Neural2-D（女性・最高品質）</option>
+    <option value="ja-JP-Wavenet-A">WaveNet-A（女性）</option>
+    <option value="ja-JP-Wavenet-B">WaveNet-B（男性）</option>
+    <option value="ja-JP-Wavenet-C">WaveNet-C（男性）</option>
+    <option value="ja-JP-Wavenet-D">WaveNet-D（女性）</option>
+    <option value="ja-JP-Standard-A">Standard-A（女性・無料多め）</option>
+    <option value="ja-JP-Standard-B">Standard-B（女性）</option>
+    <option value="ja-JP-Standard-C">Standard-C（男性）</option>
+    <option value="ja-JP-Standard-D">Standard-D（男性）</option>
+  </select>
+  <div class="sett-sub">Neural2＞WaveNet＞Standard の順で高品質。<br>Neural2・WaveNetは月100万文字無料。</div>
+</div>
+```
+
+  </div><!-- /panel-sett -->
+
 </div><!-- /scroll-area -->
 
 <!-- BOTTOM CONTROLS -->
@@ -286,9 +412,13 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
       <button class="st-btn" onclick="stepPitch(1)">＋</button>
     </div>
   </div>
-  <div class="voice-row">
+  <div class="voice-row" id="voiceRowKyoko">
     <span class="voice-lbl">音声</span>
     <select id="voiceSel" onchange="onVoice()"><option>読み込み中…</option></select>
+  </div>
+  <div class="voice-row" id="voiceRowGoogle" style="display:none">
+    <span class="voice-lbl">音声</span>
+    <span class="mode-badge google">🎙 Google TTS 使用中</span>
   </div>
   <div class="btn-row">
     <button class="cb" id="bPrev" onclick="prevSeg()" disabled>⏮</button>
@@ -296,6 +426,67 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
     <button class="cb" id="bFwd"  onclick="nextSeg()" disabled>⏭</button>
     <button class="cb" id="bStop" onclick="stop()" disabled>■</button>
     <button class="cb cb-nxt" id="bNext" onclick="goNext()" disabled>次→</button>
+  </div>
+</div>
+
+<!-- README MODAL -->
+
+<div class="rdm-overlay" id="rdmOverlay" onclick="if(event.target===this)closeReadme()">
+  <div class="rdm-sheet">
+    <div class="rdm-head">
+      <div class="rdm-title">夜語り — 使い方</div>
+      <button class="rdm-close" onclick="closeReadme()">✕</button>
+    </div>
+    <div class="rdm-body">
+
+```
+  <h3>// 基本の使い方</h3>
+  <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt">小説家になろうなどの<b>目次URL</b>をコピーして「読む」タブに貼り付ける<br><span style="font-family:var(--mono);font-size:10px;color:var(--tx2)">例: https://ncode.syosetu.com/n1234ab/</span></div></div>
+  <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt">「読込」を押すと<b>話一覧</b>が表示される。読みたい話をタップ</div></div>
+  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt">自動で読み上げ開始。話の終わりに<b>5秒カウント後、次の話へ自動進行</b></div></div>
+
+  <h3>// しおり・履歴</h3>
+  <ul>
+    <li>読み上げ中は10段落ごとに<b>自動でしおり保存</b></li>
+    <li>次回同じURLを入力すると「🔖 読みかけ」バナーが出る</li>
+    <li>「履歴」タブから過去に読んだ小説を再開できる</li>
+  </ul>
+
+  <h3>// 再生コントロール</h3>
+  <ul>
+    <li>⏮ 前の段落 ／ ⏭ 次の段落</li>
+    <li>■ 停止（もう一度▶で最初から）</li>
+    <li>次→ 今すぐ次の話へ進む</li>
+    <li>速度・ピッチは − ＋ で0.1ずつ調整</li>
+  </ul>
+
+  <h3>// バックグラウンド再生（iPhone）</h3>
+  <p>Safariのまま画面を閉じると止まる場合があります。対策：</p>
+  <ul>
+    <li>設定 → 画面表示と明るさ → <b>自動ロックをオフ</b></li>
+    <li>止まったら画面をタップすると再開</li>
+    <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
+  </ul>
+
+  <h3>// Google TTS 高品質音声（任意）</h3>
+  <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt">PCかスマホで <b>Google Cloud Console</b> にGoogleアカウントでログイン<br><span style="font-family:var(--mono);font-size:10px;color:var(--tx2)">https://console.cloud.google.com/</span></div></div>
+  <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt">「新しいプロジェクト」を作成 → 「Text-to-Speech API」を検索して有効化</div></div>
+  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt">「APIとサービス」→「認証情報」→「APIキーを作成」<br>表示された <b>AIzaSy…</b> のキーをコピー</div></div>
+  <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt">このアプリの「設定」タブにキーを貼り付けて「保存して使う」</div></div>
+  <div class="rdm-note">⚠ キーはこの端末のみに保存。外部サーバーには送信しません。<br>月100万文字まで無料（Neural2・WaveNet）。上限に近づくとアプリが警告します。</div>
+
+  <h3>// 対応サイト</h3>
+  <ul>
+    <li>小説家になろう（ncode.syosetu.com）</li>
+    <li>カクヨム（kakuyomu.jp）</li>
+    <li>アルファポリス（alphapolis.co.jp）</li>
+    <li>ハーメルン（hameln.jp）</li>
+    <li>エブリスタ（estar.jp）</li>
+  </ul>
+
+</div>
+```
+
   </div>
 </div>
 
@@ -317,7 +508,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v3';
+const APP_VER = 'v5';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -774,11 +965,49 @@ function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 // ═══════════════════════════════════════════
 //  SPEECH
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+//  GOOGLE TTS ENGINE
+// ═══════════════════════════════════════════
+let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
+let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Neural2-D';
+let _gAudio  = null; // 再生中のAudioオブジェクト
+
+function hasGoogleKey() { return _gApiKey.trim().length > 10; }
+
+async function speakGoogle(text) {
+  const key = _gApiKey.trim();
+  const voiceName = document.getElementById('googleVoiceSel')?.value || _gVoice;
+  const body = {
+    input: { text },
+    voice: { languageCode: 'ja-JP', name: voiceName },
+    audioConfig: { audioEncoding: 'MP3', speakingRate: getRate(), pitch: (getPitch()-1)*10 }
+  };
+  // 上限チェック
+  if (isOverLimit()) throw new Error('月間無料枠(100万文字)に達しました。設定でリセットするかKyokoをご利用ください。');
+  const res = await fetch(
+    'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + key,
+    { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err?.error?.message || 'Google TTS エラー ' + res.status);
+  }
+  const data = await res.json();
+  addUsage(text.length);
+  return 'data:audio/mp3;base64,' + data.audioContent;
+}
+
+function stopGoogleAudio() {
+  if (_gAudio) { _gAudio.pause(); _gAudio.src=''; _gAudio=null; }
+}
+
+// ═══════════════════════════════════════════
+//  UNIFIED SPEAK
+// ═══════════════════════════════════════════
 function speakIdx(i) {
   clearWatchdog();
   if (i >= segs.length) {
     playing=false; updBtn(); setBadge(false);
-    // しおり保存 (次ページがあるなら次ページ冒頭)
     saveBookmarkCurrent(i);
     if (queue[qi]) queue[qi].done = true;
     renderQueue();
@@ -787,36 +1016,140 @@ function speakIdx(i) {
   }
   idx = i;
   updHighlight(); updProg();
-  // 定期しおり保存 (10段落ごと)
   if (i % 10 === 0) saveBookmarkCurrent(i);
 
-  const utt = new SpeechSynthesisUtterance(segs[i]);
-  if (selVoice) utt.voice = selVoice;
-  utt.rate  = getRate();
-  utt.volume= 1.0;
-  utt.pitch = getPitch();
-  utt.lang  = 'ja-JP';
-  utt.onstart = () => startWatchdog(utt.rate);
-  utt.onend   = () => { clearWatchdog(); if(playing) speakIdx(idx+1); };
-  utt.onerror = (e) => { clearWatchdog(); if(e.error==='interrupted') return; if(playing) setTimeout(()=>speakIdx(idx),500); };
-  SS.speak(utt);
+  if (hasGoogleKey()) {
+    // ── Google TTS ──
+    speakGoogle(segs[i]).then(audioSrc => {
+      if (!playing) return;
+      _gAudio = new Audio(audioSrc);
+      _gAudio.onended = () => { if(playing) speakIdx(idx+1); };
+      _gAudio.onerror = () => { if(playing) setTimeout(()=>speakIdx(idx),600); };
+      _gAudio.play().catch(()=>{ if(playing) setTimeout(()=>speakIdx(idx),600); });
+      startWatchdog(getRate(), true);
+    }).catch(e => {
+      if (!playing) return;
+      // APIキーエラーなら設定タブへ誘導
+      toast('Google TTS エラー: ' + e.message.slice(0,40));
+      playing=false; updBtn(); setBadge(false);
+    });
+  } else {
+    // ── Web Speech API (Kyoko) ──
+    const utt = new SpeechSynthesisUtterance(segs[i]);
+    if (selVoice) utt.voice = selVoice;
+    utt.rate  = getRate();
+    utt.volume= 1.0;
+    utt.pitch = getPitch();
+    utt.lang  = 'ja-JP';
+    utt.onstart = () => startWatchdog(getRate(), false);
+    utt.onend   = () => { clearWatchdog(); if(playing) speakIdx(idx+1); };
+    utt.onerror = (e) => { clearWatchdog(); if(e.error==='interrupted') return; if(playing) setTimeout(()=>speakIdx(idx),500); };
+    SS.speak(utt);
+  }
 }
 
-function startWatchdog(rate) {
-  const ms = Math.min((segs[idx]?.length||20)/(getRate()*4)*1000+4000, 35000);
-  watchdog = setTimeout(()=>{ if(playing&&!SS.speaking&&!SS.pending){SS.cancel();speakIdx(idx);} }, ms);
+function startWatchdog(rate, isGoogle=false) {
+  const ms = Math.min((segs[idx]?.length||20)/(rate*4)*1000 + (isGoogle?8000:4000), 40000);
+  watchdog = setTimeout(()=>{
+    if (!playing) return;
+    if (isGoogle) { stopGoogleAudio(); speakIdx(idx); }
+    else if (!SS.speaking&&!SS.pending) { SS.cancel(); speakIdx(idx); }
+  }, ms);
 }
 function clearWatchdog() { if(watchdog){clearTimeout(watchdog);watchdog=null;} }
 
-function startPlay() { playing=true; updBtn(); setBadge(true); SS.cancel(); speakIdx(idx); }
+function startPlay() {
+  playing=true; updBtn(); setBadge(true);
+  SS.cancel(); stopGoogleAudio();
+  speakIdx(idx);
+}
 function togglePlay() {
   if (!segs.length) return;
-  if (playing) { playing=false; SS.pause(); updBtn(); setBadge(false); clearWatchdog(); }
-  else { if(SS.paused){playing=true;SS.resume();updBtn();setBadge(true);startWatchdog(getRate());}else startPlay(); }
+  if (playing) {
+    playing=false; clearWatchdog();
+    if (hasGoogleKey()) { stopGoogleAudio(); }
+    else { SS.pause(); }
+    updBtn(); setBadge(false);
+  } else {
+    if (!hasGoogleKey() && SS.paused) {
+      playing=true; SS.resume(); updBtn(); setBadge(true); startWatchdog(getRate(),false);
+    } else { startPlay(); }
+  }
 }
-function stop() { playing=false; SS.cancel(); clearWatchdog(); updBtn(); setBadge(false); cancelNext(); }
-function prevSeg() { SS.cancel(); clearWatchdog(); const i=Math.max(0,idx-1); if(playing) speakIdx(i); else{idx=i;updHighlight();updProg();} }
-function nextSeg() { SS.cancel(); clearWatchdog(); const i=Math.min(segs.length-1,idx+1); if(playing) speakIdx(i); else{idx=i;updHighlight();updProg();} }
+function stop() {
+  playing=false;
+  SS.cancel(); stopGoogleAudio();
+  clearWatchdog(); updBtn(); setBadge(false); cancelNext();
+}
+function prevSeg() {
+  SS.cancel(); stopGoogleAudio(); clearWatchdog();
+  const i=Math.max(0,idx-1); if(playing) speakIdx(i); else{idx=i;updHighlight();updProg();}
+}
+function nextSeg() {
+  SS.cancel(); stopGoogleAudio(); clearWatchdog();
+  const i=Math.min(segs.length-1,idx+1); if(playing) speakIdx(i); else{idx=i;updHighlight();updProg();}
+}
+
+// ═══════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════
+function initSettings() {
+  if (_gApiKey) {
+    document.getElementById('apiKeyInput').value = _gApiKey;
+    document.getElementById('googleVoiceSection').style.display = 'block';
+    const sel = document.getElementById('googleVoiceSel');
+    if (sel) sel.value = _gVoice;
+  }
+  updModeDisplay();
+  updUsageDisplay();
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { showApiStatus('ng', 'キーを入力してください'); return; }
+  if (!key.startsWith('AIza')) { showApiStatus('ng', 'キーの形式が正しくありません（AIzaSy…）'); return; }
+  _gApiKey = key;
+  _gVoice = document.getElementById('googleVoiceSel')?.value || _gVoice;
+  localStorage.setItem('yogatari_gkey', _gApiKey);
+  localStorage.setItem('yogatari_gvoice', _gVoice);
+  document.getElementById('googleVoiceSection').style.display = 'block';
+  showApiStatus('ok', '✓ 保存しました — Google TTS が有効です');
+  updModeDisplay();
+  toast('Google TTSを設定しました');
+}
+
+function clearApiKey() {
+  _gApiKey = '';
+  localStorage.removeItem('yogatari_gkey');
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('googleVoiceSection').style.display = 'none';
+  showApiStatus('ng', 'クリアしました — Kyokoに戻ります');
+  updModeDisplay();
+  toast('Kyokoに戻しました');
+}
+
+function showApiStatus(type, msg) {
+  const el = document.getElementById('apiStatus');
+  el.textContent = msg;
+  el.className = 'api-status show ' + type;
+}
+
+function updModeDisplay() {
+  const el = document.getElementById('modeDisplay');
+  if (!el) return;
+  const row = document.getElementById('voiceRowKyoko');
+  const rowG = document.getElementById('voiceRowGoogle');
+  if (hasGoogleKey()) {
+    const vname = document.getElementById('googleVoiceSel')?.value || _gVoice;
+    el.innerHTML = '<span class="mode-badge google">🎙 Google TTS: ' + vname + '</span>';
+    if(row) row.style.display='none';
+    if(rowG) rowG.style.display='flex';
+  } else {
+    el.innerHTML = '<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';
+    if(row) row.style.display='flex';
+    if(rowG) rowG.style.display='none';
+  }
+}
 
 // ═══════════════════════════════════════════
 //  BOOKMARK SAVE
@@ -955,6 +1288,55 @@ function delHist(novelId) {
   toast('削除しました');
 }
 
+
+// ═══════════════════════════════════════════
+//  README
+// ═══════════════════════════════════════════
+function openReadme()  { document.getElementById('rdmOverlay').classList.add('show'); }
+function closeReadme() { document.getElementById('rdmOverlay').classList.remove('show'); }
+
+// ═══════════════════════════════════════════
+//  USAGE TRACKING (Google TTS)
+// ═══════════════════════════════════════════
+const USAGE_WARN  = 900000;   // 警告
+const USAGE_LIMIT = 1000000;  // 自動停止（無料枠）
+
+function usageKey() {
+  const d = new Date();
+  return 'yogatari_usage_' + d.getFullYear() + '_' + (d.getMonth()+1);
+}
+function getUsage() { return parseInt(localStorage.getItem(usageKey()) || '0'); }
+function addUsage(chars) {
+  const cur = getUsage() + chars;
+  localStorage.setItem(usageKey(), cur);
+  checkUsageAlert(cur);
+  return cur;
+}
+function resetUsage() {
+  localStorage.setItem(usageKey(), '0');
+  updUsageDisplay();
+  toast('使用量をリセットしました');
+}
+function checkUsageAlert(cur) {
+  if (cur >= USAGE_LIMIT) {
+    toast('⚠ 月間無料枠(100万文字)に達しました。Kyokoに切り替えます。');
+  } else if (cur >= USAGE_WARN) {
+    toast('⚠ 今月の使用量が90万文字を超えました。残り' + Math.round((USAGE_LIMIT-cur)/1000) + '千文字');
+  }
+}
+function isOverLimit() { return hasGoogleKey() && getUsage() >= USAGE_LIMIT; }
+
+function updUsageDisplay() {
+  const cur = getUsage();
+  const pct = Math.min(cur / USAGE_LIMIT * 100, 100);
+  const el = document.getElementById('usageVal');
+  const fill = document.getElementById('usageFill');
+  if (!el) return;
+  el.textContent = cur.toLocaleString() + ' / 1,000,000文字';
+  fill.style.width = pct + '%';
+  fill.className = 'usage-fill' + (cur >= USAGE_LIMIT ? ' over' : cur >= USAGE_WARN ? ' warn' : '');
+}
+
 // ═══════════════════════════════════════════
 //  TABS
 // ═══════════════════════════════════════════
@@ -964,6 +1346,7 @@ function switchTab(name) {
   document.getElementById('tab-'+name).classList.add('active');
   document.getElementById('panel-'+name).classList.add('active');
   if (name==='hist') renderHistList();
+  if (name==='sett') { initSettings(); updUsageDisplay(); }
 }
 
 // ═══════════════════════════════════════════
@@ -971,7 +1354,7 @@ function switchTab(name) {
 // ═══════════════════════════════════════════
 document.addEventListener('visibilitychange', ()=>{
   if (document.visibilityState==='visible') {
-    if(playing&&!SS.speaking&&!SS.pending){SS.cancel();setTimeout(()=>speakIdx(idx),300);}
+    if(playing) { if(hasGoogleKey()){if(!_gAudio||_gAudio.paused){stopGoogleAudio();setTimeout(()=>speakIdx(idx),300);}} else if(!SS.speaking&&!SS.pending){SS.cancel();setTimeout(()=>speakIdx(idx),300);} }
     if(_actx&&_actx.state==='suspended') _actx.resume().catch(()=>{});
   }
 });
