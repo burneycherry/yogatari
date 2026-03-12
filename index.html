@@ -269,7 +269,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v13</span></div>
+  <div class="app-name">夜語り <span class="ver">v14</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -595,7 +595,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v13';
+const APP_VER = 'v14';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -691,16 +691,22 @@ let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentCh
 //  CORS PROXIES
 // ═══════════════════════════════════════════
 const PROXIES = [
-  { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents' },
-  { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u),          isJson:false },
+  { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true,  field:'contents' },
+  { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u),           isJson:false },
   { build: u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u), isJson:false },
-  { build: u=>'https://thingproxy.freeboard.io/fetch/'+u,                  isJson:false },
+  { build: u=>'https://thingproxy.freeboard.io/fetch/'+u,                   isJson:false },
+  { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u),           isJson:false, retry:true },
+  { build: u=>'https://htmldriven.com/json-result?url='+encodeURIComponent(u), isJson:true, field:'html' },
 ];
 async function fetchHtml(url) {
   const errors = [];
   for (const p of PROXIES) {
     try {
-      const r = await fetch(p.build(url), { signal: AbortSignal.timeout(18000) });
+      const headers = p.retry ? { 'X-Requested-With': 'XMLHttpRequest' } : {};
+      const r = await fetch(p.build(url), {
+        signal: AbortSignal.timeout(12000),
+        headers
+      });
       if (!r.ok) throw new Error('HTTP '+r.status);
       const raw = await r.text();
       if (!raw || raw.length < 80) throw new Error('空のレスポンス');
@@ -710,11 +716,12 @@ async function fetchHtml(url) {
         if (!html || html.length < 80) throw new Error('コンテンツ空');
         return html;
       }
-      if (raw.includes('Access denied')||raw.includes('403 Forbidden')) throw new Error('アクセス拒否');
+      if (raw.includes('Access denied') || raw.includes('403 Forbidden') ||
+          raw.includes('Blocked') || raw.includes('bot detection')) throw new Error('アクセス拒否');
       return raw;
-    } catch(e) { errors.push(p.build(url).split('?')[0]+' → '+e.message); }
+    } catch(e) { errors.push(p.build(url).split('?')[0].split('/').pop() + ': ' + e.message); }
   }
-  throw new Error('ページ取得失敗。サイトがブロックしている可能性があります。\n' + errors.join('\n'));
+  throw new Error('ページ取得失敗 (全プロキシ失敗)\n詳細: ' + errors.join(' / '));
 }
 
 // ═══════════════════════════════════════════
@@ -1061,6 +1068,7 @@ let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
 let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Wavenet-A';
 let _gAudio  = null;
 let _busy    = false;
+let _tabSw   = false; // タブ切替中（音声再起動防止）
 
 // ── プリフェッチキャッシュ ──
 // { idx: Promise<audioSrc> } を最大2件保持
@@ -1171,18 +1179,17 @@ function speakIdx(i) {
       _gAudio = new Audio(audioSrc);
       _gAudio.onended = () => {
         clearWatchdog();
-        if (playing) speakIdx(idx + 1);
+        if (playing && !_tabSw) speakIdx(idx + 1);
       };
       _gAudio.onerror = () => {
         clearWatchdog(); _busy = false;
-        // キャッシュを無効化して再取得
         _prefetchCache.delete(i);
-        if (playing) setTimeout(() => speakIdx(idx), 800);
+        if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 800);
       };
       _gAudio.play().catch(() => {
         clearWatchdog(); _busy = false;
         _prefetchCache.delete(i);
-        if (playing) setTimeout(() => speakIdx(idx), 600);
+        if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 600);
       });
       startWatchdog(getRate(), true);
       // 再生開始と同時に次の段落を先読み
@@ -1609,12 +1616,14 @@ function updUsageDisplay() {
 //  TABS
 // ═══════════════════════════════════════════
 function switchTab(name) {
+  _tabSw = true; // タブ切替開始
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.getElementById('panel-'+name).classList.add('active');
   if (name==='hist') renderHistList();
   if (name==='sett') { initSettings(); updUsageDisplay(); }
+  setTimeout(() => { _tabSw = false; }, 600); // 600ms後に解除
 }
 
 // ═══════════════════════════════════════════
