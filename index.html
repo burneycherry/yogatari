@@ -269,7 +269,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v15</span></div>
+  <div class="app-name">夜語り <span class="ver">v16</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -595,7 +595,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v15';
+const APP_VER = 'v16';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1426,9 +1426,15 @@ async function goNext() {
     currentChapterTitle=page.title;
     currentChapterNum=chapNumFromUrl(url);
     displayPage(page,url,0);
-    stop(); // 念のため既存を止めてから
-    startPlay();
     hideFetch();
+    // AudioContextを再開してから再生（fetch中にsuspendされる場合がある）
+    if(_actx && _actx.state==='suspended') {
+      await _actx.resume().catch(()=>{});
+    }
+    // 少し待ってから再生開始（DOMが落ち着くのを待つ）
+    await new Promise(r=>setTimeout(r,200));
+    _busy = false;
+    startPlay();
   } catch(e){showFetch('err',e.message);}
   disable(false);
 }
@@ -1663,22 +1669,59 @@ document.addEventListener('visibilitychange', ()=>{
     if(_actx&&_actx.state==='suspended') _actx.resume().catch(()=>{});
   }
 });
-document.addEventListener('touchstart', ()=>{
-  if(playing&&!SS.speaking&&!SS.pending){SS.cancel();setTimeout(()=>speakIdx(idx),200);}
-  if(_actx&&_actx.state==='suspended') _actx.resume().catch(()=>{});
+document.addEventListener('touchstart', (e)=>{
+  // AudioContextの再開（常に実行）
+  if(_actx && _actx.state==='suspended') _actx.resume().catch(()=>{});
+
+  // ── ボタン・入力・コントロール類へのタッチは無視 ──
+  const tag = e.target?.tagName || '';
+  const cl  = e.target?.className || '';
+  const skip = ['BUTTON','INPUT','SELECT','A','LABEL'].includes(tag)
+    || cl.includes('cb') || cl.includes('tab') || cl.includes('seg')
+    || cl.includes('step') || cl.includes('chip') || cl.includes('howto')
+    || e.target?.closest?.('button, input, select, a, .cb, .tab, .stepper, .q-chip');
+  if (skip) return;
+
+  // ── 再生中のみ復帰処理 ──
+  if (!playing) return;
+
+  if (hasGoogleKey()) {
+    // Google TTS: 音声オブジェクトが正常再生中なら何もしない
+    if (_gAudio && !_gAudio.paused && !_gAudio.ended) return;
+    // 止まっていたら再起動（_busyでなければ）
+    if (!_busy) { stopGoogleAudio(); setTimeout(()=>speakIdx(idx), 300); }
+  } else {
+    // Kyoko: SpeechSynthesisが止まっていたら再起動
+    if (!SS.speaking && !SS.pending) {
+      SS.cancel(); setTimeout(()=>speakIdx(idx), 200);
+    }
+  }
 },{passive:true});
 
 // ═══════════════════════════════════════════
 //  UI HELPERS
 // ═══════════════════════════════════════════
-function updHighlight() {
+let _userScrolling = false;
+let _scrollTimer   = null;
+
+// ユーザーが手動スクロール中は自動追従をオフ
+document.addEventListener('scroll', ()=>{
+  _userScrolling = true;
+  if(_scrollTimer) clearTimeout(_scrollTimer);
+  _scrollTimer = setTimeout(()=>{ _userScrolling = false; }, 2000);
+}, {passive:true});
+
+function updHighlight(autoScroll=true) {
   document.querySelectorAll('.seg').forEach((el,i)=>{
     el.classList.remove('active','past');
     if(i===idx) el.classList.add('active');
     else if(i<idx) el.classList.add('past');
   });
-  const el=document.getElementById('s'+idx);
-  if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+  // ユーザーがスクロール中 or autoScroll=false なら追従しない
+  if(autoScroll && !_userScrolling) {
+    const el=document.getElementById('s'+idx);
+    if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+  }
 }
 function updProg() {
   const total=segs.length, cur=Math.min(idx+1,total);
