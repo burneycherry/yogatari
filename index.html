@@ -266,7 +266,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v7</span></div>
+  <div class="app-name">夜語り <span class="ver">v9</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -365,7 +365,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
   <div class="sett-title">// 音声エンジン</div>
   <div id="modeDisplay" style="margin-bottom:12px"></div>
 
-  <div class="sett-title">// 今月の使用量（Google TTS）</div>
+  <div class="sett-title">// 今月の使用量（アプリ内カウント）</div>
   <div class="usage-bar-wrap" id="usageWrap">
     <div class="usage-bar-header">
       <span class="usage-bar-label">文字数</span>
@@ -374,16 +374,27 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
     <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
     <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
   </div>
-  <div class="sett-sub" style="margin-bottom:14px">
-    900,000文字に達すると警告。1,000,000文字でKyokoに自動切替（無料枠超過防止）。<br>
-    カウントは毎月1日に自動リセットされます。
+  <div class="sett-sub" style="margin-bottom:10px">
+    WaveNetは360万文字で警告 → 400万文字でKyokoに自動切替。<br>Neural2は90万文字で警告 → 100万文字で切替。<br>カウントは毎月1日に自動リセットされます。
+  </div>
+
+  <div class="sett-title">// Google側での使用量・請求確認</div>
+  <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">
+    実際の使用量や請求額はGoogle Cloud Consoleで確認できます。
+  </div>
+  <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
+  <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">💳 請求・料金を確認する</a>
+  <a class="howto-link" href="https://console.cloud.google.com/billing/create-budget" target="_blank">🔔 予算アラートを設定する（課金防止）</a>
+  <div class="sett-sub" style="margin-bottom:14px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">
+    ⭐ 予算アラートを <b>¥1</b> で設定しておくと<br>
+    万が一の課金時にメールで通知が届いて安心です。
   </div>
 
   <div class="sett-title">// Google Cloud TTS（高品質）</div>
   <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">
     GoogleアカウントのAPIキーを入力すると<br>
     Kyokoより自然な日本語音声になります。<br>
-    月100万文字まで無料（標準音声）
+    WaveNet・Standard：月400万文字まで無料
   </div>
   <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
 
@@ -401,20 +412,26 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 
 <div class="sett-section" id="googleVoiceSection" style="display:none">
   <div class="sett-title">// Google音声を選ぶ</div>
-  <select class="gv-select" id="googleVoiceSel">
-    <option value="ja-JP-Neural2-B">Neural2-B（男性・最高品質）</option>
-    <option value="ja-JP-Neural2-C">Neural2-C（男性）</option>
-    <option value="ja-JP-Neural2-D" selected>Neural2-D（女性・最高品質）</option>
-    <option value="ja-JP-Wavenet-A">WaveNet-A（女性）</option>
-    <option value="ja-JP-Wavenet-B">WaveNet-B（男性）</option>
-    <option value="ja-JP-Wavenet-C">WaveNet-C（男性）</option>
-    <option value="ja-JP-Wavenet-D">WaveNet-D（女性）</option>
-    <option value="ja-JP-Standard-A">Standard-A（女性・無料多め）</option>
-    <option value="ja-JP-Standard-B">Standard-B（女性）</option>
-    <option value="ja-JP-Standard-C">Standard-C（男性）</option>
-    <option value="ja-JP-Standard-D">Standard-D（男性）</option>
+  <select class="gv-select" id="googleVoiceSel" onchange="onGVoiceChange()">
+    <optgroup label="── WaveNet  月400万文字無料 ──">
+      <option value="ja-JP-Wavenet-D" selected>WaveNet-D（女性）★おすすめ</option>
+      <option value="ja-JP-Wavenet-A">WaveNet-A（女性）</option>
+      <option value="ja-JP-Wavenet-B">WaveNet-B（男性）</option>
+      <option value="ja-JP-Wavenet-C">WaveNet-C（男性）</option>
+    </optgroup>
+    <optgroup label="── Standard  月400万文字無料 ──">
+      <option value="ja-JP-Standard-A">Standard-A（女性）</option>
+      <option value="ja-JP-Standard-B">Standard-B（女性）</option>
+      <option value="ja-JP-Standard-C">Standard-C（男性）</option>
+      <option value="ja-JP-Standard-D">Standard-D（男性）</option>
+    </optgroup>
+    <optgroup label="── Neural2  月100万文字無料 ──">
+      <option value="ja-JP-Neural2-D">Neural2-D（女性・高品質）</option>
+      <option value="ja-JP-Neural2-B">Neural2-B（男性・高品質）</option>
+      <option value="ja-JP-Neural2-C">Neural2-C（男性・高品質）</option>
+    </optgroup>
   </select>
-  <div class="sett-sub">Neural2＞WaveNet＞Standard の順で高品質。<br>Neural2・WaveNetは月100万文字無料。</div>
+  <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2：月100万文字まで無料</div>
 </div>
 ```
 
@@ -445,7 +462,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
   </div>
   <div class="voice-row" id="voiceRowGoogle" style="display:none">
     <span class="voice-lbl">音声</span>
-    <span class="mode-badge google">🎙 Google TTS 使用中</span>
+    <span class="mode-badge google" id="googleBadge">🎙 Google TTS</span>
   </div>
   <div class="btn-row">
     <button class="cb" id="bPrev" onclick="prevSeg()" disabled>⏮</button>
@@ -574,7 +591,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v7';
+const APP_VER = 'v9';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1035,7 +1052,7 @@ function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 //  GOOGLE TTS ENGINE  (v7: 二重発話防止・SS完全分離)
 // ═══════════════════════════════════════════
 let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
-let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Neural2-D';
+let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Wavenet-D';
 let _gAudio  = null;
 let _busy    = false; // 発話リクエスト処理中フラグ
 
@@ -1048,7 +1065,7 @@ function currentGVoice() {
 }
 
 async function speakGoogle(text) {
-  if (isOverLimit()) throw new Error('月間無料枠(100万文字)に達しました。設定タブでリセットを。');
+  if (isOverLimit()) throw new Error('月間無料枠(' + (USAGE_LIMIT()/10000).toFixed(0) + '万文字)に達しました。設定タブでリセットを。');
   const body = {
     input: { text },
     voice: { languageCode: 'ja-JP', name: currentGVoice() },
@@ -1250,17 +1267,20 @@ function showApiStatus(type, msg) {
 function updModeDisplay() {
   const el = document.getElementById('modeDisplay');
   if (!el) return;
-  const row = document.getElementById('voiceRowKyoko');
+  const row  = document.getElementById('voiceRowKyoko');
   const rowG = document.getElementById('voiceRowGoogle');
+  const badge = document.getElementById('googleBadge');
   if (hasGoogleKey()) {
-    const vname = document.getElementById('googleVoiceSel')?.value || _gVoice;
-    el.innerHTML = '<span class="mode-badge google">🎙 Google TTS: ' + vname + '</span>';
-    if(row) row.style.display='none';
-    if(rowG) rowG.style.display='flex';
+    const vname = currentGVoice();
+    const lim = (USAGE_LIMIT() / 10000).toFixed(0) + '万文字/月無料';
+    el.innerHTML = '<span class="mode-badge google">🎙 ' + vname + ' (' + lim + ')</span>';
+    if (badge) badge.textContent = '🎙 ' + vname;
+    if (row)  row.style.display  = 'none';
+    if (rowG) rowG.style.display = 'flex';
   } else {
     el.innerHTML = '<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';
-    if(row) row.style.display='flex';
-    if(rowG) rowG.style.display='none';
+    if (row)  row.style.display  = 'flex';
+    if (rowG) rowG.style.display = 'none';
   }
 }
 
@@ -1450,8 +1470,22 @@ function closeReadme() { document.getElementById('rdmOverlay').classList.remove(
 // ═══════════════════════════════════════════
 //  USAGE TRACKING (Google TTS)
 // ═══════════════════════════════════════════
-const USAGE_WARN  = 900000;   // 警告
-const USAGE_LIMIT = 1000000;  // 自動停止（無料枠）
+// 音声種別ごとの無料枠
+const VOICE_LIMITS = {
+  'Wavenet':  { free: 4000000, warn: 3600000 },
+  'Standard': { free: 4000000, warn: 3600000 },
+  'Neural2':  { free: 1000000, warn:  900000 },
+  'default':  { free: 1000000, warn:  900000 },
+};
+function getVoiceLimits() {
+  const v = _gVoice || '';
+  if (v.includes('Wavenet'))  return VOICE_LIMITS['Wavenet'];
+  if (v.includes('Standard')) return VOICE_LIMITS['Standard'];
+  if (v.includes('Neural2'))  return VOICE_LIMITS['Neural2'];
+  return VOICE_LIMITS['default'];
+}
+function USAGE_WARN()  { return getVoiceLimits().warn; }
+function USAGE_LIMIT() { return getVoiceLimits().free; }
 
 function usageKey() {
   const d = new Date();
@@ -1476,23 +1510,25 @@ function resetUsage() {
   );
 }
 function checkUsageAlert(cur) {
-  if (cur >= USAGE_LIMIT) {
-    toast('⚠ 月間無料枠(100万文字)に達しました。Kyokoに切り替えます。');
-  } else if (cur >= USAGE_WARN) {
-    toast('⚠ 今月の使用量が90万文字を超えました。残り' + Math.round((USAGE_LIMIT-cur)/1000) + '千文字');
+  const lim = USAGE_LIMIT(), warn = USAGE_WARN();
+  const limStr = (lim/10000).toFixed(0) + '万';
+  if (cur >= lim) {
+    toast('⚠ 月間無料枠(' + limStr + '文字)に達しました。Kyokoに切り替えます。');
+  } else if (cur >= warn) {
+    toast('⚠ 使用量が' + (warn/10000).toFixed(0) + '万文字を超えました。残り' + Math.round((lim-cur)/10000) + '万文字');
   }
 }
-function isOverLimit() { return hasGoogleKey() && getUsage() >= USAGE_LIMIT; }
+function isOverLimit() { return hasGoogleKey() && getUsage() >= USAGE_LIMIT(); }
 
 function updUsageDisplay() {
   const cur = getUsage();
-  const pct = Math.min(cur / USAGE_LIMIT * 100, 100);
+  const pct = Math.min(cur / USAGE_LIMIT() * 100, 100);
   const el = document.getElementById('usageVal');
   const fill = document.getElementById('usageFill');
   if (!el) return;
-  el.textContent = cur.toLocaleString() + ' / 1,000,000文字';
+  const lim2 = USAGE_LIMIT(); el.textContent = cur.toLocaleString() + ' / ' + lim2.toLocaleString() + '文字';
   fill.style.width = pct + '%';
-  fill.className = 'usage-fill' + (cur >= USAGE_LIMIT ? ' over' : cur >= USAGE_WARN ? ' warn' : '');
+  fill.className = 'usage-fill' + (cur >= USAGE_LIMIT() ? ' over' : cur >= USAGE_WARN() ? ' warn' : '');
 }
 
 // ═══════════════════════════════════════════
@@ -1598,6 +1634,25 @@ function stepPitch(dir) {
 }
 function getRate()  { return _rate; }
 function getPitch() { return _pitch; }
+function onGVoiceChange() {
+  const sel = document.getElementById('googleVoiceSel');
+  if (sel && sel.value) {
+    _gVoice = sel.value;
+    localStorage.setItem('yogatari_gvoice', _gVoice);
+  }
+  // 上限ノートを更新
+  const note = document.getElementById('voiceLimitNote');
+  if (note) {
+    const lim = USAGE_LIMIT();
+    const isWave = _gVoice.includes('Wavenet') || _gVoice.includes('Standard');
+    note.innerHTML = isWave
+      ? 'WaveNet / Standard：月<b>400万文字</b>まで無料'
+      : 'Neural2：月<b>100万文字</b>まで無料';
+  }
+  updModeDisplay();
+  updUsageDisplay();
+}
+
 function onVoice()  { const i=+document.getElementById('voiceSel').value; if(!isNaN(i)) selVoice=voices[i]; }
 </script>
 
