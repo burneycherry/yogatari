@@ -229,6 +229,9 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 .usage-fill.over{background:linear-gradient(90deg,#e05050,#c02020)}
 .usage-reset-btn{font-family:var(–mono);font-size:10px;color:var(–tx2);background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;margin-top:6px;display:block}
 .usage-reset-btn:active{color:var(–tx1)}
+.test-voice-btn{width:100%;padding:10px;margin:6px 0 8px;background:rgba(200,153,30,0.15);border:1px solid rgba(200,153,30,0.4);color:var(–acc);border-radius:10px;font-family:var(–serif);font-size:13px;cursor:pointer;letter-spacing:.05em}
+.test-voice-btn:active{background:rgba(200,153,30,0.3)}
+.test-voice-btn.testing{opacity:0.6;pointer-events:none}
 
 /* ── SETTINGS PANEL ── */
 .sett-section{margin-bottom:20px}
@@ -266,7 +269,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v12</span></div>
+  <div class="app-name">夜語り <span class="ver">v13</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -414,23 +417,24 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
   <div class="sett-title">// Google音声を選ぶ</div>
   <select class="gv-select" id="googleVoiceSel" onchange="onGVoiceChange()">
     <optgroup label="── WaveNet  月400万文字無料 ──">
-      <option value="ja-JP-Wavenet-D" selected>WaveNet-D（女性）★おすすめ</option>
-      <option value="ja-JP-Wavenet-A">WaveNet-A（女性）</option>
-      <option value="ja-JP-Wavenet-B">WaveNet-B（男性）</option>
-      <option value="ja-JP-Wavenet-C">WaveNet-C（男性）</option>
+      <option value="ja-JP-Wavenet-A">WaveNet-A ★おすすめ</option>
+      <option value="ja-JP-Wavenet-B">WaveNet-B</option>
+      <option value="ja-JP-Wavenet-C">WaveNet-C</option>
+      <option value="ja-JP-Wavenet-D">WaveNet-D</option>
     </optgroup>
     <optgroup label="── Standard  月400万文字無料 ──">
-      <option value="ja-JP-Standard-A">Standard-A（女性）</option>
-      <option value="ja-JP-Standard-B">Standard-B（女性）</option>
-      <option value="ja-JP-Standard-C">Standard-C（男性）</option>
-      <option value="ja-JP-Standard-D">Standard-D（男性）</option>
+      <option value="ja-JP-Standard-A">Standard-A</option>
+      <option value="ja-JP-Standard-B">Standard-B</option>
+      <option value="ja-JP-Standard-C">Standard-C</option>
+      <option value="ja-JP-Standard-D">Standard-D</option>
     </optgroup>
-    <optgroup label="── Neural2  月100万文字無料 ──">
-      <option value="ja-JP-Neural2-D">Neural2-D（女性・高品質）</option>
-      <option value="ja-JP-Neural2-B">Neural2-B（男性・高品質）</option>
-      <option value="ja-JP-Neural2-C">Neural2-C（男性・高品質）</option>
+    <optgroup label="── Neural2  月100万文字無料（高品質）──">
+      <option value="ja-JP-Neural2-B">Neural2-B</option>
+      <option value="ja-JP-Neural2-C">Neural2-C</option>
+      <option value="ja-JP-Neural2-D">Neural2-D</option>
     </optgroup>
   </select>
+  <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
   <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2：月100万文字まで無料</div>
 </div>
 ```
@@ -591,7 +595,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v12';
+const APP_VER = 'v13';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1054,7 +1058,7 @@ function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 //  GOOGLE TTS ENGINE  (v11: プリフェッチ・ギャップ解消)
 // ═══════════════════════════════════════════
 let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
-let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Wavenet-D';
+let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Wavenet-A';
 let _gAudio  = null;
 let _busy    = false;
 
@@ -1289,6 +1293,7 @@ function syncVoiceSelect() {
   if (!sel) return;
   const exists = Array.from(sel.options).some(o => o.value === _gVoice);
   if (exists) sel.value = _gVoice;
+  else { sel.value = 'ja-JP-Wavenet-A'; _gVoice = 'ja-JP-Wavenet-A'; }
 }
 
 function saveApiKey() {
@@ -1324,20 +1329,13 @@ function showApiStatus(type, msg) {
 
 // 音声APIキー → 表示名
 function friendlyVoiceName(v) {
-  const map = {
-    'ja-JP-Wavenet-A':  'WaveNet-A（女性）',
-    'ja-JP-Wavenet-B':  'WaveNet-B（男性）',
-    'ja-JP-Wavenet-C':  'WaveNet-C（男性）',
-    'ja-JP-Wavenet-D':  'WaveNet-D（女性）',
-    'ja-JP-Standard-A': 'Standard-A（女性）',
-    'ja-JP-Standard-B': 'Standard-B（女性）',
-    'ja-JP-Standard-C': 'Standard-C（男性）',
-    'ja-JP-Standard-D': 'Standard-D（男性）',
-    'ja-JP-Neural2-B':  'Neural2-B（男性）',
-    'ja-JP-Neural2-C':  'Neural2-C（男性）',
-    'ja-JP-Neural2-D':  'Neural2-D（女性）',
-  };
-  return map[v] || v;
+  // 例: ja-JP-Wavenet-A → WaveNet-A
+  const m = v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);
+  if (m) {
+    const type = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
+    return type + '-' + m[2];
+  }
+  return v;
 }
 
 function updModeDisplay() {
@@ -1712,14 +1710,15 @@ function getRate()  { return _rate; }
 function getPitch() { return _pitch; }
 function onGVoiceChange() {
   const sel = document.getElementById('googleVoiceSel');
-  if (sel && sel.value && sel.value !== _gVoice) {
-    _gVoice = sel.value;
+  if (sel && sel.value) {
+    _gVoice = sel.value; // 常に更新（条件なし）
     localStorage.setItem('yogatari_gvoice', _gVoice);
   }
+  // 音声変更時はプリフェッチキャッシュをクリア（古い声のキャッシュを破棄）
+  clearPrefetchCache();
   // 上限ノートを更新
   const note = document.getElementById('voiceLimitNote');
   if (note) {
-    const lim = USAGE_LIMIT();
     const isWave = _gVoice.includes('Wavenet') || _gVoice.includes('Standard');
     note.innerHTML = isWave
       ? 'WaveNet / Standard：月<b>400万文字</b>まで無料'
@@ -1727,6 +1726,26 @@ function onGVoiceChange() {
   }
   updModeDisplay();
   updUsageDisplay();
+}
+
+// 試聴ボタン
+async function testVoice() {
+  if (!hasGoogleKey()) { toast('APIキーを先に保存してください'); return; }
+  const btn = document.getElementById('testVoiceBtn');
+  if (btn) btn.classList.add('testing');
+  // 現在選択中の音声を _gVoice に確定
+  const sel = document.getElementById('googleVoiceSel');
+  if (sel && sel.value) { _gVoice = sel.value; localStorage.setItem('yogatari_gvoice', _gVoice); }
+  try {
+    const src = await fetchGoogleAudio('こんにちは。これは' + friendlyVoiceName(_gVoice) + 'の声です。いかがでしょうか。');
+    const a = new Audio(src);
+    a.onended = () => { if(btn) btn.classList.remove('testing'); };
+    a.onerror = () => { if(btn) btn.classList.remove('testing'); toast('再生エラー'); };
+    a.play().catch(()=>{ if(btn) btn.classList.remove('testing'); toast('再生できませんでした'); });
+  } catch(e) {
+    if(btn) btn.classList.remove('testing');
+    toast('⚠ ' + (e.message||'試聴エラー').slice(0,40));
+  }
 }
 
 function onVoice()  { const i=+document.getElementById('voiceSel').value; if(!isNaN(i)) selVoice=voices[i]; }
