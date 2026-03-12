@@ -181,6 +181,20 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 .cfm-btn-cancel{background:none;border-color:var(–tx3);color:var(–tx1)}
 .cfm-btn-cancel:active{border-color:var(–tx1);color:var(–tx0)}
 
+/* ── CONFIRM DIALOG ── */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;display:none;align-items:center;justify-content:center;padding:24px}
+.confirm-overlay.show{display:flex}
+.confirm-box{background:var(–bg2);border:1px solid var(–tx2);border-radius:16px;width:100%;max-width:340px;padding:24px 20px}
+.confirm-icon{font-size:32px;text-align:center;margin-bottom:12px}
+.confirm-title{font-family:var(–disp);font-size:17px;color:var(–tx0);text-align:center;margin-bottom:8px}
+.confirm-msg{font-size:13px;color:var(–tx1);line-height:1.8;text-align:center;margin-bottom:20px}
+.confirm-btns{display:flex;gap:10px}
+.confirm-btn{flex:1;font-family:var(–serif);font-size:14px;padding:12px;border-radius:10px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s;text-align:center}
+.confirm-btn-ok{background:var(–gold);border-color:var(–gold);color:var(–bg);font-weight:bold}
+.confirm-btn-ok:active{background:var(–gold2)}
+.confirm-btn-cancel{background:none;border-color:var(–tx3);color:var(–tx1)}
+.confirm-btn-cancel:active{border-color:var(–tx1)}
+
 /* ── README BUTTON ── */
 .readme-btn{width:28px;height:28px;border-radius:50%;background:none;border:1px solid var(–tx3);color:var(–tx2);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0}
 .readme-btn:active{border-color:var(–gold);color:var(–gold)}
@@ -252,7 +266,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v6</span></div>
+  <div class="app-name">夜語り <span class="ver">v7</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -455,6 +469,20 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
   </div>
 </div>
 
+<!-- CONFIRM DIALOG -->
+
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirmIcon">⚠️</div>
+    <div class="confirm-title" id="confirmTitle">確認</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-btn confirm-btn-cancel" onclick="confirmCancel()">キャンセル</button>
+      <button class="confirm-btn confirm-btn-ok" id="confirmOkBtn" onclick="confirmOk()">実行</button>
+    </div>
+  </div>
+</div>
+
 <!-- README MODAL -->
 
 <div class="rdm-overlay" id="rdmOverlay" onclick="if(event.target===this)closeReadme()">
@@ -546,7 +574,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v6';
+const APP_VER = 'v7';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1004,31 +1032,40 @@ function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 //  SPEECH
 // ═══════════════════════════════════════════
 // ═══════════════════════════════════════════
-//  GOOGLE TTS ENGINE
+//  GOOGLE TTS ENGINE  (v7: 二重発話防止・SS完全分離)
 // ═══════════════════════════════════════════
 let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
 let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Neural2-D';
-let _gAudio  = null; // 再生中のAudioオブジェクト
+let _gAudio  = null;
+let _busy    = false; // 発話リクエスト処理中フラグ
 
 function hasGoogleKey() { return _gApiKey.trim().length > 10; }
 
+function currentGVoice() {
+  const sel = document.getElementById('googleVoiceSel');
+  if (sel && sel.value) _gVoice = sel.value;
+  return _gVoice;
+}
+
 async function speakGoogle(text) {
-  const key = _gApiKey.trim();
-  const voiceName = document.getElementById('googleVoiceSel')?.value || _gVoice;
+  if (isOverLimit()) throw new Error('月間無料枠(100万文字)に達しました。設定タブでリセットを。');
   const body = {
     input: { text },
-    voice: { languageCode: 'ja-JP', name: voiceName },
-    audioConfig: { audioEncoding: 'MP3', speakingRate: getRate(), pitch: (getPitch()-1)*10 }
+    voice: { languageCode: 'ja-JP', name: currentGVoice() },
+    audioConfig: {
+      audioEncoding: 'MP3',
+      speakingRate: Math.max(0.25, Math.min(4.0, getRate())),
+      pitch: Math.max(-20, Math.min(20, (getPitch() - 1.0) * 6))
+    }
   };
-  // 上限チェック
-  if (isOverLimit()) throw new Error('月間無料枠(100万文字)に達しました。設定でリセットするかKyokoをご利用ください。');
   const res = await fetch(
-    'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + key,
-    { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) }
+    'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + _gApiKey.trim(),
+    { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body), signal: AbortSignal.timeout(15000) }
   );
   if (!res.ok) {
     const err = await res.json().catch(()=>({}));
-    throw new Error(err?.error?.message || 'Google TTS エラー ' + res.status);
+    throw new Error(err?.error?.message || 'HTTP ' + res.status);
   }
   const data = await res.json();
   addUsage(text.length);
@@ -1036,107 +1073,144 @@ async function speakGoogle(text) {
 }
 
 function stopGoogleAudio() {
-  if (_gAudio) { _gAudio.pause(); _gAudio.src=''; _gAudio=null; }
+  if (_gAudio) {
+    _gAudio.onended = null;
+    _gAudio.onerror = null;
+    _gAudio.pause();
+    _gAudio.src = '';
+    _gAudio = null;
+  }
 }
 
 // ═══════════════════════════════════════════
 //  UNIFIED SPEAK
 // ═══════════════════════════════════════════
 function speakIdx(i) {
+  if (_busy) return; // 処理中は二重起動しない
   clearWatchdog();
+
   if (i >= segs.length) {
-    playing=false; updBtn(); setBadge(false);
+    playing = false; updBtn(); setBadge(false);
     saveBookmarkCurrent(i);
     if (queue[qi]) queue[qi].done = true;
     renderQueue();
     if (nextUrl) startNextCd(); else toast('読み上げ完了');
     return;
   }
+
   idx = i;
   updHighlight(); updProg();
   if (i % 10 === 0) saveBookmarkCurrent(i);
 
   if (hasGoogleKey()) {
     // ── Google TTS ──
+    SS.cancel(); // KyokoがいたらSSを確実に止める
+    _busy = true;
+
     speakGoogle(segs[i]).then(audioSrc => {
+      _busy = false;
       if (!playing) return;
+      stopGoogleAudio();
       _gAudio = new Audio(audioSrc);
-      _gAudio.onended = () => { if(playing) speakIdx(idx+1); };
-      _gAudio.onerror = () => { if(playing) setTimeout(()=>speakIdx(idx),600); };
-      _gAudio.play().catch(()=>{ if(playing) setTimeout(()=>speakIdx(idx),600); });
+      _gAudio.onended = () => { clearWatchdog(); if (playing) speakIdx(idx + 1); };
+      _gAudio.onerror = () => { clearWatchdog(); _busy = false; if (playing) setTimeout(() => speakIdx(idx), 1000); };
+      _gAudio.play().catch(() => { clearWatchdog(); _busy = false; if (playing) setTimeout(() => speakIdx(idx), 800); });
       startWatchdog(getRate(), true);
     }).catch(e => {
+      _busy = false;
       if (!playing) return;
-      // APIキーエラーなら設定タブへ誘導
-      toast('Google TTS エラー: ' + e.message.slice(0,40));
-      playing=false; updBtn(); setBadge(false);
+      const msg = (e.message || 'Google TTSエラー').slice(0, 60);
+      toast('⚠ ' + msg);
+      // 上限・キー不正は停止、ネットワーク系は2秒後リトライ
+      if (/quota|key|API|無料枠|401|403/.test(msg)) {
+        playing = false; updBtn(); setBadge(false);
+      } else {
+        setTimeout(() => { if (playing) speakIdx(idx); }, 2000);
+      }
     });
+
   } else {
     // ── Web Speech API (Kyoko) ──
+    stopGoogleAudio(); // GoogleAudioが残っていたら止める
     const utt = new SpeechSynthesisUtterance(segs[i]);
     if (selVoice) utt.voice = selVoice;
-    utt.rate  = getRate();
-    utt.volume= 1.0;
-    utt.pitch = getPitch();
-    utt.lang  = 'ja-JP';
+    utt.rate   = getRate();
+    utt.volume = 1.0;
+    utt.pitch  = getPitch();
+    utt.lang   = 'ja-JP';
     utt.onstart = () => startWatchdog(getRate(), false);
-    utt.onend   = () => { clearWatchdog(); if(playing) speakIdx(idx+1); };
-    utt.onerror = (e) => { clearWatchdog(); if(e.error==='interrupted') return; if(playing) setTimeout(()=>speakIdx(idx),500); };
+    utt.onend   = () => { clearWatchdog(); if (playing) speakIdx(idx + 1); };
+    utt.onerror = (e) => {
+      clearWatchdog();
+      if (e.error === 'interrupted' || e.error === 'canceled') return;
+      if (playing) setTimeout(() => speakIdx(idx), 500);
+    };
     SS.speak(utt);
   }
 }
 
-function startWatchdog(rate, isGoogle=false) {
-  const ms = Math.min((segs[idx]?.length||20)/(rate*4)*1000 + (isGoogle?8000:4000), 40000);
-  watchdog = setTimeout(()=>{
+function startWatchdog(rate, isGoogle = false) {
+  const ms = Math.min((segs[idx]?.length || 20) / (rate * 3) * 1000 + (isGoogle ? 10000 : 5000), 45000);
+  watchdog = setTimeout(() => {
     if (!playing) return;
+    _busy = false;
     if (isGoogle) { stopGoogleAudio(); speakIdx(idx); }
-    else if (!SS.speaking&&!SS.pending) { SS.cancel(); speakIdx(idx); }
+    else if (!SS.speaking && !SS.pending) { SS.cancel(); speakIdx(idx); }
   }, ms);
 }
-function clearWatchdog() { if(watchdog){clearTimeout(watchdog);watchdog=null;} }
+function clearWatchdog() { if (watchdog) { clearTimeout(watchdog); watchdog = null; } }
 
 function startPlay() {
-  playing=true; updBtn(); setBadge(true);
-  SS.cancel(); stopGoogleAudio();
-  speakIdx(idx);
+  if (playing) return; // 二重起動防止
+  playing = true; _busy = false;
+  updBtn(); setBadge(true);
+  SS.cancel();
+  stopGoogleAudio();
+  setTimeout(() => speakIdx(idx), 80);
 }
 function togglePlay() {
   if (!segs.length) return;
   if (playing) {
-    playing=false; clearWatchdog();
-    if (hasGoogleKey()) { stopGoogleAudio(); }
-    else { SS.pause(); }
+    playing = false; _busy = false; clearWatchdog();
+    SS.cancel(); stopGoogleAudio();
     updBtn(); setBadge(false);
   } else {
-    if (!hasGoogleKey() && SS.paused) {
-      playing=true; SS.resume(); updBtn(); setBadge(true); startWatchdog(getRate(),false);
-    } else { startPlay(); }
+    startPlay();
   }
 }
 function stop() {
-  playing=false;
+  playing = false; _busy = false;
   SS.cancel(); stopGoogleAudio();
   clearWatchdog(); updBtn(); setBadge(false); cancelNext();
 }
 function prevSeg() {
-  SS.cancel(); stopGoogleAudio(); clearWatchdog();
-  const i=Math.max(0,idx-1); if(playing) speakIdx(i); else{idx=i;updHighlight();updProg();}
+  if (_busy) return;
+  SS.cancel(); stopGoogleAudio(); clearWatchdog(); _busy = false;
+  const i = Math.max(0, idx - 1);
+  if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
 }
 function nextSeg() {
-  SS.cancel(); stopGoogleAudio(); clearWatchdog();
-  const i=Math.min(segs.length-1,idx+1); if(playing) speakIdx(i); else{idx=i;updHighlight();updProg();}
+  if (_busy) return;
+  SS.cancel(); stopGoogleAudio(); clearWatchdog(); _busy = false;
+  const i = Math.min(segs.length - 1, idx + 1);
+  if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
 }
 
 // ═══════════════════════════════════════════
 //  SETTINGS
 // ═══════════════════════════════════════════
 function initSettings() {
+  // APIキー
   if (_gApiKey) {
     document.getElementById('apiKeyInput').value = _gApiKey;
     document.getElementById('googleVoiceSection').style.display = 'block';
-    const sel = document.getElementById('googleVoiceSel');
-    if (sel) sel.value = _gVoice;
+  }
+  // 音声名を localStorage から復元してセレクタに反映
+  const sel = document.getElementById('googleVoiceSel');
+  if (sel && _gVoice) {
+    // optionが存在するか確認してからセット
+    const exists = Array.from(sel.options).some(o => o.value === _gVoice);
+    if (exists) sel.value = _gVoice;
   }
   updModeDisplay();
   updUsageDisplay();
@@ -1147,7 +1221,8 @@ function saveApiKey() {
   if (!key) { showApiStatus('ng', 'キーを入力してください'); return; }
   if (!key.startsWith('AIza')) { showApiStatus('ng', 'キーの形式が正しくありません（AIzaSy…）'); return; }
   _gApiKey = key;
-  _gVoice = document.getElementById('googleVoiceSel')?.value || _gVoice;
+  const selEl = document.getElementById('googleVoiceSel');
+  if (selEl && selEl.value) _gVoice = selEl.value;
   localStorage.setItem('yogatari_gkey', _gApiKey);
   localStorage.setItem('yogatari_gvoice', _gVoice);
   document.getElementById('googleVoiceSection').style.display = 'block';
@@ -1230,6 +1305,7 @@ async function goNext() {
     currentChapterTitle=page.title;
     currentChapterNum=chapNumFromUrl(url);
     displayPage(page,url,0);
+    stop(); // 念のため既存を止めてから
     startPlay();
     hideFetch();
   } catch(e){showFetch('err',e.message);}
@@ -1345,6 +1421,27 @@ function closeConfirm() {
 }
 
 // ═══════════════════════════════════════════
+//  CONFIRM DIALOG
+// ═══════════════════════════════════════════
+let _confirmCallback = null;
+function showConfirm(icon, title, msg, okLabel, callback) {
+  document.getElementById('confirmIcon').textContent = icon;
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmOkBtn').textContent = okLabel;
+  _confirmCallback = callback;
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+function confirmOk() {
+  document.getElementById('confirmOverlay').classList.remove('show');
+  if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
+}
+function confirmCancel() {
+  document.getElementById('confirmOverlay').classList.remove('show');
+  _confirmCallback = null;
+}
+
+// ═══════════════════════════════════════════
 //  README
 // ═══════════════════════════════════════════
 function openReadme()  { document.getElementById('rdmOverlay').classList.add('show'); }
@@ -1415,7 +1512,15 @@ function switchTab(name) {
 // ═══════════════════════════════════════════
 document.addEventListener('visibilitychange', ()=>{
   if (document.visibilityState==='visible') {
-    if(playing) { if(hasGoogleKey()){if(!_gAudio||_gAudio.paused){stopGoogleAudio();setTimeout(()=>speakIdx(idx),300);}} else if(!SS.speaking&&!SS.pending){SS.cancel();setTimeout(()=>speakIdx(idx),300);} }
+    if(playing && !_speakLock) {
+      if(hasGoogleKey()) {
+        if(!_gAudio || _gAudio.paused || _gAudio.ended) {
+          stopGoogleAudio(); _speakLock=false; setTimeout(()=>speakIdx(idx),400);
+        }
+      } else if(!SS.speaking && !SS.pending) {
+        SS.cancel(); setTimeout(()=>speakIdx(idx),300);
+      }
+    }
     if(_actx&&_actx.state==='suspended') _actx.resume().catch(()=>{});
   }
 });
@@ -1497,4 +1602,4 @@ function onVoice()  { const i=+document.getElementById('voiceSel').value; if(!is
 </script>
 
 </body>
-</html>
+</html>  
