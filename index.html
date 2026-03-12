@@ -266,7 +266,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v10</span></div>
+  <div class="app-name">夜語り <span class="ver">v12</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -591,7 +591,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v10';
+const APP_VER = 'v12';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -639,6 +639,8 @@ function loadVoices() {
 }
 SS.addEventListener ? SS.addEventListener('voiceschanged', loadVoices) : (SS.onvoiceschanged = loadVoices);
 loadVoices();
+// 起動時に音声設定をDOMに同期
+setTimeout(() => { syncVoiceSelect(); updModeDisplay(); }, 300);
 
 // ═══════════════════════════════════════════
 //  BOOKMARKS (localStorage)
@@ -1049,22 +1051,23 @@ function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 //  SPEECH
 // ═══════════════════════════════════════════
 // ═══════════════════════════════════════════
-//  GOOGLE TTS ENGINE  (v7: 二重発話防止・SS完全分離)
+//  GOOGLE TTS ENGINE  (v11: プリフェッチ・ギャップ解消)
 // ═══════════════════════════════════════════
 let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
 let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Wavenet-D';
 let _gAudio  = null;
-let _busy    = false; // 発話リクエスト処理中フラグ
+let _busy    = false;
+
+// ── プリフェッチキャッシュ ──
+// { idx: Promise<audioSrc> } を最大2件保持
+const _prefetchCache = new Map();
 
 function hasGoogleKey() { return _gApiKey.trim().length > 10; }
 
-function currentGVoice() {
-  const sel = document.getElementById('googleVoiceSel');
-  if (sel && sel.value) _gVoice = sel.value;
-  return _gVoice;
-}
+// _gVoice が唯一の情報源。DOM selectは表示用のみ。
+function currentGVoice() { return _gVoice; }
 
-async function speakGoogle(text) {
+async function fetchGoogleAudio(text) {
   if (isOverLimit()) throw new Error('月間無料枠(' + (USAGE_LIMIT()/10000).toFixed(0) + '万文字)に達しました。設定タブでリセットを。');
   const body = {
     input: { text },
@@ -1089,6 +1092,37 @@ async function speakGoogle(text) {
   return 'data:audio/mp3;base64,' + data.audioContent;
 }
 
+// キャッシュ付き取得（同じidxは1回だけfetch）
+function getAudioCached(i) {
+  if (!_prefetchCache.has(i)) {
+    if (i < segs.length) {
+      _prefetchCache.set(i, fetchGoogleAudio(segs[i]));
+    }
+  }
+  return _prefetchCache.get(i);
+}
+
+// 古いキャッシュを削除（メモリ節約）
+function evictCache(currentIdx) {
+  for (const key of _prefetchCache.keys()) {
+    if (key < currentIdx - 1 || key > currentIdx + 2) {
+      _prefetchCache.delete(key);
+    }
+  }
+}
+
+// 次の段落を先読み（再生開始直後に呼ぶ）
+function prefetchNext(i) {
+  if (!hasGoogleKey()) return;
+  if (i + 1 < segs.length && !_prefetchCache.has(i + 1)) {
+    getAudioCached(i + 1); // Promiseを走らせるだけ（awaitしない）
+  }
+}
+
+function clearPrefetchCache() {
+  _prefetchCache.clear();
+}
+
 function stopGoogleAudio() {
   if (_gAudio) {
     _gAudio.onended = null;
@@ -1103,7 +1137,7 @@ function stopGoogleAudio() {
 //  UNIFIED SPEAK
 // ═══════════════════════════════════════════
 function speakIdx(i) {
-  if (_busy) return; // 処理中は二重起動しない
+  if (_busy) return;
   clearWatchdog();
 
   if (i >= segs.length) {
@@ -1111,6 +1145,7 @@ function speakIdx(i) {
     saveBookmarkCurrent(i);
     if (queue[qi]) queue[qi].done = true;
     renderQueue();
+    clearPrefetchCache();
     if (nextUrl) startNextCd(); else toast('読み上げ完了');
     return;
   }
@@ -1120,25 +1155,40 @@ function speakIdx(i) {
   if (i % 10 === 0) saveBookmarkCurrent(i);
 
   if (hasGoogleKey()) {
-    // ── Google TTS ──
-    SS.cancel(); // KyokoがいたらSSを確実に止める
+    // ── Google TTS（プリフェッチ対応）──
+    SS.cancel();
     _busy = true;
+    evictCache(i);
 
-    speakGoogle(segs[i]).then(audioSrc => {
+    getAudioCached(i).then(audioSrc => {
       _busy = false;
       if (!playing) return;
       stopGoogleAudio();
       _gAudio = new Audio(audioSrc);
-      _gAudio.onended = () => { clearWatchdog(); if (playing) speakIdx(idx + 1); };
-      _gAudio.onerror = () => { clearWatchdog(); _busy = false; if (playing) setTimeout(() => speakIdx(idx), 1000); };
-      _gAudio.play().catch(() => { clearWatchdog(); _busy = false; if (playing) setTimeout(() => speakIdx(idx), 800); });
+      _gAudio.onended = () => {
+        clearWatchdog();
+        if (playing) speakIdx(idx + 1);
+      };
+      _gAudio.onerror = () => {
+        clearWatchdog(); _busy = false;
+        // キャッシュを無効化して再取得
+        _prefetchCache.delete(i);
+        if (playing) setTimeout(() => speakIdx(idx), 800);
+      };
+      _gAudio.play().catch(() => {
+        clearWatchdog(); _busy = false;
+        _prefetchCache.delete(i);
+        if (playing) setTimeout(() => speakIdx(idx), 600);
+      });
       startWatchdog(getRate(), true);
+      // 再生開始と同時に次の段落を先読み
+      prefetchNext(i);
     }).catch(e => {
       _busy = false;
+      _prefetchCache.delete(i); // エラーはキャッシュから削除
       if (!playing) return;
       const msg = (e.message || 'Google TTSエラー').slice(0, 60);
       toast('⚠ ' + msg);
-      // 上限・キー不正は停止、ネットワーク系は2秒後リトライ
       if (/quota|key|API|無料枠|401|403/.test(msg)) {
         playing = false; updBtn(); setBadge(false);
       } else {
@@ -1148,7 +1198,8 @@ function speakIdx(i) {
 
   } else {
     // ── Web Speech API (Kyoko) ──
-    stopGoogleAudio(); // GoogleAudioが残っていたら止める
+    stopGoogleAudio();
+    // iOSで止まりやすいので短いセグメントは結合
     const utt = new SpeechSynthesisUtterance(segs[i]);
     if (selVoice) utt.voice = selVoice;
     utt.rate   = getRate();
@@ -1178,11 +1229,14 @@ function startWatchdog(rate, isGoogle = false) {
 function clearWatchdog() { if (watchdog) { clearTimeout(watchdog); watchdog = null; } }
 
 function startPlay() {
-  if (playing) return; // 二重起動防止
+  if (playing) return;
   playing = true; _busy = false;
   updBtn(); setBadge(true);
   SS.cancel();
   stopGoogleAudio();
+  clearPrefetchCache();
+  // 先読み開始（最初の段落をキャッシュ）
+  if (hasGoogleKey()) getAudioCached(idx);
   setTimeout(() => speakIdx(idx), 80);
 }
 function togglePlay() {
@@ -1198,17 +1252,18 @@ function togglePlay() {
 function stop() {
   playing = false; _busy = false;
   SS.cancel(); stopGoogleAudio();
-  clearWatchdog(); updBtn(); setBadge(false); cancelNext();
+  clearWatchdog(); clearPrefetchCache();
+  updBtn(); setBadge(false); cancelNext();
 }
 function prevSeg() {
   if (_busy) return;
-  SS.cancel(); stopGoogleAudio(); clearWatchdog(); _busy = false;
+  SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false;
   const i = Math.max(0, idx - 1);
   if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
 }
 function nextSeg() {
   if (_busy) return;
-  SS.cancel(); stopGoogleAudio(); clearWatchdog(); _busy = false;
+  SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false;
   const i = Math.min(segs.length - 1, idx + 1);
   if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
 }
@@ -1222,15 +1277,18 @@ function initSettings() {
     document.getElementById('apiKeyInput').value = _gApiKey;
     document.getElementById('googleVoiceSection').style.display = 'block';
   }
-  // 音声名を localStorage から復元してセレクタに反映
-  const sel = document.getElementById('googleVoiceSel');
-  if (sel && _gVoice) {
-    // optionが存在するか確認してからセット
-    const exists = Array.from(sel.options).some(o => o.value === _gVoice);
-    if (exists) sel.value = _gVoice;
-  }
+  // _gVoice（=localStorage）→ DOM select に同期（_gVoiceが正）
+  syncVoiceSelect();
   updModeDisplay();
   updUsageDisplay();
+}
+
+// DOM selectを _gVoice に合わせる（起動時・音声変更時に呼ぶ）
+function syncVoiceSelect() {
+  const sel = document.getElementById('googleVoiceSel');
+  if (!sel) return;
+  const exists = Array.from(sel.options).some(o => o.value === _gVoice);
+  if (exists) sel.value = _gVoice;
 }
 
 function saveApiKey() {
@@ -1288,10 +1346,7 @@ function updModeDisplay() {
   const row   = document.getElementById('voiceRowKyoko');
   const rowG  = document.getElementById('voiceRowGoogle');
   const badge = document.getElementById('googleBadge');
-  // _gVoice を最新にしてからDOMに反映
-  const sel = document.getElementById('googleVoiceSel');
-  if (sel && sel.value) _gVoice = sel.value;
-  if (hasGoogleKey()) {
+    if (hasGoogleKey()) {
     const fname = friendlyVoiceName(_gVoice);
     const lim   = (USAGE_LIMIT() / 10000).toFixed(0) + '万文字/月無料';
     el.innerHTML = '<span class="mode-badge google">🎙 ' + fname + '<br><span style="font-size:9px;opacity:0.7">' + lim + '</span></span>';
@@ -1657,7 +1712,7 @@ function getRate()  { return _rate; }
 function getPitch() { return _pitch; }
 function onGVoiceChange() {
   const sel = document.getElementById('googleVoiceSel');
-  if (sel && sel.value) {
+  if (sel && sel.value && sel.value !== _gVoice) {
     _gVoice = sel.value;
     localStorage.setItem('yogatari_gvoice', _gVoice);
   }
