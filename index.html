@@ -266,7 +266,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v9</span></div>
+  <div class="app-name">夜語り <span class="ver">v10</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -591,7 +591,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v9';
+const APP_VER = 'v10';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1264,17 +1264,38 @@ function showApiStatus(type, msg) {
   el.className = 'api-status show ' + type;
 }
 
+// 音声APIキー → 表示名
+function friendlyVoiceName(v) {
+  const map = {
+    'ja-JP-Wavenet-A':  'WaveNet-A（女性）',
+    'ja-JP-Wavenet-B':  'WaveNet-B（男性）',
+    'ja-JP-Wavenet-C':  'WaveNet-C（男性）',
+    'ja-JP-Wavenet-D':  'WaveNet-D（女性）',
+    'ja-JP-Standard-A': 'Standard-A（女性）',
+    'ja-JP-Standard-B': 'Standard-B（女性）',
+    'ja-JP-Standard-C': 'Standard-C（男性）',
+    'ja-JP-Standard-D': 'Standard-D（男性）',
+    'ja-JP-Neural2-B':  'Neural2-B（男性）',
+    'ja-JP-Neural2-C':  'Neural2-C（男性）',
+    'ja-JP-Neural2-D':  'Neural2-D（女性）',
+  };
+  return map[v] || v;
+}
+
 function updModeDisplay() {
   const el = document.getElementById('modeDisplay');
   if (!el) return;
-  const row  = document.getElementById('voiceRowKyoko');
-  const rowG = document.getElementById('voiceRowGoogle');
+  const row   = document.getElementById('voiceRowKyoko');
+  const rowG  = document.getElementById('voiceRowGoogle');
   const badge = document.getElementById('googleBadge');
+  // _gVoice を最新にしてからDOMに反映
+  const sel = document.getElementById('googleVoiceSel');
+  if (sel && sel.value) _gVoice = sel.value;
   if (hasGoogleKey()) {
-    const vname = currentGVoice();
-    const lim = (USAGE_LIMIT() / 10000).toFixed(0) + '万文字/月無料';
-    el.innerHTML = '<span class="mode-badge google">🎙 ' + vname + ' (' + lim + ')</span>';
-    if (badge) badge.textContent = '🎙 ' + vname;
+    const fname = friendlyVoiceName(_gVoice);
+    const lim   = (USAGE_LIMIT() / 10000).toFixed(0) + '万文字/月無料';
+    el.innerHTML = '<span class="mode-badge google">🎙 ' + fname + '<br><span style="font-size:9px;opacity:0.7">' + lim + '</span></span>';
+    if (badge) badge.textContent = '🎙 ' + fname;
     if (row)  row.style.display  = 'none';
     if (rowG) rowG.style.display = 'flex';
   } else {
