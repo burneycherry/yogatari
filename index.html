@@ -232,6 +232,8 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 .test-voice-btn{width:100%;padding:10px;margin:6px 0 8px;background:rgba(200,153,30,0.15);border:1px solid rgba(200,153,30,0.4);color:var(–acc);border-radius:10px;font-family:var(–serif);font-size:13px;cursor:pointer;letter-spacing:.05em}
 .test-voice-btn:active{background:rgba(200,153,30,0.3)}
 .test-voice-btn.testing{opacity:0.6;pointer-events:none}
+.ios-hint{font-size:11px;color:var(–tx2);background:rgba(200,153,30,0.06);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:8px 12px;margin:8px 0 0;line-height:1.7;text-align:center;transition:opacity 0.5s}
+.ios-hint.hidden{opacity:0;pointer-events:none}
 
 /* ── SETTINGS PANEL ── */
 .sett-section{margin-bottom:20px}
@@ -266,10 +268,14 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 </head>
 <body>
 
+<!-- iOS Audio アンロック用DOM要素 -->
+
+<audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
+
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v16</span></div>
+  <div class="app-name">夜語り <span class="ver">v18</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -305,6 +311,11 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <div class="fetch-box" id="fetchBox">
   <div class="spin" id="spin"></div>
   <span id="fetchMsg">取得中…</span>
+</div>
+
+<!-- iOS アンロックヒント -->
+<div class="ios-hint" id="iosHint">
+  🍎 iPhoneは最初に <b>▶を1回タップ</b> すると次の話への自動進行が有効になります
 </div>
 
 <!-- resume banner -->
@@ -520,6 +531,17 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
   <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt">「読込」を押すと<b>話一覧</b>が表示される。読みたい話をタップ</div></div>
   <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt">自動で読み上げ開始。話の終わりに<b>5秒カウント後、次の話へ自動進行</b></div></div>
 
+  <div class="rdm-note" style="margin-bottom:10px;border-color:rgba(200,153,30,0.5);background:rgba(200,153,30,0.07)">
+    🍎 <b>iPhone / iPad をお使いの方へ（重要）</b><br><br>
+    iOSのSafariは<b>ユーザーが直接タップしたときだけ</b>音声の再生を許可する仕様のため、<br>
+    アプリを開いたら <b>必ず最初に▶ボタンを1回タップ</b> してください。<br><br>
+    この操作でiOSの音声制限が解除され、以降は<br>
+    <b>・次の話への自動進行</b><br>
+    <b>・バックグラウンドでの継続再生</b><br>
+    が正常に動作します。<br><br>
+    ⚠️ アプリを閉じて開き直した場合は、再度▶を1回タップする必要があります。
+  </div>
+
   <h3>// しおり・履歴</h3>
   <ul>
     <li>読み上げ中は10段落ごとに<b>自動でしおり保存</b></li>
@@ -542,6 +564,11 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
     <li>止まったら画面をタップすると再開</li>
     <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
   </ul>
+  <div class="rdm-note" style="margin-top:4px">
+    📌 再生が止まった・次の話に進まない場合は<br>
+    まず <b>▶ボタンを1回タップ</b> してみてください。<br>
+    iOSの音声制限がリセットされ、多くの場合これで解決します。
+  </div>
 
   <h3>// Google TTS 高品質音声（任意）</h3>
   <p style="color:var(--tx2);font-size:12px;">PCやAndroidで取得してiPhoneに貼るだけでOKです</p>
@@ -595,7 +622,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v16';
+const APP_VER = 'v18';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1086,9 +1113,37 @@ function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 // ═══════════════════════════════════════════
 let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
 let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Wavenet-A';
-let _gAudio  = null;
+let _gAudio  = null;   // DOM要素への参照（起動後に設定）
 let _busy    = false;
-let _tabSw   = false; // タブ切替中（音声再起動防止）
+let _tabSw   = false;  // タブ切替中（音声再起動防止）
+let _audioUnlocked = false; // iOSオーディオアンロック済みフラグ
+
+// DOM audio要素を取得（遅延初期化）
+function getAudioEl() {
+  if (!_gAudio) _gAudio = document.getElementById('gAudioEl');
+  return _gAudio;
+}
+
+// ユーザー操作時にaudio要素をアンロック
+function unlockAudio() {
+  if (_audioUnlocked) return;
+  const el = getAudioEl();
+  if (!el) return;
+  // 無音の短いMP3をbase64で再生してアンロック
+  el.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSjAT' +
+            'HQAAAA6AAAALMef+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
+            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  el.volume = 0;
+  el.play().then(() => {
+    _audioUnlocked = true;
+    el.pause();
+    el.src = '';
+    el.volume = 1;
+    // アンロック成功 → ヒントを非表示
+    const hint = document.getElementById('iosHint');
+    if (hint) hint.classList.add('hidden');
+  }).catch(() => {});
+}
 
 // ── プリフェッチキャッシュ ──
 // { idx: Promise<audioSrc> } を最大2件保持
@@ -1156,12 +1211,12 @@ function clearPrefetchCache() {
 }
 
 function stopGoogleAudio() {
-  if (_gAudio) {
-    _gAudio.onended = null;
-    _gAudio.onerror = null;
-    _gAudio.pause();
-    _gAudio.src = '';
-    _gAudio = null;
+  const el = getAudioEl();
+  if (el) {
+    el.onended = null;
+    el.onerror = null;
+    el.pause();
+    el.src = '';
   }
 }
 
@@ -1196,17 +1251,19 @@ function speakIdx(i) {
       _busy = false;
       if (!playing) return;
       stopGoogleAudio();
-      _gAudio = new Audio(audioSrc);
-      _gAudio.onended = () => {
+      const el = getAudioEl();
+      el.onended = () => {
         clearWatchdog();
         if (playing && !_tabSw) speakIdx(idx + 1);
       };
-      _gAudio.onerror = () => {
+      el.onerror = () => {
         clearWatchdog(); _busy = false;
         _prefetchCache.delete(i);
         if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 800);
       };
-      _gAudio.play().catch(() => {
+      el.src = audioSrc;
+      el.play().catch(e => {
+        console.warn('play() failed:', e.name, e.message);
         clearWatchdog(); _busy = false;
         _prefetchCache.delete(i);
         if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 600);
@@ -1261,14 +1318,15 @@ function clearWatchdog() { if (watchdog) { clearTimeout(watchdog); watchdog = nu
 
 function startPlay() {
   if (playing) return;
+  // iOSアンロック（ユーザー操作から呼ばれた場合のみ有効）
+  unlockAudio();
   playing = true; _busy = false;
   updBtn(); setBadge(true);
   SS.cancel();
   stopGoogleAudio();
   clearPrefetchCache();
-  // 先読み開始（最初の段落をキャッシュ）
   if (hasGoogleKey()) getAudioCached(idx);
-  setTimeout(() => speakIdx(idx), 80);
+  setTimeout(() => speakIdx(idx), 100);
 }
 function togglePlay() {
   if (!segs.length) return;
@@ -1432,9 +1490,10 @@ async function goNext() {
       await _actx.resume().catch(()=>{});
     }
     // 少し待ってから再生開始（DOMが落ち着くのを待つ）
-    await new Promise(r=>setTimeout(r,200));
+    await new Promise(r=>setTimeout(r,300));
     _busy = false;
-    startPlay();
+    // playing=falseの状態からstartPlayを呼ぶ（playing=falseを確認してから）
+    if (!playing) startPlay();
   } catch(e){showFetch('err',e.message);}
   disable(false);
 }
@@ -1660,7 +1719,7 @@ document.addEventListener('visibilitychange', ()=>{
     if(playing && !_speakLock) {
       if(hasGoogleKey()) {
         if(!_gAudio || _gAudio.paused || _gAudio.ended) {
-          stopGoogleAudio(); _speakLock=false; setTimeout(()=>speakIdx(idx),400);
+          stopGoogleAudio(); _busy=false; setTimeout(()=>speakIdx(idx),400);
         }
       } else if(!SS.speaking && !SS.pending) {
         SS.cancel(); setTimeout(()=>speakIdx(idx),300);
@@ -1687,7 +1746,7 @@ document.addEventListener('touchstart', (e)=>{
 
   if (hasGoogleKey()) {
     // Google TTS: 音声オブジェクトが正常再生中なら何もしない
-    if (_gAudio && !_gAudio.paused && !_gAudio.ended) return;
+    const _ael = getAudioEl(); if (_ael && _ael.src && !_ael.paused && !_ael.ended) return;
     // 止まっていたら再起動（_busyでなければ）
     if (!_busy) { stopGoogleAudio(); setTimeout(()=>speakIdx(idx), 300); }
   } else {
