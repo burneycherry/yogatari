@@ -3,12 +3,16 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="color-scheme" content="dark">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
 <title>夜語り</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Zen+Old+Mincho&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<!-- フォント preconnect（Safari高速化）-->
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Zen+Old+Mincho&family=Share+Tech+Mono&display=swap" rel="stylesheet" crossorigin="anonymous">
 <style>
 :root {
   --bg:    #0a0908;
@@ -26,12 +30,12 @@
   --green: #2a5c3a;
   --greenb: rgba(42,92,58,0.2);
   --safe-b: env(safe-area-inset-bottom, 0px);
-  --serif: 'Noto Serif JP','Hiragino Mincho ProN','YuMincho',serif;
-  --disp:  'Zen Old Mincho',serif;
-  --mono:  'Share Tech Mono',monospace;
+  --serif: 'Noto Serif JP','Hiragino Mincho ProN','YuMincho','ヒラギノ明朝 ProN',serif;
+  --disp:  'Zen Old Mincho','Hiragino Mincho ProN','YuMincho',serif;
+  --mono:  'Share Tech Mono','Courier New',monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden}
+html,body{height:100%;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 body{background:var(--bg);color:var(--tx0);font-family:var(--serif);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
 
 /* ── TOP BAR ── */
@@ -160,7 +164,7 @@ body{background:var(--bg);color:var(--tx0);font-family:var(--serif);display:flex
 select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–tx0);font-family:var(–serif);font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
 /* 再生ボタン */
 .btn-row{display:flex;align-items:center;justify-content:center;gap:8px}
-.cb{width:44px;height:44px;border-radius:50%;background:none;border:1px solid var(–tx3);color:var(–tx1);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;user-select:none;-webkit-appearance:none}
+.cb{width:44px;height:44px;border-radius:50%;background:none;border:1px solid var(–tx3);color:var(–tx1);font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-appearance:none;appearance:none;transition:all 0.15s;user-select:none;-webkit-appearance:none}
 .cb:active:not(:disabled){border-color:var(–gold);color:var(–gold);background:var(–goldf)}
 .cb:disabled{opacity:0.2;pointer-events:none}
 .cb-play{width:54px;height:54px;font-size:20px;border-color:var(–gold);color:var(–gold)}
@@ -275,7 +279,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v20</span></div>
+  <div class="app-name">夜語り <span class="ver">v22</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -398,7 +402,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
   </div>
   <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
   <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">💳 請求・料金を確認する</a>
-  <a class="howto-link" href="https://console.cloud.google.com/billing/create-budget" target="_blank">🔔 予算アラートを設定する（課金防止）</a>
+  <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">🔔 予算アラートを設定する（課金防止）</a>
   <div class="sett-sub" style="margin-bottom:14px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">
     ⭐ 予算アラートを <b>¥1</b> で設定しておくと<br>
     万が一の課金時にメールで通知が届いて安心です。
@@ -622,7 +626,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v20';
+const APP_VER = 'v22';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
