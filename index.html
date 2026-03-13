@@ -275,7 +275,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v19</span></div>
+  <div class="app-name">夜語り <span class="ver">v20</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -622,7 +622,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v19';
+const APP_VER = 'v20';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -671,7 +671,13 @@ function loadVoices() {
 SS.addEventListener ? SS.addEventListener('voiceschanged', loadVoices) : (SS.onvoiceschanged = loadVoices);
 loadVoices();
 // 起動時に音声設定をDOMに同期
-setTimeout(() => { syncVoiceSelect(); updModeDisplay(); }, 300);
+setTimeout(() => {
+  syncVoiceSelect();
+  updModeDisplay();
+  // 速度・ピッチ表示を復元
+  document.getElementById('vRate').textContent  = _rate.toFixed(1)  + '×';
+  document.getElementById('vPitch').textContent = _pitch.toFixed(1);
+}, 300);
 
 // ═══════════════════════════════════════════
 //  BOOKMARKS (localStorage)
@@ -1889,17 +1895,20 @@ function toast(msg) {
   setTimeout(()=>t.classList.remove('show'),2600);
 }
 // ステッパー状態
-let _rate = 1.1, _pitch = 1.0;
+let _rate  = parseFloat(localStorage.getItem('yogatari_rate'))  || 1.1;
+let _pitch = parseFloat(localStorage.getItem('yogatari_pitch')) || 1.0;
 const RATE_MIN=0.5, RATE_MAX=2.5, RATE_STEP=0.1;
 const PITCH_MIN=0.5, PITCH_MAX=2.0, PITCH_STEP=0.1;
 
 function stepRate(dir) {
   _rate = Math.round(Math.min(RATE_MAX, Math.max(RATE_MIN, _rate + dir*RATE_STEP)) * 10) / 10;
   document.getElementById('vRate').textContent = _rate.toFixed(1)+'×';
+  localStorage.setItem('yogatari_rate', _rate);
 }
 function stepPitch(dir) {
   _pitch = Math.round(Math.min(PITCH_MAX, Math.max(PITCH_MIN, _pitch + dir*PITCH_STEP)) * 10) / 10;
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
+  localStorage.setItem('yogatari_pitch', _pitch);
 }
 function getRate()  { return _rate; }
 function getPitch() { return _pitch; }
