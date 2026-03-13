@@ -9,10 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
 <title>夜語り</title>
-<!-- フォント preconnect（Safari高速化）-->
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Zen+Old+Mincho&family=Share+Tech+Mono&display=swap" rel="stylesheet" crossorigin="anonymous">
+<!-- 外部フォント依存なし: iOS/macOS標準フォントのみ使用 -->
 <style>
 :root {
   --bg:    #0a0908;
@@ -30,9 +27,9 @@
   --green: #2a5c3a;
   --greenb: rgba(42,92,58,0.2);
   --safe-b: env(safe-area-inset-bottom, 0px);
-  --serif: 'Noto Serif JP','Hiragino Mincho ProN','YuMincho','ヒラギノ明朝 ProN',serif;
-  --disp:  'Zen Old Mincho','Hiragino Mincho ProN','YuMincho',serif;
-  --mono:  'Share Tech Mono','Courier New',monospace;
+  --serif: 'Hiragino Mincho ProN','ヒラギノ明朝 ProN W3','YuMincho','游明朝','BIZ UDPMincho',serif;
+  --disp:  'Hiragino Mincho ProN','ヒラギノ明朝 ProN W6','YuMincho',serif;
+  --mono:  'Courier New',Consolas,monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -279,7 +276,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v22</span></div>
+  <div class="app-name">夜語り <span class="ver">v23</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -626,7 +623,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v22';
+const APP_VER = 'v23';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
