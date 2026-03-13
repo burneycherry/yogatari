@@ -40,7 +40,7 @@ body{background:var(--bg);color:var(--tx0);font-family:var(--serif);display:flex
 .app-name{font-family:var(–disp);font-size:22px;color:var(–gold);letter-spacing:0.12em;text-shadow:0 0 24px rgba(200,153,30,0.35);display:flex;align-items:baseline;gap:7px}
 .ver{font-size:11px;color:var(–tx2);font-family:var(–mono);letter-spacing:0.1em}
 .topbar-right{display:flex;align-items:center;gap:12px}
-.badge{font-family:var(–mono);font-size:12px;letter-spacing:0.12em;color:var(–tx2);display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(–tx3);background:var(–bg2);transition:all 0.3s}
+.badge{font-family:var(–mono);font-size:12px;letter-spacing:0.04em;color:var(–tx2);display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid var(–tx3);background:var(–bg2);transition:all 0.3s}
 .badge.on{color:var(–gold2);border-color:rgba(200,153,30,0.4);background:rgba(200,153,30,0.1);box-shadow:0 0 12px rgba(200,153,30,0.15)}
 .bdot{width:7px;height:7px;border-radius:50%;background:var(–tx2);transition:all 0.3s;flex-shrink:0}
 .badge.on .bdot{background:var(–gold2);box-shadow:0 0 8px var(–gold2);animation:pulse 2s ease-in-out infinite}
@@ -50,7 +50,7 @@ body{background:var(--bg);color:var(--tx0);font-family:var(--serif);display:flex
 
 /* ── TAB BAR ── */
 .tab-bar{flex-shrink:0;display:flex;border-bottom:1px solid var(–tx3)}
-.tab{flex:1;font-family:var(–mono);font-size:11px;letter-spacing:0.1em;color:var(–tx2);background:none;border:none;padding:10px 0;cursor:pointer;position:relative;transition:color 0.2s}
+.tab{flex:1;font-family:var(–serif);font-size:12px;letter-spacing:0.02em;color:var(–tx2);background:none;border:none;padding:10px 0;cursor:pointer;position:relative;transition:color 0.2s}
 .tab.active{color:var(–gold)}
 .tab.active::after{content:’’;position:absolute;bottom:0;left:20%;right:20%;height:1.5px;background:var(–gold)}
 
@@ -208,7 +208,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 .rdm-title{font-family:var(–disp);font-size:18px;color:var(–gold2);letter-spacing:0.1em}
 .rdm-close{font-size:20px;color:var(–tx1);cursor:pointer;padding:4px 8px;background:none;border:none}
 .rdm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px 24px}
-.rdm-body h3{font-family:var(–mono);font-size:10px;letter-spacing:0.18em;color:var(–gold);margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid var(–tx3)}
+.rdm-body h3{font-family:var(–serif);font-size:11px;letter-spacing:0.04em;color:var(–gold);margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid var(–tx3)}
 .rdm-body h3:first-child{margin-top:0}
 .rdm-body p{font-size:13px;line-height:1.9;color:var(–tx1);margin-bottom:8px}
 .rdm-body ul{padding-left:0;list-style:none}
@@ -238,10 +238,10 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 
 /* ── SETTINGS PANEL ── */
 .sett-section{margin-bottom:20px}
-.sett-title{font-family:var(–mono);font-size:10px;letter-spacing:0.18em;color:var(–tx2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(–tx3)}
+.sett-title{font-family:var(–serif);font-size:11px;letter-spacing:0.04em;color:var(–tx2);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(–tx3)}
 .sett-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .sett-label{font-size:13px;color:var(–tx0);flex:1}
-.sett-sub{font-family:var(–mono);font-size:10px;color:var(–tx2);margin-top:3px;line-height:1.5}
+.sett-sub{font-family:var(–serif);font-size:11px;color:var(–tx2);margin-top:3px;line-height:1.7}
 .api-input{width:100%;background:var(–bg2);border:1px solid var(–tx3);border-radius:10px;color:var(–tx0);font-family:var(–mono);font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
 .api-input:focus{border-color:var(–gold)}
 .api-input::placeholder{color:var(–tx2)}
@@ -276,7 +276,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v23</span></div>
+  <div class="app-name">夜語り <span class="ver">v24</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -623,7 +623,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v23';
+const APP_VER = 'v24';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -691,9 +691,24 @@ function bkLoad() {
 function bkSave(data) {
   try { localStorage.setItem('yogatari_bk', JSON.stringify(data)); } catch(e) {}
 }
-function bkSet(novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx) {
+function bkSet(novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx, totalChap) {
   const all = bkLoad();
-  all[novelId] = { novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx, ts: Date.now() };
+  const prev = all[novelId] || {};
+  all[novelId] = {
+    novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx,
+    ts: Date.now(),
+    totalChap: totalChap || prev.totalChap || null,
+    tocUrl: prev.tocUrl || null,
+  };
+  bkSave(all);
+}
+
+// TOCを保存（目次URL確定時に呼ぶ）
+function bkSetToc(novelId, tocUrl, totalChap) {
+  const all = bkLoad();
+  if (!all[novelId]) return;
+  all[novelId].tocUrl = tocUrl;
+  if (totalChap) all[novelId].totalChap = totalChap;
   bkSave(all);
 }
 function bkGet(novelId) { return bkLoad()[novelId] || null; }
@@ -961,6 +976,7 @@ async function go() {
       // 小説タイトル取得
       const doc = new DOMParser().parseFromString(html,'text/html');
       const nTitle = doc.querySelector('.novel_title,.title,h1')?.textContent?.trim() || '小説';
+      bkSetToc(novelId, url, items.length); // TOC情報を保存（新着検出用）
       openChapPicker(nTitle, items, novelId, bk);
     } catch(e) {
       showFetch('err', e.message);
@@ -1604,6 +1620,9 @@ async function jumpQ(i) {
 // ═══════════════════════════════════════════
 //  HISTORY LIST
 // ═══════════════════════════════════════════
+// 新着チェックキャッシュ（セッション内）
+const _newChapCache = {};
+
 function renderHistList() {
   const list = document.getElementById('histList');
   const items = bkAll();
@@ -1614,10 +1633,14 @@ function renderHistList() {
   list.innerHTML = items.map(bk => {
     const d = new Date(bk.ts);
     const dateStr = d.getMonth()+1+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
-    return `<div class="hist-item" onclick="resumeFrom('${esc(bk.novelId)}')">
+    const newInfo = _newChapCache[bk.novelId];
+    const newBadge = newInfo
+      ? `<span class="hist-new">NEW +${newInfo.diff}話</span>`
+      : '';
+    return `<div class="hist-item" id="hi-${esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_')}" onclick="resumeFrom('${esc(bk.novelId)}')">
       <div class="hist-thumb">📖</div>
       <div class="hist-main">
-        <div class="hist-title">${esc(bk.novelTitle||bk.chapterTitle)}</div>
+        <div class="hist-title">${esc(bk.novelTitle||bk.chapterTitle)}${newBadge}</div>
         <div class="hist-meta">
           <span>第${bk.chapterNum||'?'}話</span>
           <span>段落${bk.segIdx+1}</span>
@@ -1627,6 +1650,32 @@ function renderHistList() {
       <button class="hist-del" onclick="event.stopPropagation();delHist('${esc(bk.novelId)}')">✕</button>
     </div>`;
   }).join('');
+
+  // 非同期で新着チェック（TOCがあるものだけ・最近24時間以内に確認していないもの）
+  items.forEach(bk => {
+    if (!bk.tocUrl || !bk.totalChap) return;
+    const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
+    if (Date.now() - lastCheck < 3600000) return; // 1時間以内はスキップ
+    checkNewChapter(bk);
+  });
+}
+
+async function checkNewChapter(bk) {
+  try {
+    const html = await fetchHtml(bk.tocUrl);
+    const items = parseSyosetuToc(html, bk.tocUrl);
+    if (!items.length) return;
+    const current = items.length;
+    const saved = bk.totalChap;
+    _newChapCache[bk.novelId] = {
+      total: current,
+      diff: Math.max(0, current - saved),
+      checkedAt: Date.now()
+    };
+    if (current > saved) {
+      renderHistList(); // バッジ表示のため再描画
+    }
+  } catch(e) { /* ネットワークエラーは無視 */ }
 }
 
 async function resumeFrom(novelId) {
@@ -1634,9 +1683,21 @@ async function resumeFrom(novelId) {
   if (!bk) { toast('しおりが見つかりません'); return; }
   switchTab('read');
   document.getElementById('urlIn').value = bk.novelId;
-  stop(); disable(true); showFetch('load','取得中…');
+  stop(); disable(true); showFetch('load','履歴から読み込み中…');
   try {
-    const html = await fetchHtml(bk.chapterUrl);
+    // ページキャッシュを確認（最近読んだページは高速表示）
+    const cacheKey = 'yogatari_pc_' + btoa(encodeURIComponent(bk.chapterUrl)).slice(0,40);
+    const cached = sessionStorage.getItem(cacheKey);
+    let html;
+    if (cached) {
+      html = cached;
+      showFetch('load','キャッシュから復元中…');
+    } else {
+      showFetch('load','ページ取得中… (初回は時間がかかります)');
+      html = await fetchHtml(bk.chapterUrl);
+      // セッション内キャッシュに保存（次のタブ切替等で再利用）
+      try { sessionStorage.setItem(cacheKey, html); } catch(e) {}
+    }
     const page = extractPage(html, bk.chapterUrl);
     currentNovelId = novelId;
     currentNovelTitle = bk.novelTitle || page.title;
