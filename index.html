@@ -275,7 +275,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v18</span></div>
+  <div class="app-name">夜語り <span class="ver">v19</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -622,7 +622,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v18';
+const APP_VER = 'v19';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1084,6 +1084,12 @@ function displayPage(page, url, startSeg = 0) {
   ctrlEnable(true);
   document.getElementById('bNext').disabled = !nextUrl;
   renderQueue();
+
+  // 次話HTMLをバックグラウンドで先読み開始（読み終わり前に取得完了させる）
+  if (nextUrl) {
+    clearNextChapterCache();
+    setTimeout(() => prefetchNextChapter(nextUrl), 1000); // 1秒後に開始
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1148,6 +1154,42 @@ function unlockAudio() {
 // ── プリフェッチキャッシュ ──
 // { idx: Promise<audioSrc> } を最大2件保持
 const _prefetchCache = new Map();
+
+// ── 次話HTML先読みキャッシュ ──
+let _nextHtmlCache = null;  // { url, promise } 次話HTMLのPromise
+let _nextPageCache = null;  // { url, page }   解析済みページ
+
+function prefetchNextChapter(url) {
+  if (!url) return;
+  // 同じURLは再fetchしない
+  if (_nextHtmlCache && _nextHtmlCache.url === url) return;
+  _nextHtmlCache = {
+    url,
+    promise: fetchHtml(url).then(html => {
+      const page = extractPage(html, url);
+      _nextPageCache = { url, page };
+      // HTMLが取れたら次話の最初の音声も先読み
+      if (hasGoogleKey() && page.text) {
+        const nextSegs = splitText(page.text);
+        if (nextSegs.length > 0) {
+          // 最初の2段落を先読み（_prefetchCacheとは別管理）
+          _nextAudioCache = [];
+          for (let k = 0; k < Math.min(2, nextSegs.length); k++) {
+            _nextAudioCache.push({ idx: k, promise: fetchGoogleAudio(nextSegs[k]) });
+          }
+        }
+      }
+      return page;
+    }).catch(() => null)
+  };
+}
+let _nextAudioCache = []; // 次話の最初の音声先読み
+
+function clearNextChapterCache() {
+  _nextHtmlCache = null;
+  _nextPageCache = null;
+  _nextAudioCache = [];
+}
 
 function hasGoogleKey() { return _gApiKey.trim().length > 10; }
 
@@ -1343,6 +1385,7 @@ function stop() {
   SS.cancel(); stopGoogleAudio();
   clearWatchdog(); clearPrefetchCache();
   updBtn(); setBadge(false); cancelNext();
+  // 次話先読みはキャンセルしない（キャッシュは維持）
 }
 function prevSeg() {
   if (_busy) return;
@@ -1457,7 +1500,7 @@ function saveBookmarkCurrent(segIdx) {
 //  AUTO NEXT PAGE
 // ═══════════════════════════════════════════
 function startNextCd() {
-  nextCount=5;
+  nextCount=3;
   document.getElementById('nextNotice').classList.add('show');
   document.getElementById('nextCd').textContent=nextCount;
   nextTimer=setInterval(()=>{
@@ -1478,23 +1521,44 @@ async function goNext() {
   if(!queue.find(q=>q.url===url)){queue.push({url,title:'読込中…',done:false});qi=queue.length-1;}
   else qi=queue.findIndex(q=>q.url===url);
   try {
-    const html=await fetchHtml(url);
-    const page=extractPage(html,url);
-    if(queue[qi]) queue[qi].title=page.title;
-    currentChapterTitle=page.title;
-    currentChapterNum=chapNumFromUrl(url);
-    displayPage(page,url,0);
-    hideFetch();
-    // AudioContextを再開してから再生（fetch中にsuspendされる場合がある）
-    if(_actx && _actx.state==='suspended') {
-      await _actx.resume().catch(()=>{});
+    let page = null;
+
+    // キャッシュチェック（先読み済みなら即使用）
+    if (_nextPageCache && _nextPageCache.url === url) {
+      page = _nextPageCache.page;
+      showFetch('load', '✓ 先読み済み — 即開始');
+      await new Promise(r => setTimeout(r, 300));
+    } else {
+      // キャッシュなし → 通常fetch（Promiseが走っていれば待つ）
+      if (_nextHtmlCache && _nextHtmlCache.url === url) {
+        showFetch('load', '先読み中… しばらくお待ちください');
+        page = await _nextHtmlCache.promise;
+      }
+      if (!page) {
+        page = await fetchHtml(url).then(html => extractPage(html, url));
+      }
     }
-    // 少し待ってから再生開始（DOMが落ち着くのを待つ）
-    await new Promise(r=>setTimeout(r,300));
+
+    if (!page) throw new Error('ページ取得失敗');
+
+    if(queue[qi]) queue[qi].title = page.title;
+    currentChapterTitle = page.title;
+    currentChapterNum = chapNumFromUrl(url);
+
+    // 次話の音声先読みをメインキャッシュに移す
+    if (_nextAudioCache.length > 0 && hasGoogleKey()) {
+      clearPrefetchCache();
+      _nextAudioCache.forEach(({idx: k, promise}) => _prefetchCache.set(k, promise));
+      _nextAudioCache = [];
+    }
+
+    displayPage(page, url, 0);
+    hideFetch();
+    if(_actx && _actx.state==='suspended') await _actx.resume().catch(()=>{});
+    await new Promise(r => setTimeout(r, 200));
     _busy = false;
-    // playing=falseの状態からstartPlayを呼ぶ（playing=falseを確認してから）
     if (!playing) startPlay();
-  } catch(e){showFetch('err',e.message);}
+  } catch(e){ showFetch('err', e.message); }
   disable(false);
 }
 
