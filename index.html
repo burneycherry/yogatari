@@ -32,8 +32,9 @@
   --mono:  'Courier New',Consolas,monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
-body{background:var(--bg);color:var(--tx0);font-family:var(--serif);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{height:100%;overflow:hidden;background:var(--bg);color:var(--tx0);font-family:var(--serif);display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;}
+/* body: 上で定義済み */
 
 /* ── TOP BAR ── */
 .topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 18px 10px;border-bottom:1px solid var(–tx3);background:var(–bg)}
@@ -207,7 +208,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 .rdm-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(–tx3);flex-shrink:0}
 .rdm-title{font-family:var(–disp);font-size:18px;color:var(–gold2);letter-spacing:0.1em}
 .rdm-close{font-size:20px;color:var(–tx1);cursor:pointer;padding:4px 8px;background:none;border:none}
-.rdm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px 24px}
+.rdm-.rdm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px 24px}
 .rdm-body h3{font-family:var(–serif);font-size:11px;letter-spacing:0.04em;color:var(–gold);margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid var(–tx3)}
 .rdm-body h3:first-child{margin-top:0}
 .rdm-body p{font-size:13px;line-height:1.9;color:var(–tx1);margin-bottom:8px}
@@ -276,7 +277,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v24</span></div>
+  <div class="app-name">夜語り <span class="ver">v25</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -623,7 +624,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v24';
+const APP_VER = 'v25';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
