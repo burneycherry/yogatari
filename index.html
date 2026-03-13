@@ -277,7 +277,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v25</span></div>
+  <div class="app-name">夜語り <span class="ver">v27</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -378,6 +378,12 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 
 ```
 <div class="sett-section">
+  <div class="sett-title">// このアプリをダウンロード</div>
+  <div class="sett-sub" style="margin-bottom:8px">SafariでHTMLファイルとして保存できます。<br>GitHubへのアップロードにもご利用ください。</div>
+  <button class="sett-btn sett-btn-save" onclick="selfDownload()" style="width:100%;margin-bottom:16px">
+    ⬇️ yogatari.html をダウンロード
+  </button>
+
   <div class="sett-title">// 音声エンジン</div>
   <div id="modeDisplay" style="margin-bottom:12px"></div>
 
@@ -624,7 +630,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v25';
+const APP_VER = 'v27';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -2012,6 +2018,25 @@ async function testVoice() {
   } catch(e) {
     if(btn) btn.classList.remove('testing');
     toast('⚠ ' + (e.message||'試聴エラー').slice(0,40));
+  }
+}
+
+function selfDownload() {
+  try {
+    // 現在のHTMLソースをそのままファイル化（クリップボード経由なし）
+    const src = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+    const blob = new Blob([src], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'yogatari-v' + APP_VER.replace('v','') + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast('ダウンロード開始 — ファイルアプリを確認してください');
+  } catch(e) {
+    toast('⚠ ' + e.message);
   }
 }
 
