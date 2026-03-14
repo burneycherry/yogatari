@@ -277,7 +277,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v27</span></div>
+  <div class="app-name">夜語り <span class="ver">v28</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -630,7 +630,7 @@ select{flex:1;background:var(–bg2);border:1px solid var(–tx3);color:var(–t
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v27';
+const APP_VER = 'v28';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -2023,8 +2023,16 @@ async function testVoice() {
 
 function selfDownload() {
   try {
-    // 現在のHTMLソースをそのままファイル化（クリップボード経由なし）
-    const src = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+    let src = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+    // iOSスマートダッシュ修復: en-dash(–) / em-dash(—) → ハイフン2本(--)
+    // CSS変数 var(–xxx) → var(--xxx)
+    src = src.replace(/var\([–—]/g, 'var(--');
+    // env(–xxx) → env(--xxx)
+    src = src.replace(/env\([–—]/g, 'env(--');
+    // その他 CSS変数定義 :  –xxx → : --xxx
+    src = src.replace(/:\s*[–—]([a-zA-Z])/g, ': --$1');
+    // 連続ダッシュ  ––  → --
+    src = src.replace(/[–—]{2}/g, '--');
     const blob = new Blob([src], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -2034,7 +2042,7 @@ function selfDownload() {
     a.click();
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 5000);
-    toast('ダウンロード開始 — ファイルアプリを確認してください');
+    toast('✓ ダウンロード完了 — ファイルアプリを確認してください');
   } catch(e) {
     toast('⚠ ' + e.message);
   }
