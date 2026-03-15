@@ -259,7 +259,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v36</span></div>
+  <div class="app-name">夜語り <span class="ver">v38</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -525,7 +525,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <h3>// 基本の使い方</h3>
   <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt">小説家になろうなどの<b>目次URL</b>をコピーして「読む」タブに貼り付ける<br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838">例: https://ncode.syosetu.com/n1234ab/</span></div></div>
   <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt">「読込」を押すと<b>話一覧</b>が表示される。読みたい話をタップ</div></div>
-  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt">自動で読み上げ開始。話の終わりに<b>5秒カウント後、次の話へ自動進行</b></div></div>
+  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>▶ボタン</b>をタップして読み上げ開始。話の終わりに<b>3秒カウント後、次の話へ自動進行</b></div></div>
 
   <div class="rdm-note" style="margin-bottom:10px;border-color:rgba(200,153,30,0.5);background:rgba(200,153,30,0.07)">
     🍎 <b>iPhone / iPad をお使いの方へ（重要）</b><br><br>
@@ -540,24 +540,31 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 
   <h3>// しおり・履歴</h3>
   <ul>
-    <li>読み上げ中は10段落ごとに<b>自動でしおり保存</b></li>
+    <li>読み上げ中は5段落ごとに<b>自動でしおり保存</b></li>
     <li>次回同じURLを入力すると「🔖 読みかけ」バナーが出る</li>
-    <li>「履歴」タブから過去に読んだ小説を再開できる</li>
+    <li>「履歴」タブから過去に読んだ小説を再開できる（<b>▶で再生開始</b>）</li>
   </ul>
 
   <h3>// 再生コントロール</h3>
   <ul>
-    <li>⏮ 前の段落 ／ ⏭ 次の段落</li>
-    <li>■ 停止（もう一度▶で最初から）</li>
-    <li>次話→ 今すぐ次の話へ進む</li>
+    <li>⏮ <b>1文戻る</b> ／ ⏭ <b>1文進む</b><br>
+      <span style="font-size:12px;color:#564838">段落の先頭／末尾では前後の段落に移動</span></li>
+    <li>←前話 ／ 次話→ で話をまたいで移動</li>
     <li>速度・ピッチは − ＋ で0.1ずつ調整</li>
   </ul>
+  <h3>// 画面タップで1文移動（再生中のみ）</h3>
+  <ul>
+    <li><b>画面左1/3タップ</b> → 1文戻る</li>
+    <li><b>画面右1/3タップ</b> → 1文進む</li>
+    <li><b>画面中央</b> → 通常スクロール</li>
+  </ul>
+  <p style="font-size:12px;color:#564838">画面を見ずに片手で操作できます。再生中のみ有効。</p>
 
   <h3>// バックグラウンド再生（iPhone）</h3>
   <p>Safariのまま画面を閉じると止まる場合があります。対策：</p>
   <ul>
     <li>設定 → 画面表示と明るさ → <b>自動ロックをオフ</b></li>
-    <li>止まったら画面をタップすると再開</li>
+    <li>止まったら<b>▶ボタン</b>をタップすると再開</li>
     <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
   </ul>
   <div class="rdm-note" style="margin-top:4px">
@@ -618,7 +625,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v36';
+const APP_VER = 'v38';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1305,8 +1312,8 @@ function prevSent() {
   if (sents.length <= 1) { prevSeg(); return; }
 
   if (_sentIdx <= 0) {
-    // セグメントの最初文より前 → 前セグメントへ
-    prevSeg();
+    // セグメントの最初文より前 → 前段落へ
+    prevSegFull();
   } else {
     _sentIdx = Math.max(0, _sentIdx - 1);
     playSentence(_sentIdx);
@@ -1380,7 +1387,7 @@ function speakIdx(i) {
 
   idx = i;
   updHighlight(); updProg();
-  if (i % 10 === 0) saveBookmarkCurrent(i);
+  if (i % 5 === 0) saveBookmarkCurrent(i);
 
   if (hasGoogleKey()) {
     // ── Google TTS（プリフェッチ対応）──
@@ -1486,13 +1493,17 @@ function stop() {
   updBtn(); setBadge(false); cancelNext();
   // 次話先読みはキャンセルしない（キャッシュは維持）
 }
-function prevSeg() {
+// ⏮⏭ = 1文単位移動
+function prevSeg() { prevSent(); }
+function nextSeg() { nextSent(); }
+// 段落単位移動（内部使用）
+function prevSegFull() {
   if (_busy) return;
   SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false;
   const i = Math.max(0, idx - 1);
   if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
 }
-function nextSeg() {
+function nextSegFull() {
   if (_busy) return;
   SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false;
   const i = Math.min(segs.length - 1, idx + 1);
