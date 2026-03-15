@@ -137,7 +137,9 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .st-btn{width:32px;height:32px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;user-select:none;-webkit-appearance:none;transition:all 0.12s}
 .st-btn:active{background:rgba(200,153,30,0.12);border-color:#c8991e;color:#c8991e}
 /* 音声選択 */
-.voice-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.voice-remain-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.voice-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
+.remain-box{display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
 .voice-lbl{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
 select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
 /* 再生ボタン */
@@ -257,7 +259,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v34</span></div>
+  <div class="app-name">夜語り <span class="ver">v36</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -457,17 +459,21 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <button class="st-btn" onclick="stepPitch(-1)">－</button>
       <span class="st-val" id="vPitch">1.0</span>
       <button class="st-btn" onclick="stepPitch(1)">＋</button>
-      <span class="st-label" style="margin-left:8px">残り</span>
-      <span class="st-val" id="vRemain" style="width:44px;font-size:11px">--</span>
     </div>
   </div>
-  <div class="voice-row" id="voiceRowKyoko">
-    <span class="voice-lbl">音声</span>
-    <select id="voiceSel" onchange="onVoice()"><option>読み込み中…</option></select>
-  </div>
-  <div class="voice-row" id="voiceRowGoogle" style="display:none">
-    <span class="voice-lbl">音声</span>
-    <span class="mode-badge google" id="googleBadge">🎙 Google TTS</span>
+  <div class="voice-remain-row">
+    <div class="voice-row" id="voiceRowKyoko">
+      <span class="voice-lbl">音声</span>
+      <select id="voiceSel" onchange="onVoice()"><option>読み込み中…</option></select>
+    </div>
+    <div class="voice-row" id="voiceRowGoogle" style="display:none">
+      <span class="voice-lbl">音声</span>
+      <span class="mode-badge google" id="googleBadge">🎙 Google TTS</span>
+    </div>
+    <div class="remain-box">
+      <span class="st-label">残り</span>
+      <span id="vRemain" style="font-family:'Courier New',Consolas,monospace;font-size:12px;color:#c8991e;font-weight:bold">--</span>
+    </div>
   </div>
   <div class="btn-row">
     <button class="cb cb-nxt" id="bPrev2" onclick="goPrev()" disabled>←前話</button>
@@ -612,7 +618,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v34';
+const APP_VER = 'v36';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
