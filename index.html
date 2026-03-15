@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v33</span></div>
+  <div class="app-name">夜語り <span class="ver">v34</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -320,6 +320,12 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <div class="prog-wrap" id="progWrap">
   <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
   <div class="prog-num" id="progNum">0 / 0</div>
+</div>
+
+<!-- タップゾーン（左:1文戻る / 右:1文進む）-->
+<div id="tapZones" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10">
+  <div id="tapL" onclick="prevSent()" style="position:absolute;top:15%;left:0;width:30%;height:65%;pointer-events:auto;opacity:0;"></div>
+  <div id="tapR" onclick="nextSent()" style="position:absolute;top:15%;right:0;width:30%;height:65%;pointer-events:auto;opacity:0;"></div>
 </div>
 
 <!-- text -->
@@ -451,6 +457,8 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <button class="st-btn" onclick="stepPitch(-1)">－</button>
       <span class="st-val" id="vPitch">1.0</span>
       <button class="st-btn" onclick="stepPitch(1)">＋</button>
+      <span class="st-label" style="margin-left:8px">残り</span>
+      <span class="st-val" id="vRemain" style="width:44px;font-size:11px">--</span>
     </div>
   </div>
   <div class="voice-row" id="voiceRowKyoko">
@@ -466,7 +474,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     <button class="cb" id="bPrev" onclick="prevSeg()" disabled>⏮</button>
     <button class="cb cb-play" id="bPlay" onclick="togglePlay()" disabled>▶</button>
     <button class="cb" id="bFwd"  onclick="nextSeg()" disabled>⏭</button>
-    <button class="cb cb-nxt" id="bNext" onclick="goNext()" disabled>次→</button>
+    <button class="cb cb-nxt" id="bNext" onclick="goNext()" disabled>次話→</button>
   </div>
 </div>
 
@@ -535,7 +543,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <ul>
     <li>⏮ 前の段落 ／ ⏭ 次の段落</li>
     <li>■ 停止（もう一度▶で最初から）</li>
-    <li>次→ 今すぐ次の話へ進む</li>
+    <li>次話→ 今すぐ次の話へ進む</li>
     <li>速度・ピッチは − ＋ で0.1ずつ調整</li>
   </ul>
 
@@ -604,7 +612,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v33';
+const APP_VER = 'v34';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1274,11 +1282,84 @@ function stopGoogleAudio() {
   }
 }
 
+
+// ── 1文単位の移動 ──
+// 文の区切り: 。！？…の後（引用符・括弧考慮）
+function splitSentences(text) {
+  // 句点・感嘆符・疑問符で分割、区切り文字を末尾に残す
+  return text.split(/(?<=[。！？…」』\.!?])/).filter(s=>s.trim().length>0);
+}
+
+// 現在セグメント内での文インデックス管理
+let _sentIdx = -1; // -1 = セグメント全体再生中
+
+function prevSent() {
+  if (!segs.length || !playing) return;
+  const sents = splitSentences(segs[idx]);
+  if (sents.length <= 1) { prevSeg(); return; }
+
+  if (_sentIdx <= 0) {
+    // セグメントの最初文より前 → 前セグメントへ
+    prevSeg();
+  } else {
+    _sentIdx = Math.max(0, _sentIdx - 1);
+    playSentence(_sentIdx);
+  }
+}
+
+function nextSent() {
+  if (!segs.length || !playing) return;
+  const sents = splitSentences(segs[idx]);
+  if (sents.length <= 1) { nextSeg(); return; }
+
+  _sentIdx = Math.min(sents.length - 1, (_sentIdx < 0 ? 0 : _sentIdx) + 1);
+  if (_sentIdx >= sents.length - 1) { nextSeg(); return; }
+  playSentence(_sentIdx);
+}
+
+function playSentence(si) {
+  const sents = splitSentences(segs[idx]);
+  if (!sents[si]) return;
+  _busy = false;
+  clearWatchdog();
+  SS.cancel(); stopGoogleAudio();
+
+  if (hasGoogleKey()) {
+    _busy = true;
+    const el = getAudioEl();
+    fetchGoogleAudio(sents[si]).then(src => {
+      _busy = false;
+      if (!playing) return;
+      el.onended = () => {
+        clearWatchdog();
+        if (!playing) return;
+        _sentIdx++;
+        if (_sentIdx >= sents.length) { _sentIdx = -1; speakIdx(idx + 1); }
+        else playSentence(_sentIdx);
+      };
+      el.src = src;
+      el.play().catch(()=>{ _busy=false; });
+    }).catch(()=>{ _busy=false; });
+  } else {
+    const utt = new SpeechSynthesisUtterance(sents[si]);
+    if (selVoice) utt.voice = selVoice;
+    utt.rate = getRate(); utt.pitch = getPitch(); utt.lang = 'ja-JP';
+    utt.onend = () => {
+      if (!playing) return;
+      _sentIdx++;
+      if (_sentIdx >= sents.length) { _sentIdx = -1; speakIdx(idx + 1); }
+      else playSentence(_sentIdx);
+    };
+    SS.speak(utt);
+  }
+}
+
 // ═══════════════════════════════════════════
 //  UNIFIED SPEAK
 // ═══════════════════════════════════════════
 function speakIdx(i) {
   if (_busy) return;
+  _sentIdx = -1; // 文インデックスをリセット
   clearWatchdog();
 
   if (i >= segs.length) {
@@ -1930,6 +2011,16 @@ function updProg() {
   const total=segs.length, cur=Math.min(idx+1,total);
   document.getElementById('progNum').textContent=cur+' / '+total;
   document.getElementById('progFill').style.width=(total?cur/total*100:0)+'%';
+  // 残り時間: 残り文字数 / (250文字/分 × 速度)
+  const remEl = document.getElementById('vRemain');
+  if (remEl && total > 0) {
+    const remSegs = segs.slice(idx);
+    const remChars = remSegs.reduce((a,s)=>a+s.length, 0);
+    const cpm = 250 * getRate(); // 文字/分
+    const remMin = remChars / cpm;
+    if (remMin < 1) remEl.textContent = '1分未満';
+    else remEl.textContent = '約' + Math.ceil(remMin) + '分';
+  }
 }
 function updBtn() {
   const b=document.getElementById('bPlay');
@@ -1938,6 +2029,8 @@ function updBtn() {
 function setBadge(on) {
   document.getElementById('badge').classList.toggle('on',on);
   document.getElementById('btext').textContent=on?'読み上げ中':'待機中';
+  const tz = document.getElementById('tapZones');
+  if (tz) tz.style.display = on ? 'block' : 'none';
 }
 function ctrlEnable(on) {
   ['bPlay','bPrev','bFwd'].forEach(id=>{ document.getElementById(id).disabled=!on; });
