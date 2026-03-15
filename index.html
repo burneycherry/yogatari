@@ -188,7 +188,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .rdm-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid #302618;flex-shrink:0}
 .rdm-title{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:18px;color:#e8be50;letter-spacing:0.1em}
 .rdm-close{font-size:20px;color:#9e8660;cursor:pointer;padding:4px 8px;background:none;border:none}
-.rdm-.rdm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px 24px}
+.rdm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px 24px}
 .rdm-body h3{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:11px;letter-spacing:0.04em;color:#c8991e;margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid #302618}
 .rdm-body h3:first-child{margin-top:0}
 .rdm-body p{font-size:13px;line-height:1.9;color:#9e8660;margin-bottom:8px}
@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v30</span></div>
+  <div class="app-name">夜語り <span class="ver">v31</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -462,10 +462,10 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     <span class="mode-badge google" id="googleBadge">🎙 Google TTS</span>
   </div>
   <div class="btn-row">
+    <button class="cb cb-nxt" id="bPrev2" onclick="goPrev()" disabled>←前話</button>
     <button class="cb" id="bPrev" onclick="prevSeg()" disabled>⏮</button>
     <button class="cb cb-play" id="bPlay" onclick="togglePlay()" disabled>▶</button>
     <button class="cb" id="bFwd"  onclick="nextSeg()" disabled>⏭</button>
-    <button class="cb" id="bStop" onclick="stop()" disabled>■</button>
     <button class="cb cb-nxt" id="bNext" onclick="goNext()" disabled>次→</button>
   </div>
 </div>
@@ -604,7 +604,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v30';
+const APP_VER = 'v31';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -712,7 +712,7 @@ function toNovelId(url) {
 //  STATE
 // ═══════════════════════════════════════════
 let segs=[], idx=0, playing=false;
-let nextUrl=null, nextTimer=null, nextCount=0;
+let nextUrl=null, prevUrl=null, nextTimer=null, nextCount=0;
 let queue=[], qi=0;
 let watchdog=null;
 let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentChapterNum=1;
@@ -1076,6 +1076,8 @@ async function resumeBookmark() {
 //  DISPLAY PAGE
 // ═══════════════════════════════════════════
 function displayPage(page, url, startSeg = 0) {
+  prevUrl = currentChapterUrl || null; // 前話URLを保存
+  currentChapterUrl = url;
   nextUrl = page.nextUrl || null;
   document.getElementById('chapTitle').textContent = page.title || url;
   const lnk = document.getElementById('chapLink'); lnk.textContent = url; lnk.href = url;
@@ -1100,7 +1102,15 @@ function displayPage(page, url, startSeg = 0) {
 //  TEXT
 // ═══════════════════════════════════════════
 function splitText(t) {
-  return t.replace(/\r\n/g,'\n').split(/\n{1,}/).map(s=>s.trim()).filter(s=>s.length>0);
+  // 前へ/目次/次へ などのナビゲーション行を除去
+  const navPat = /^(前へ|次へ|目次|<<|>>|＜＜|＞＞|← ?前|次 ?→|◀|▶|PREV|NEXT|\.{3}|…)[\s\S]{0,10}$/i;
+  return t.replace(/
+/g,'
+')
+    .split(/
+{1,}/)
+    .map(s=>s.trim())
+    .filter(s=>s.length>0 && !navPat.test(s));
 }
 function renderText() {
   const box = document.getElementById('novelText');
@@ -1517,6 +1527,29 @@ function cancelNext() {
   if(nextTimer){clearInterval(nextTimer);nextTimer=null;}
   document.getElementById('nextNotice').classList.remove('show');
 }
+async function goPrev() {
+  if (!prevUrl) { toast('前の話はありません'); return; }
+  const url = prevUrl;
+  document.getElementById('urlIn').value = url;
+  stop(); disable(true); showFetch('load','前の話を取得中…');
+  if (!queue.find(q=>q.url===url)) { queue.push({url,title:'読込中…',done:false}); qi=queue.length-1; }
+  else qi = queue.findIndex(q=>q.url===url);
+  try {
+    const html = await fetchHtml(url);
+    const page = extractPage(html, url);
+    if (queue[qi]) queue[qi].title = page.title;
+    currentChapterTitle = page.title;
+    currentChapterNum = chapNumFromUrl(url);
+    displayPage(page, url, 0);
+    hideFetch();
+    if (_actx && _actx.state === 'suspended') await _actx.resume().catch(()=>{});
+    await new Promise(r=>setTimeout(r,200));
+    _busy = false;
+    if (!playing) startPlay();
+  } catch(e) { showFetch('err', e.message); }
+  disable(false);
+}
+
 async function goNext() {
   if(!nextUrl){toast('次のページなし');return;}
   const url=nextUrl;
@@ -1688,8 +1721,8 @@ async function resumeFrom(novelId) {
     else qi = queue.findIndex(q=>q.url===bk.chapterUrl);
     displayPage(page, bk.chapterUrl, bk.segIdx||0);
     startSilentAudio();
-    startPlay();
     hideFetch();
+    // 自動再生しない（ユーザーが▶を押したら開始）
     document.getElementById('bgTip').classList.add('show');
   } catch(e) { showFetch('err', e.message); }
   disable(false);
@@ -1909,7 +1942,9 @@ function setBadge(on) {
   document.getElementById('btext').textContent=on?'読み上げ中':'待機中';
 }
 function ctrlEnable(on) {
-  ['bPlay','bStop','bPrev','bFwd'].forEach(id=>{ document.getElementById(id).disabled=!on; });
+  ['bPlay','bPrev','bFwd'].forEach(id=>{ document.getElementById(id).disabled=!on; });
+  document.getElementById('bNext').disabled = !(on && nextUrl);
+  document.getElementById('bPrev2').disabled = !(on && prevUrl);
 }
 function disable(on) { document.getElementById('btnGo').disabled=on; }
 function showFetch(type,msg) {
