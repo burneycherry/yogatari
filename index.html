@@ -121,6 +121,8 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .hist-meta{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;display:flex;gap:8px;flex-wrap:wrap}
 .hist-meta span{white-space:nowrap}
 .hist-del{font-size:16px;color:#564838;background:none;border:none;cursor:pointer;padding:4px 6px;flex-shrink:0}
+.hist-new{background:#c8340c;color:#fff;font-size:10px;font-weight:bold;font-family:‘Courier New’,Consolas,monospace;padding:2px 7px;border-radius:8px;margin-left:6px;vertical-align:middle;animation:newpulse 2s ease-in-out infinite}
+@keyframes newpulse{0%,100%{opacity:1}50%{opacity:0.55}}
 .hist-del:active{color:#e05050}
 
 /* ── iOS BG TIP ── */
@@ -259,7 +261,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v40</span></div>
+  <div class="app-name">夜語り <span class="ver">v41</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -544,6 +546,13 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     <li>次回同じURLを入力すると「🔖 読みかけ」バナーが出る</li>
     <li>「履歴」タブから過去に読んだ小説を再開できる（<b>▶で再生開始</b>）</li>
   </ul>
+  <h3>// 新着話の自動検出</h3>
+  <ul>
+    <li>アプリ起動3秒後に履歴の作品をバックグラウンドで自動チェック</li>
+    <li>新しい話が追加されていると履歴に <span style="background:#c8340c;color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;">NEW +3話</span> のように表示</li>
+    <li>その作品を開くとNEWは自動で消える</li>
+    <li>1時間ごとに再チェック（通信節約のため）</li>
+  </ul>
 
   <h3>// 再生コントロール</h3>
   <ul>
@@ -624,7 +633,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v40';
+const APP_VER = 'v41';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -676,10 +685,22 @@ loadVoices();
 setTimeout(() => {
   syncVoiceSelect();
   updModeDisplay();
-  // 速度・ピッチ表示を復元
   document.getElementById('vRate').textContent  = _rate.toFixed(1)  + '×';
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
 }, 300);
+
+// 起動3秒後にバックグラウンドで新着チェック開始（通信負荷分散）
+setTimeout(() => { startupNewCheck(); }, 3000);
+
+async function startupNewCheck() {
+  const items = bkAll();
+  for (const bk of items) {
+    const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
+    if (Date.now() - lastCheck < 3600000) continue; // 1時間以内はスキップ
+    await checkNewChapter(bk);
+    await new Promise(r => setTimeout(r, 1500)); // 1.5秒間隔（サーバー負荷対策）
+  }
+}
 
 // ═══════════════════════════════════════════
 //  BOOKMARKS (localStorage)
@@ -711,6 +732,24 @@ function bkSetToc(novelId, tocUrl, totalChap) {
   all[novelId].tocUrl = tocUrl;
   if (totalChap) all[novelId].totalChap = totalChap;
   bkSave(all);
+}
+
+// 章URLから目次URLを推定（なろう系対応）
+function inferTocUrl(chapterUrl) {
+  try {
+    const u = new URL(chapterUrl);
+    if (u.hostname.includes('syosetu.com')) {
+      // https://ncode.syosetu.com/n1234ab/3/ → https://ncode.syosetu.com/n1234ab/
+      const m = u.pathname.match(/^(\/[^\/]+)\/\d+\/?$/);
+      if (m) return u.origin + m[1] + '/';
+    }
+    // kakuyomu: /works/12345/episodes/67890 → /works/12345
+    if (u.hostname.includes('kakuyomu.jp')) {
+      const m = u.pathname.match(/^(\/works\/[^\/]+)/);
+      if (m) return u.origin + m[1];
+    }
+  } catch(e) {}
+  return null;
 }
 function bkGet(novelId) { return bkLoad()[novelId] || null; }
 function bkDel(novelId) { const a = bkLoad(); delete a[novelId]; bkSave(a); }
@@ -1784,8 +1823,9 @@ function renderHistList() {
     const d = new Date(bk.ts);
     const dateStr = d.getMonth()+1+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
     const newInfo = _newChapCache[bk.novelId];
-    const newBadge = newInfo
-      ? `<span class="hist-new">NEW +${newInfo.diff}話</span>`
+    const diff = newInfo?.diff || (bk.hasNew ? bk.newDiff : 0) || 0;
+    const newBadge = diff > 0
+      ? `<span class="hist-new">NEW +${diff}話</span>`
       : '';
     return `<div class="hist-item" id="hi-${esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_')}" onclick="resumeFrom('${esc(bk.novelId)}')">
       <div class="hist-thumb">📖</div>
@@ -1811,19 +1851,33 @@ function renderHistList() {
 }
 
 async function checkNewChapter(bk) {
+  // tocUrlがなければ章URLから推定
+  const tocUrl = bk.tocUrl || inferTocUrl(bk.chapterUrl);
+  if (!tocUrl) return;
+
   try {
-    const html = await fetchHtml(bk.tocUrl);
-    const items = parseSyosetuToc(html, bk.tocUrl);
+    const html = await fetchHtml(tocUrl);
+    const items = parseSyosetuToc(html, tocUrl);
     if (!items.length) return;
+
     const current = items.length;
-    const saved = bk.totalChap;
-    _newChapCache[bk.novelId] = {
-      total: current,
-      diff: Math.max(0, current - saved),
-      checkedAt: Date.now()
-    };
-    if (current > saved) {
-      renderHistList(); // バッジ表示のため再描画
+    const saved = bk.totalChap || bk.chapterNum || 0;
+    const diff = Math.max(0, current - saved);
+
+    _newChapCache[bk.novelId] = { total: current, diff, checkedAt: Date.now() };
+
+    // tocUrl・totalChap を更新保存
+    if (!bk.tocUrl) bkSetToc(bk.novelId, tocUrl, current);
+
+    if (diff > 0) {
+      // 新着フラグをlocalStorageにも永続保存
+      const all = bkLoad();
+      if (all[bk.novelId]) {
+        all[bk.novelId].hasNew = true;
+        all[bk.novelId].newDiff = diff;
+        bkSave(all);
+      }
+      renderHistList();
     }
   } catch(e) { /* ネットワークエラーは無視 */ }
 }
@@ -1831,6 +1885,10 @@ async function checkNewChapter(bk) {
 async function resumeFrom(novelId) {
   const bk = bkGet(novelId);
   if (!bk) { toast('しおりが見つかりません'); return; }
+  // NEWフラグをクリア
+  const all = bkLoad();
+  if (all[novelId]) { delete all[novelId].hasNew; delete all[novelId].newDiff; bkSave(all); }
+  delete _newChapCache[novelId];
   switchTab('read');
   document.getElementById('urlIn').value = bk.novelId;
   stop(); disable(true); showFetch('load','履歴から読み込み中…');
