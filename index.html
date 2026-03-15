@@ -261,7 +261,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v42</span></div>
+  <div class="app-name">夜語り <span class="ver">v43</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -633,7 +633,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v42';
+const APP_VER = 'v43';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1780,11 +1780,7 @@ async function goNext() {
     const msg = e.message || '';
     const isFetchErr = msg.includes('取得失敗') || msg.includes('HTTP') || msg.includes('Load failed');
     if (isFetchErr) {
-      showFetch('err',
-        '📖 最終話まで読み終わりました
-' +
-        '続きは作者の更新をお待ちください'
-      );
+      showFetch('err', '📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');
     } else {
       showFetch('err', msg.slice(0, 80));
     }
