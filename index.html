@@ -265,7 +265,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v51</span></div>
+  <div class="app-name">夜語り <span class="ver">v52</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -648,7 +648,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v51';
+const APP_VER = 'v52';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -986,8 +986,8 @@ function extractPage(html, pageUrl) {
     doc.querySelector('title')?.textContent?.trim() || pageUrl
   ).replace(/\s*[-|｜–—]\s*.+$/, '').trim();
 
-  // なろう系のエラーページ検出
-  if (rawText && (rawText.includes('作品が見つかりません') || rawText.includes('エラーが発生しました') || rawText.includes('存在しない') )) {
+  // なろう系エラーページ検出（本文が短くかつエラー文言を含む場合のみ）
+  if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) {
     throw new Error('本文を取得できませんでした（最終話の可能性があります）');
   }
   if (!rawText || rawText.length < 30)
