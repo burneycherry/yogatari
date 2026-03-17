@@ -265,7 +265,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v52</span></div>
+  <div class="app-name">夜語り <span class="ver">v53</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -648,7 +648,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v52';
+const APP_VER = 'v53';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1801,16 +1801,25 @@ async function goNext() {
     _busy = false;
     if (!playing) startPlay();
   } catch(e) {
-    // nextUrlをクリアしてカウントダウンのループを止める
-    nextUrl = null;
-    clearNextChapterCache();
-    document.getElementById('bNext').disabled = true;
-
-    // エラーメッセージを状況に応じて表示
     const msg = e.message || '';
-    const isFetchErr = msg.includes('取得失敗') || msg.includes('HTTP') || msg.includes('Load failed') || msg.includes('本文を取得') || msg.length === 0;
-    if (isFetchErr) {
+
+    // 「本当の最終話」= なろうのエラーページ検出時のみ
+    const isTrulyFinal = msg.includes('最終話の可能性');
+
+    // プロキシ/ネットワーク失敗 = nextUrlを保持してリトライ可能に
+    const isNetErr = msg.includes('取得失敗') || msg.includes('HTTP') ||
+                     msg.includes('Load failed') || msg.includes('全プロキシ');
+
+    if (isTrulyFinal) {
+      // 本当の最終話 → nextUrlをクリア・リトライ不要
+      nextUrl = null;
+      clearNextChapterCache();
+      document.getElementById('bNext').disabled = true;
       showFetch('err', '📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');
+    } else if (isNetErr) {
+      // ネットワーク失敗 → nextUrlは保持・次話ボタンは有効のまま
+      clearNextChapterCache();
+      showFetch('err', '⚠ ページ取得に失敗しました。「次話→」で再試行できます');
     } else {
       showFetch('err', msg.slice(0, 80));
     }
