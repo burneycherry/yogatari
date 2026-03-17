@@ -17,7 +17,7 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 /* body: 上で定義済み */
 
 /* ── TOP BAR ── */
-.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 18px 10px;border-bottom:1px solid #302618;background:#0a0908}
+.topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 18px 10px;border-bottom:1px solid #302618;background:rgba(10,9,8,0.88);position:relative;z-index:1}
 .app-name{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:22px;color:#c8991e;letter-spacing:0.12em;text-shadow:0 0 24px rgba(200,153,30,0.35);display:flex;align-items:baseline;gap:7px}
 .ver{font-size:11px;color:#564838;font-family:‘Courier New’,Consolas,monospace;letter-spacing:0.1em}
 .topbar-right{display:flex;align-items:center;gap:12px}
@@ -30,14 +30,14 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .hist-btn:active{border-color:#c8991e;color:#c8991e}
 
 /* ── TAB BAR ── */
-.tab-bar{flex-shrink:0;display:flex;border-bottom:1px solid #302618;position:relative;z-index:20}
+.tab-bar{flex-shrink:0;display:flex;border-bottom:1px solid #302618;position:relative;z-index:20;background:rgba(10,9,8,0.88)}
 .tab{flex:1;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:12px;letter-spacing:0.02em;color:#564838;background:none;border:none;padding:10px 0;cursor:pointer;position:relative;transition:color 0.2s}
 .tab.active{color:#c8991e}
 .tab.active::after{content:’’;position:absolute;bottom:0;left:20%;right:20%;height:1.5px;background:#c8991e}
 
 /* ── SCROLL AREA ── */
-.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 10px}
-.panel{display:none}.panel.active{display:block}
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 10px;position:relative;z-index:1}
+.panel{display:none}.panel.active{display:block;position:relative;z-index:1}
 
 /* ── URL ── */
 .url-row{display:flex;gap:8px;margin-bottom:10px}
@@ -95,7 +95,7 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .prog-track{flex:1;height:2px;background:#302618;border-radius:1px;overflow:hidden}
 .prog-fill{height:100%;background:linear-gradient(90deg,#7a5c10,#c8991e);width:0%;transition:width 0.4s}
 .prog-num{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;white-space:nowrap;min-width:56px;text-align:right}
-.novel-text{background:#141210;border:1px solid #302618;border-radius:12px;padding:20px 18px;font-size:16px;line-height:2.1;letter-spacing:0.04em;min-height:100px;display:none}
+.novel-text{background:rgba(20,18,16,0.82);border:1px solid #302618;border-radius:12px;padding:20px 18px;font-size:16px;line-height:2.1;letter-spacing:0.04em;min-height:100px;display:none}
 .novel-text.show{display:block}
 .seg{display:inline;border-radius:3px;padding:1px 1px;transition:background 0.15s,color 0.15s}
 .seg.active{background:rgba(200,153,30,0.22);color:#e8be50;border-bottom:1.5px solid rgba(200,153,30,0.45)}
@@ -130,7 +130,7 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .bg-tip.show{display:block}
 
 /* ── BOTTOM CONTROLS ── */
-.ctrl-bar{flex-shrink:0;background:#141210;border-top:1px solid #302618;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));position:relative;z-index:20}
+.ctrl-bar{flex-shrink:0;background:rgba(20,18,16,0.90);border-top:1px solid #302618;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));position:relative;z-index:20}
 /* ステッパー行 */
 .stepper-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:8px}
 .stepper-row{display:flex;align-items:center;gap:6px}
@@ -258,10 +258,14 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 
+<!-- 背景エフェクト Canvas -->
+
+<canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
+
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v44</span></div>
+  <div class="app-name">夜語り <span class="ver">v47</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -367,6 +371,19 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <div class="panel" id="panel-sett">
 
 ```
+<div class="sett-section">
+  <div class="sett-title">// 背景エフェクト</div>
+  <div class="sett-row">
+    <span class="sett-label">背景アニメーション</span>
+    <button class="sett-btn" id="bgToggleBtn" onclick="toggleBgEffect()">OFF</button>
+  </div>
+  <div id="bgWeatherRow" class="sett-row" style="display:none">
+    <span class="sett-label">天気連動（位置情報使用）</span>
+    <button class="sett-btn" id="bgWeatherBtn" onclick="toggleBgWeather()">OFF</button>
+  </div>
+  <div class="sett-sub" id="bgStatusTxt" style="margin-bottom:4px"></div>
+</div>
+
 <div class="sett-section">
   <div class="sett-title">// 音声エンジン</div>
   <div id="modeDisplay" style="margin-bottom:12px"></div>
@@ -633,7 +650,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v44';
+const APP_VER = 'v47';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -2298,6 +2315,442 @@ function selfDownload() {
     toast('⚠ ' + e.message);
   }
 }
+
+// ═══════════════════════════════════════════
+//  BACKGROUND EFFECT ENGINE
+// ═══════════════════════════════════════════
+let _bgOn      = localStorage.getItem('yogatari_bg') === '1';
+let _bgWeather = localStorage.getItem('yogatari_bgw') === '1';
+let _bgRaf     = null;
+let _bgWeatherData = null; // { condition: 'clear'|'cloudy'|'rain'|'snow', isNight: bool }
+
+const bgCv  = document.getElementById('bgCanvas');
+const bgCtx = bgCv ? bgCv.getContext('2d') : null;
+
+// ── パーティクル管理 ──
+let _stars = [], _clouds = [], _drops = [], _flakes = [], _shootings = [];
+
+function bgResize() {
+  if (!bgCv) return;
+  bgCv.width  = window.innerWidth;
+  bgCv.height = window.innerHeight;
+}
+
+function initStars(n) {
+  _stars = Array.from({length: n}, () => ({
+    x: Math.random() * bgCv.width,
+    y: Math.random() * bgCv.height * 0.85,
+    r: Math.random() * 1.4 + 0.3,
+    a: Math.random(),
+    da: (Math.random() - 0.5) * 0.008,
+  }));
+}
+
+function initClouds(n) {
+  _clouds = Array.from({length: n}, () => ({
+    x: Math.random() * bgCv.width * 1.5 - bgCv.width * 0.25,
+    y: Math.random() * bgCv.height * 0.5,
+    w: Math.random() * 180 + 80,
+    h: Math.random() * 50 + 25,
+    spd: Math.random() * 0.18 + 0.05,
+    a: Math.random() * 0.25 + 0.08,
+  }));
+}
+
+function initRain(n) {
+  _drops = Array.from({length: n}, () => ({
+    x: Math.random() * bgCv.width,
+    y: Math.random() * bgCv.height,
+    len: Math.random() * 14 + 6,
+    spd: Math.random() * 6 + 6,
+    a: Math.random() * 0.4 + 0.15,
+  }));
+}
+
+function initSnow(n) {
+  _flakes = Array.from({length: n}, () => ({
+    x: Math.random() * bgCv.width,
+    y: Math.random() * bgCv.height,
+    r: Math.random() * 3 + 1,
+    spd: Math.random() * 1.2 + 0.4,
+    drift: (Math.random() - 0.5) * 0.5,
+    a: Math.random() * 0.6 + 0.3,
+  }));
+}
+
+function maybeShoot() {
+  if (Math.random() < 0.004 && _shootings.length < 3) {
+    const x = Math.random() * bgCv.width;
+    _shootings.push({ x, y: Math.random() * bgCv.height * 0.4,
+      vx: (Math.random() * 4 + 3) * (Math.random() < 0.5 ? 1 : -1),
+      vy: Math.random() * 3 + 2,
+      life: 1.0 });
+  }
+}
+
+function getCondition() {
+  const d = _bgWeatherData;
+  const h = new Date().getHours();
+  const isNight = d ? d.isNight : (h >= 20 || h < 6);
+  const cond = d ? d.condition : (h >= 6 && h < 18 ? 'clear_day' : 'clear');
+  return { isNight, cond };
+}
+
+function drawBg() {
+  if (!bgCtx || !bgCv.width) return;
+  const { isNight, cond } = getCondition();
+  const W = bgCv.width, H = bgCv.height;
+
+  // 空のグラデーション
+  const grad = bgCtx.createLinearGradient(0, 0, 0, H);
+  if (cond === 'rain' || cond === 'thunderstorm') {
+    grad.addColorStop(0, '#0d1520'); grad.addColorStop(1, '#1a2530');
+  } else if (cond === 'snow') {
+    grad.addColorStop(0, '#1a1e2e'); grad.addColorStop(1, '#2a2e3e');
+  } else if (cond === 'cloudy' || cond === 'fog') {
+    grad.addColorStop(0, isNight ? '#0d1020' : '#6a7a8a');
+    grad.addColorStop(1, isNight ? '#1a1a30' : '#8a9aaa');
+  } else if (!isNight) {
+    const h = new Date().getHours();
+    if (h >= 6 && h < 8) { // 夜明け
+      grad.addColorStop(0, '#1a0a20'); grad.addColorStop(0.5, '#ff6030');
+      grad.addColorStop(1, '#ffb060');
+    } else if (h >= 17 && h < 20) { // 夕焼け
+      grad.addColorStop(0, '#200818'); grad.addColorStop(0.4, '#c03010');
+      grad.addColorStop(1, '#ff8040');
+    } else { // 昼
+      grad.addColorStop(0, '#1a3060'); grad.addColorStop(1, '#4080c0');
+    }
+  } else { // 夜
+    grad.addColorStop(0, '#020408'); grad.addColorStop(1, '#050810');
+  }
+  bgCtx.fillStyle = grad;
+  bgCtx.fillRect(0, 0, W, H);
+
+  // 月（夜 & 晴れ/曇り） - 月齢・位置・月相対応
+  if (isNight && cond !== 'rain' && cond !== 'thunderstorm') {
+    const phase = getMoonPhase();     // 0.0〜1.0
+    const mpos  = getMoonPosition();  // {x,y} 画面比率
+    const mr = 24;
+    const mx = W * mpos.x, my = H * mpos.y;
+
+    // 月暈（光輪）
+    const mg = bgCtx.createRadialGradient(mx, my, mr*0.8, mx, my, mr*3.5);
+    mg.addColorStop(0, 'rgba(255,245,200,0.18)');
+    mg.addColorStop(1, 'rgba(255,245,200,0)');
+    bgCtx.fillStyle = mg;
+    bgCtx.beginPath(); bgCtx.arc(mx, my, mr*3.5, 0, Math.PI*2); bgCtx.fill();
+
+    // 月本体（月相マスク描画）
+    drawMoonPhase(bgCtx, mx, my, mr, phase);
+
+    // クレーター（満月付近のみ表示）
+    const fullness = 1 - Math.abs(phase - 0.5) * 2; // 0=新月 1=満月
+    if (fullness > 0.3) {
+      bgCtx.globalAlpha = fullness * 0.25;
+      bgCtx.fillStyle = 'rgba(180,160,90,1)';
+      [[mx-7,my+5,4.5],[mx+8,my-7,3.5],[mx-2,my-9,2.5],[mx+4,my+8,2]].forEach(([cx,cy,cr])=>{
+        bgCtx.beginPath(); bgCtx.arc(cx,cy,cr,0,Math.PI*2); bgCtx.fill();
+      });
+      bgCtx.globalAlpha = 1;
+    }
+  }
+
+  // 太陽（昼）
+  if (!isNight && (cond === 'clear_day' || cond === 'clear')) {
+    const sx = W * 0.75, sy = H * 0.1, sr = 18;
+    const sg = bgCtx.createRadialGradient(sx,sy,0,sx,sy,sr*4);
+    sg.addColorStop(0,'rgba(255,240,100,0.4)'); sg.addColorStop(1,'rgba(255,200,50,0)');
+    bgCtx.fillStyle=sg; bgCtx.beginPath(); bgCtx.arc(sx,sy,sr*4,0,Math.PI*2); bgCtx.fill();
+    bgCtx.fillStyle='#ffe060'; bgCtx.beginPath(); bgCtx.arc(sx,sy,sr,0,Math.PI*2); bgCtx.fill();
+  }
+
+  // 星（夜）
+  if (isNight && cond !== 'rain') {
+    maybeShoot();
+    _stars.forEach(s => {
+      s.a += s.da;
+      if (s.a > 1 || s.a < 0.1) s.da *= -1;
+      bgCtx.globalAlpha = s.a * (cond === 'cloudy' ? 0.3 : 0.9);
+      bgCtx.fillStyle = '#fff';
+      bgCtx.beginPath(); bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2); bgCtx.fill();
+    });
+    // 流れ星
+    _shootings = _shootings.filter(s => {
+      s.x += s.vx * 3; s.y += s.vy * 3; s.life -= 0.025;
+      if (s.life <= 0) return false;
+      bgCtx.globalAlpha = s.life * 0.9;
+      bgCtx.strokeStyle = '#fff';
+      bgCtx.lineWidth = 1.5;
+      const tail = 30;
+      bgCtx.beginPath();
+      bgCtx.moveTo(s.x, s.y);
+      bgCtx.lineTo(s.x - s.vx * tail / Math.abs(s.vx), s.y - s.vy * tail / Math.abs(s.vx));
+      bgCtx.stroke();
+      return true;
+    });
+    bgCtx.globalAlpha = 1;
+  }
+
+  // 雲（リアルな積雲）
+  if (cond === 'cloudy' || cond === 'clear' || cond === 'clear_day' || cond === 'rain' || cond === 'snow') {
+    const cloudAlphaMult = cond === 'cloudy' ? 1.8 : cond === 'rain' ? 1.4 : 0.7;
+    _clouds.forEach(c => {
+      c.x += c.spd;
+      if (c.x > W + c.w * 1.2) c.x = -c.w * 1.2;
+      bgCtx.save();
+      bgCtx.globalAlpha = Math.min(1, c.a * cloudAlphaMult);
+      drawRealCloud(bgCtx, c.x, c.y, c.w, c.h, isNight, cond);
+      bgCtx.restore();
+    });
+    bgCtx.globalAlpha = 1;
+  }
+
+  // 雨
+  if (cond === 'rain' || cond === 'thunderstorm') {
+    _drops.forEach(d => {
+      d.y += d.spd; d.x += 1.5;
+      if (d.y > H) { d.y = 0; d.x = Math.random() * W; }
+      bgCtx.globalAlpha = d.a;
+      bgCtx.strokeStyle = 'rgba(150,180,220,0.8)';
+      bgCtx.lineWidth = 1;
+      bgCtx.beginPath();
+      bgCtx.moveTo(d.x, d.y); bgCtx.lineTo(d.x + 2, d.y + d.len);
+      bgCtx.stroke();
+    });
+    bgCtx.globalAlpha = 1;
+  }
+
+  // 雪
+  if (cond === 'snow') {
+    _flakes.forEach(f => {
+      f.y += f.spd; f.x += f.drift;
+      if (f.y > H) { f.y = 0; f.x = Math.random() * W; }
+      if (f.x > W) f.x = 0; if (f.x < 0) f.x = W;
+      bgCtx.globalAlpha = f.a;
+      bgCtx.fillStyle = '#e0eeff';
+      bgCtx.beginPath(); bgCtx.arc(f.x, f.y, f.r, 0, Math.PI * 2); bgCtx.fill();
+    });
+    bgCtx.globalAlpha = 1;
+  }
+}
+
+
+// ── 月齢計算（0=新月, 0.25=上弦, 0.5=満月, 0.75=下弦）──
+function getMoonPhase() {
+  const now = new Date();
+  // 既知の新月日: 2000年1月6日をゼロ点として計算
+  const knownNew = new Date(2000, 0, 6, 18, 14, 0);
+  const lunarCycle = 29.53058867; // 朔望月（日）
+  const diff = (now - knownNew) / (1000 * 60 * 60 * 24);
+  return ((diff % lunarCycle) + lunarCycle) % lunarCycle / lunarCycle;
+}
+
+// ── 月の空での位置（時刻で東から西へ移動）──
+function getMoonPosition() {
+  const h = new Date().getHours() + new Date().getMinutes() / 60;
+  // 夜20時〜翌6時の間で弧を描く（東:右 → 南:中央上 → 西:左）
+  const nightStart = 20, nightEnd = 30; // 30 = 翌6時
+  const t = h < 6 ? h + 24 : h;
+  const progress = Math.max(0, Math.min(1, (t - nightStart) / (nightEnd - nightStart)));
+  // 放物線の弧
+  const angle = Math.PI * progress; // 0=東 π=西
+  return {
+    x: 0.85 - Math.sin(angle) * 0.65,       // 右→中→左
+    y: 0.35 - Math.sin(angle) * 0.22 + 0.02 // 低→高→低
+  };
+}
+
+// ── 月相をCanvasで描画 ──
+// phase: 0=新月 0.25=上弦 0.5=満月 0.75=下弦
+function drawMoonPhase(ctx, cx, cy, r, phase) {
+  ctx.save();
+  // ベースの月（円）
+  ctx.fillStyle = '#f0e8c0';
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+
+  // 影の部分をクリップで描画
+  ctx.globalCompositeOperation = 'source-atop';
+  const p = phase < 0.5 ? phase * 2 : (phase - 0.5) * 2; // 0〜1 各半周期
+  const shadowX = phase < 0.5
+    ? cx + r * (1 - p * 2)   // 新月→満月: 右から左に影が引く
+    : cx + r * (p * 2 - 1);  // 満月→新月: 左から右に影が広がる
+
+  ctx.fillStyle = '#050a10';
+  ctx.beginPath();
+  if (phase < 0.5) {
+    // 上弦側: 右半球が明るい→全体明るくなる
+    ctx.arc(cx, cy, r, Math.PI/2, -Math.PI/2); // 左半円（影）
+    ctx.bezierCurveTo(shadowX, cy - r, shadowX, cy + r, cx, cy + r);
+    ctx.closePath();
+  } else {
+    // 下弦側: 左半球が明るい
+    ctx.arc(cx, cy, r, -Math.PI/2, Math.PI/2); // 右半円（影）
+    ctx.bezierCurveTo(shadowX, cy + r, shadowX, cy - r, cx, cy - r);
+    ctx.closePath();
+  }
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+
+  // 月の輪郭をわずかに光らせる
+  ctx.strokeStyle = 'rgba(255,245,200,0.6)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+  ctx.restore();
+}
+
+// ── リアルな積雲描画（ベジェ曲線）──
+function drawRealCloud(ctx, cx, cy, w, h, isNight, cond) {
+  const isDark = isNight || cond === 'rain' || cond === 'thunderstorm';
+
+  // 雲の色（昼: 白っぽい / 夜: 青みがかった灰 / 雨: 濃い灰）
+  const baseLight = isDark
+    ? (cond === 'rain' ? 'rgba(60,65,80,' : 'rgba(80,90,120,')
+    : (cond === 'rain' ? 'rgba(140,145,155,' : 'rgba(240,245,255,');
+  const baseShadow = isDark
+    ? (cond === 'rain' ? 'rgba(35,38,48,' : 'rgba(50,55,80,')
+    : (cond === 'rain' ? 'rgba(100,105,120,' : 'rgba(190,200,220,');
+
+  // 雲の「もこもこ」をランダムシードから決定的に生成
+  const seed = Math.floor(cx / 50);
+  const bumps = [
+    {dx: 0,       dy: 0,        rx: w*0.42, ry: h*0.55},
+    {dx: -w*0.28, dy: h*0.18,   rx: w*0.30, ry: h*0.45},
+    {dx:  w*0.28, dy: h*0.15,   rx: w*0.32, ry: h*0.42},
+    {dx: -w*0.50, dy: h*0.32,   rx: w*0.22, ry: h*0.32},
+    {dx:  w*0.50, dy: h*0.28,   rx: w*0.24, ry: h*0.30},
+    {dx: -w*0.15, dy: -h*0.15,  rx: w*0.28, ry: h*0.38},
+    {dx:  w*0.18, dy: -h*0.12,  rx: w*0.26, ry: h*0.36},
+  ];
+
+  // 影（下部）
+  ctx.fillStyle = baseShadow + '0.7)';
+  bumps.forEach(b => {
+    ctx.beginPath();
+    ctx.ellipse(cx + b.dx, cy + b.dy + h*0.12, b.rx*0.95, b.ry*0.7, 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // 本体
+  bumps.forEach((b, i) => {
+    const alpha = i === 0 ? '0.92)' : '0.85)';
+    ctx.fillStyle = baseLight + alpha;
+    ctx.beginPath();
+    ctx.ellipse(cx + b.dx, cy + b.dy, b.rx, b.ry, 0, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  // ハイライト（上部）
+  if (!isDark) {
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath();
+    ctx.ellipse(cx - w*0.08, cy - h*0.2, w*0.25, h*0.22, -0.3, 0, Math.PI*2);
+    ctx.fill();
+  }
+}
+
+function bgLoop() {
+  if (!_bgOn) return;
+  drawBg();
+  _bgRaf = requestAnimationFrame(bgLoop);
+}
+
+function startBgEffect() {
+  if (!bgCv || !bgCtx) return;
+  bgResize();
+  initStars(180); initClouds(6); initRain(120); initSnow(80);
+  bgCv.style.opacity = '0.92';
+  // bodyの背景を透明にしてキャンバスを見せる
+  document.body.style.background = 'transparent';
+  bgLoop();
+}
+
+function stopBgEffect() {
+  if (_bgRaf) { cancelAnimationFrame(_bgRaf); _bgRaf = null; }
+  if (bgCv) bgCv.style.opacity = '0';
+  // bodyの背景を元に戻す
+  document.body.style.background = '#0a0908';
+}
+
+function toggleBgEffect() {
+  _bgOn = !_bgOn;
+  localStorage.setItem('yogatari_bg', _bgOn ? '1' : '0');
+  const btn = document.getElementById('bgToggleBtn');
+  const wrow = document.getElementById('bgWeatherRow');
+  if (btn) btn.textContent = _bgOn ? 'ON' : 'OFF';
+  if (btn) btn.className = _bgOn ? 'sett-btn sett-btn-save' : 'sett-btn';
+  if (wrow) wrow.style.display = _bgOn ? 'flex' : 'none';
+  if (_bgOn) startBgEffect(); else stopBgEffect();
+  updBgStatus();
+}
+
+function toggleBgWeather() {
+  _bgWeather = !_bgWeather;
+  localStorage.setItem('yogatari_bgw', _bgWeather ? '1' : '0');
+  const btn = document.getElementById('bgWeatherBtn');
+  if (btn) btn.textContent = _bgWeather ? 'ON' : 'OFF';
+  if (btn) btn.className = _bgWeather ? 'sett-btn sett-btn-save' : 'sett-btn';
+  if (_bgWeather) fetchWeather(); else { _bgWeatherData = null; updBgStatus(); }
+}
+
+async function fetchWeather() {
+  try {
+    updBgStatus('📡 位置情報を取得中…');
+    const pos = await new Promise((res, rej) =>
+      navigator.geolocation.getCurrentPosition(res, rej, {timeout:8000})
+    );
+    const lat = pos.coords.latitude.toFixed(4);
+    const lon = pos.coords.longitude.toFixed(4);
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat +
+      '&longitude=' + lon + '&current=weather_code,is_day&timezone=auto';
+    const r = await fetch(url, {signal: AbortSignal.timeout(8000)});
+    const j = await r.json();
+    const code = j.current.weather_code;
+    const isDay = j.current.is_day === 1;
+    // WMO天気コード → 状態
+    let cond;
+    if (code === 0) cond = isDay ? 'clear_day' : 'clear';
+    else if (code <= 2) cond = 'cloudy';
+    else if (code <= 49) cond = 'fog';
+    else if (code <= 67) cond = 'rain';
+    else if (code <= 77) cond = 'snow';
+    else cond = 'thunderstorm';
+    _bgWeatherData = { condition: cond, isNight: !isDay };
+    updBgStatus('🌤 天気連動中: ' + ['晴れ','曇り','霧','雨','雪','嵐'][['clear','clear_day','cloudy','fog','rain','snow','thunderstorm'].indexOf(cond)] || cond);
+  } catch(e) {
+    _bgWeatherData = null;
+    updBgStatus('⚠ 天気取得失敗（時刻ベースで表示）');
+  }
+}
+
+function updBgStatus(msg) {
+  const el = document.getElementById('bgStatusTxt');
+  if (!el) return;
+  if (msg) { el.textContent = msg; return; }
+  if (!_bgOn) { el.textContent = ''; return; }
+  const { cond, isNight } = getCondition();
+  const labels = {clear:'晴れ(夜)',clear_day:'晴れ(昼)',cloudy:'曇り',fog:'霧',rain:'雨',snow:'雪',thunderstorm:'嵐'};
+  el.textContent = '現在: ' + (isNight?'🌙':'☀️') + ' ' + (labels[cond]||cond);
+}
+
+window.addEventListener('resize', () => { if (_bgOn) { bgResize(); initStars(180); initClouds(6); } });
+
+// 起動時に状態を復元
+setTimeout(() => {
+  const bgBtn = document.getElementById('bgToggleBtn');
+  const wBtn  = document.getElementById('bgWeatherBtn');
+  const wRow  = document.getElementById('bgWeatherRow');
+  if (bgBtn) bgBtn.textContent = _bgOn ? 'ON' : 'OFF';
+  if (bgBtn) bgBtn.className   = _bgOn ? 'sett-btn sett-btn-save' : 'sett-btn';
+  if (wBtn)  wBtn.textContent  = _bgWeather ? 'ON' : 'OFF';
+  if (wBtn)  wBtn.className    = _bgWeather ? 'sett-btn sett-btn-save' : 'sett-btn';
+  if (wRow)  wRow.style.display = _bgOn ? 'flex' : 'none';
+  if (_bgOn) {
+    startBgEffect();
+    if (_bgWeather) fetchWeather();
+  }
+  updBgStatus();
+}, 500);
 
 function onVoice()  { const i=+document.getElementById('voiceSel').value; if(!isNaN(i)) selVoice=voices[i]; }
 </script>
