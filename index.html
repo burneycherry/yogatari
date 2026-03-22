@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v64</span></div>
+  <div class="app-name">夜語り <span class="ver">v65</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v64';
+const APP_VER = 'v65';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -644,6 +644,108 @@ function stopSilentAudio() {
   _silentOn = false;
   if (_actx) { _actx.close().catch(()=>{}); _actx = null; }
 }
+
+// ═══════════════════════════════════════════
+//  MEDIA SESSION API (iOS ロック画面コントロール)
+// ═══════════════════════════════════════════
+// iOSはMediaSessionを正しく受け取るには:
+//   ① <audio>要素が実際に再生中であること（Google TTS使用時は満たされる）
+//   ② Kyoko(Web Speech API)使用時はサポート外（AudioContextのみ）のため
+//      ロック画面ボタンはGoogle TTSのみ有効になる
+const _msSupported = ('mediaSession' in navigator);
+
+function msSetMetadata() {
+  if (!_msSupported) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentChapterTitle || '読み上げ中',
+      artist: currentNovelTitle  || '夜語り',
+      album: '夜語り',
+      // アートワーク: シンプルな夜空色の画像をSVGで生成
+      artwork: [{
+        src: 'data:image/svg+xml,' + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">' +
+          '<rect width="512" height="512" fill="#0a0908"/>' +
+          '<text x="256" y="300" text-anchor="middle" font-size="220" fill="#c8991e">夜</text>' +
+          '</svg>'
+        ),
+        sizes: '512x512',
+        type: 'image/svg+xml'
+      }]
+    });
+  } catch(e) {}
+}
+
+function msSetState(state) {
+  // state: 'playing' | 'paused' | 'none'
+  if (!_msSupported) return;
+  try { navigator.mediaSession.playbackState = state; } catch(e) {}
+}
+
+function msSetPositionState() {
+  if (!_msSupported || !segs.length) return;
+  try {
+    // Google TTS使用中はaudio要素の実際の時間を使用
+    if (hasGoogleKey()) {
+      const el = getAudioEl();
+      if (el && el.duration && isFinite(el.duration)) {
+        navigator.mediaSession.setPositionState({
+          duration: el.duration,
+          playbackRate: getRate(),
+          position: el.currentTime || 0
+        });
+        return;
+      }
+    }
+    // Kyoko使用時: 段落ベースの擬似的な位置（ロック画面のシークバーに使用）
+    const totalSegs = segs.length;
+    const approxDur  = totalSegs * 4; // 1段落約4秒の概算
+    const approxPos  = idx * 4;
+    navigator.mediaSession.setPositionState({
+      duration: approxDur,
+      playbackRate: getRate(),
+      position: Math.min(approxPos, approxDur)
+    });
+  } catch(e) {}
+}
+
+function msRegisterHandlers() {
+  if (!_msSupported) return;
+  try {
+    // ▶/⏸
+    navigator.mediaSession.setActionHandler('play', () => {
+      if (!playing && segs.length) startPlay();
+    });
+    navigator.mediaSession.setActionHandler('pause', () => {
+      if (playing) togglePlay();
+    });
+    // ⏮/⏭ = 前話/次話
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+      if (prevUrl) goPrev();
+      else prevSeg();
+    });
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+      if (nextUrl) goNext();
+      else nextSeg();
+    });
+    // シーク（5秒スキップ）
+    navigator.mediaSession.setActionHandler('seekbackward', (d) => {
+      skipSec(-(d?.seekOffset || 5));
+    });
+    navigator.mediaSession.setActionHandler('seekforward', (d) => {
+      skipSec(d?.seekOffset || 5);
+    });
+  } catch(e) {}
+}
+
+// 初回1回だけハンドラ登録
+let _msHandlersRegistered = false;
+function msInit() {
+  if (!_msSupported || _msHandlersRegistered) return;
+  msRegisterHandlers();
+  _msHandlersRegistered = true;
+}
+
 
 // ═══════════════════════════════════════════
 //  SPEECH SYNTHESIS
@@ -1276,6 +1378,8 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
   document.getElementById('chapTitle').textContent = page.title || url;
   const lnk = document.getElementById('chapLink'); lnk.textContent = url; lnk.href = url;
   document.getElementById('chapInfo').classList.add('show');
+  // MediaSession: 話が切り替わったのでメタデータを更新
+  msSetMetadata();
 
   segs = splitText(page.text);
   idx = Math.min(startSeg, segs.length - 1);
@@ -1590,6 +1694,8 @@ function speakIdx(i) {
   idx = i;
   updHighlight(); updProg();
   if (i % 5 === 0) saveBookmarkCurrent(i);
+  // MediaSession: ポジション更新（ロック画面のシークバーに反映）
+  msSetPositionState();
 
   if (hasGoogleKey()) {
     SS.cancel();
@@ -1683,6 +1789,10 @@ function startPlay() {
   stopGoogleAudio();
   clearPrefetchCache();
   if (hasGoogleKey()) getAudioCached(idx);
+  // MediaSession: 初期化・メタデータ設定・状態更新
+  msInit();
+  msSetMetadata();
+  msSetState('playing');
   setTimeout(() => speakIdx(idx), 100);
 }
 function togglePlay() {
@@ -1691,6 +1801,7 @@ function togglePlay() {
     playing = false; _busy = false; clearWatchdog();
     SS.cancel(); stopGoogleAudio();
     updBtn(); setBadge(false);
+    msSetState('paused');
   } else {
     startPlay();
   }
@@ -1700,6 +1811,7 @@ function stop() {
   SS.cancel(); stopGoogleAudio();
   clearWatchdog(); clearPrefetchCache();
   updBtn(); setBadge(false); cancelNext();
+  msSetState('none');
 }
 function prevSeg() {
   if (_busy) return;
