@@ -256,7 +256,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v56</span></div>
+  <div class="app-name">夜語り <span class="ver">v57</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -616,7 +616,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v56';
+const APP_VER = 'v57';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -721,6 +721,11 @@ function inferTocUrl(chapterUrl) {
     if (u.hostname.includes('kakuyomu.jp')) {
       const m = u.pathname.match(/^(\/works\/[^\/]+)/);
       if (m) return u.origin + m[1];
+    }
+    // ハーメルン: /novel/XXXXX/N.html → /novel/XXXXX/
+    if (u.hostname.includes('syosetu.org')) {
+      const m = u.pathname.match(/^(\/novel\/[^\/]+)\/\d+\.html$/);
+      if (m) return u.origin + m[1] + '/';
     }
   } catch(e) {}
   return null;
@@ -959,14 +964,13 @@ function findInObj(obj, key, depth = 0) {
 }
 
 // ── ハーメルン目次パーサー ──
-// syosetu.org/novel/XXXXX/ の話リンク /novel/XXXXX/N/ を抽出
+// 話URLは /novel/XXXXX/N.html 形式（末尾スラッシュなし・.html付き）
 function parseHamelnToc(html, baseUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const items = [];
   const seen = new Set();
   let num = 0;
 
-  // ハーメルン: .ss_shosai / .novel_sublist / テーブル内の話リンク
   const wm = new URL(baseUrl).pathname.match(/\/novel\/([^/]+)/);
   if (!wm) return items;
   const novelPath = '/novel/' + wm[1] + '/';
@@ -974,15 +978,15 @@ function parseHamelnToc(html, baseUrl) {
   doc.querySelectorAll('a[href]').forEach(a => {
     const href = a.getAttribute('href');
     if (!href) return;
-    // /novel/XXXXX/N/ パターンに一致するものだけ
-    if (!href.startsWith(novelPath) && !href.includes(novelPath)) return;
-    const m = href.match(/\/novel\/[^/]+\/(\d+)\/?$/);
+    // /novel/XXXXX/N.html パターンに一致するものだけ（.html付き）
+    if (!href.includes(novelPath)) return;
+    const m = href.match(/\/novel\/[^/]+\/(\d+)\.html$/);
     if (!m) return;
     const url = resolveUrl(href, baseUrl);
     if (!url || seen.has(url)) return;
     const txt = a.textContent.trim();
     if (!txt || txt.length > 100) return;
-    // ナビゲーションリンク（「前のページ」「次のページ」）を除外
+    // ナビゲーションリンクを除外
     if (/^(前|次|目次|back|next|トップ)/i.test(txt)) return;
     seen.add(url);
     num++;
@@ -1132,10 +1136,16 @@ function resolveUrl(href, base) {
 }
 
 // カクヨムのepisode IDは18桁の数字で話数として使えないため除外する
+// ハーメルンは /novel/XXXXX/N.html 形式なので .html を除去してから数字を取得
 function chapNumFromUrl(url) {
   try {
     const u = new URL(url);
     if (u.hostname.includes('kakuyomu.jp')) return 0; // ピッカー経由でitem.numを使用
+    if (u.hostname.includes('syosetu.org')) {
+      // /novel/405615/7.html → 7
+      const m = u.pathname.match(/\/(\d+)\.html$/);
+      return m ? parseInt(m[1]) : 1;
+    }
   } catch(e) {}
   const m = url.match(/\/(\d+)\/?$/);
   return m ? parseInt(m[1]) : 1;
