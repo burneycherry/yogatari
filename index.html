@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v67</span></div>
+  <div class="app-name">夜語り <span class="ver">v68</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v67';
+const APP_VER = 'v68';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1107,15 +1107,17 @@ function extractPage(html, pageUrl) {
       const nd = doc.querySelector('script#__NEXT_DATA__');
       if (nd) {
         const json = JSON.parse(nd.textContent);
-        // 'nextEpisode' または 'nextEpisodeId' キーを再帰的に探索
-        const nextEp = findInObj(json, 'nextEpisode') || findInObj(json, 'nextEpisodeId');
+        // 'nextEpisode', 'nextEpisodeId', 'next' など複数キーを試みる
+        const nextEp = findInObj(json, 'nextEpisode')
+                    || findInObj(json, 'nextEpisodeId')
+                    || findInObj(json, 'nextWork')
+                    || findInObj(json, 'next');
         if (nextEp) {
           const wm = pageUrl.match(/\/works\/([^/]+)\//);
-          // nextEpがオブジェクトの場合はid/slugを取得、文字列の場合はそのまま使用
           const epId = (typeof nextEp === 'object')
-            ? (nextEp.id || nextEp.slug || nextEp.__id || null)
+            ? (nextEp.id || nextEp.slug || nextEp.__id || nextEp.episodeId || null)
             : String(nextEp);
-          if (wm && epId) {
+          if (wm && epId && epId.length > 5) {
             nextPageUrl = 'https://kakuyomu.jp/works/' + wm[1] + '/episodes/' + epId;
           }
         }
@@ -1707,7 +1709,12 @@ function speakIdx(i) {
       const el = getAudioEl();
       el.onended = () => {
         clearWatchdog();
-        if (playing && !_tabSw) speakIdx(idx + 1);
+        if (playing && !_tabSw) {
+          // [FIX] 次の音声をロード中の無音ギャップでiOSがセッション終了と誤判定するのを防ぐ
+          // onended直後にplaying状態を再通知してセッションを維持する
+          msSetState('playing');
+          speakIdx(idx + 1);
+        }
       };
       el.onerror = () => {
         clearWatchdog(); _busy = false;
@@ -1967,6 +1974,8 @@ async function goPrev() {
 
 async function goNext() {
   // [FIX] カクヨムでnextUrlがnullの場合、目次から現在話の次を取得して試みる
+  // 注意: TOCの__NEXT_DATA__には最初の数話しか含まれない場合があるため
+  //       「リストの末尾=最終話」とは判定しない
   if (!nextUrl && currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
     showFetch('load', '次話URLを取得中…');
     disable(true);
@@ -1977,19 +1986,16 @@ async function goNext() {
         const items = parseKakuyomuToc(html, tocUrl);
         const curIdx = items.findIndex(it => it.url === currentChapterUrl);
         if (curIdx >= 0 && curIdx < items.length - 1) {
+          // リスト内に次話がある → 使用
           nextUrl = items[curIdx + 1].url;
           document.getElementById('bNext').disabled = false;
-        } else if (curIdx === items.length - 1) {
-          hideFetch();
-          disable(false);
-          toast('📖 最終話まで読み終わりました');
-          document.getElementById('bNext').disabled = true;
-          return;
         }
+        // curIdx === items.length - 1 の場合はTOCが不完全な可能性があるため
+        // 「最終話」とは判断せずgoNextを続行させる（fetchHtmlで直接取得を試みる）
       }
     } catch(e) {}
     disable(false);
-    if (!nextUrl) { toast('次のページなし'); hideFetch(); return; }
+    // nextUrlが取れなかった場合でもgoNextを続行（直接fetchHtmlで取得試みる）
   }
 
   if(!nextUrl){toast('次のページなし');return;}
