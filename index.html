@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v70</span></div>
+  <div class="app-name">夜語り <span class="ver">v71</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v70';
+const APP_VER = 'v71';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1991,29 +1991,41 @@ async function goPrev() {
 }
 
 async function goNext() {
-  // [FIX] カクヨムでnextUrlがnullの場合、目次から現在話の次を取得して試みる
-  // 注意: TOCの__NEXT_DATA__には最初の数話しか含まれない場合があるため
-  //       「リストの末尾=最終話」とは判定しない
+  // [FIX] カクヨムでnextUrlがnullの場合の多段フォールバック
+  // カクヨムTOCは最初の7〜30話しか返さないため、TOC検索が失敗するケースがある。
+  // そのため以下の順で試みる:
+  //   ① 現在のエピソードページを再fetchして nextUrl を直接取得
+  //   ② それも失敗した場合のみ TOC を使う
   if (!nextUrl && currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
     showFetch('load', '次話URLを取得中…');
     disable(true);
     try {
-      const tocUrl = inferTocUrl(currentChapterUrl);
-      if (tocUrl) {
-        const html = await fetchHtml(tocUrl);
-        const items = parseKakuyomuToc(html, tocUrl);
-        const curIdx = items.findIndex(it => it.url === currentChapterUrl);
-        if (curIdx >= 0 && curIdx < items.length - 1) {
-          // リスト内に次話がある → 使用
-          nextUrl = items[curIdx + 1].url;
-          document.getElementById('bNext').disabled = false;
-        }
-        // curIdx === items.length - 1 の場合はTOCが不完全な可能性があるため
-        // 「最終話」とは判断せずgoNextを続行させる（fetchHtmlで直接取得を試みる）
+      // ① 現在のエピソードページを再fetchしてnextUrlを抽出
+      const curHtml = await fetchHtml(currentChapterUrl);
+      const curPage = extractPage(curHtml, currentChapterUrl);
+      if (curPage.nextUrl) {
+        nextUrl = curPage.nextUrl;
+        document.getElementById('bNext').disabled = false;
       }
     } catch(e) {}
+
+    // ② ①で取れなかった場合はTOCをfetch
+    if (!nextUrl) {
+      try {
+        const tocUrl = inferTocUrl(currentChapterUrl);
+        if (tocUrl) {
+          const html = await fetchHtml(tocUrl);
+          const items = parseKakuyomuToc(html, tocUrl);
+          const curIdx = items.findIndex(it => it.url === currentChapterUrl);
+          if (curIdx >= 0 && curIdx < items.length - 1) {
+            nextUrl = items[curIdx + 1].url;
+            document.getElementById('bNext').disabled = false;
+          }
+        }
+      } catch(e) {}
+    }
     disable(false);
-    // nextUrlが取れなかった場合でもgoNextを続行（直接fetchHtmlで取得試みる）
+    if (!nextUrl) { toast('次のページが見つかりませんでした'); hideFetch(); return; }
   }
 
   if(!nextUrl){toast('次のページなし');return;}
