@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v68</span></div>
+  <div class="app-name">夜語り <span class="ver">v69</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v68';
+const APP_VER = 'v69';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -847,17 +847,17 @@ let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentCh
 //  CORS PROXIES
 // ═══════════════════════════════════════════
 const PROXIES = [
-  { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:20000 },
-  { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:20000 },
-  { build: u=>'https://cors.eu.org/'+u, isJson:false, ms:12000 },
-  { build: u=>'https://yacdn.org/serve/'+u, isJson:false, ms:12000 },
-  { build: u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u), isJson:false, ms:12000 },
-  { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u), isJson:false, ms:12000 },
-  { build: u=>'https://thingproxy.freeboard.io/fetch/'+u, isJson:false, ms:12000 },
+  { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
+  { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
+  { build: u=>'https://cors.eu.org/'+u, isJson:false, ms:7000 },
+  { build: u=>'https://yacdn.org/serve/'+u, isJson:false, ms:7000 },
+  { build: u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u), isJson:false, ms:7000 },
+  { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u), isJson:false, ms:7000 },
+  { build: u=>'https://thingproxy.freeboard.io/fetch/'+u, isJson:false, ms:7000 },
 ];
 
 async function tryProxy(p, url) {
-  const r = await fetch(p.build(url), { signal: AbortSignal.timeout(p.ms || 12000) });
+  const r = await fetch(p.build(url), { signal: AbortSignal.timeout(p.ms || 8000) });
   if (!r.ok) throw new Error('HTTP ' + r.status);
   const raw = await r.text();
   if (!raw || raw.length < 200) throw new Error('レスポンス短すぎ');
@@ -875,21 +875,40 @@ async function tryProxy(p, url) {
   return raw;
 }
 
+// [FIX] 並列fetch: 全プロキシを同時に試し最初に成功したものを使う
+// 従来の直列方式では allorigins×2=最悪16秒待ちだったが、並列化で大幅短縮
 async function fetchHtml(url) {
-  const errors = [];
-  for (const p of PROXIES) {
-    const label = p.build(url).replace(/https?:\/\/([^/]+).*/, '$1');
-    try {
-      const html = await tryProxy(p, url);
-      return html;
-    } catch(e) {
-      errors.push(label + ': ' + e.message);
-    }
-  }
-  throw new Error(
-    'ページ取得失敗。なろう等は直接取得できない場合があります。\n' +
-    '📋 ' + errors.slice(0,4).join(' ／ ')
-  );
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let failCount = 0;
+    const errors = [];
+
+    PROXIES.forEach((p, idx) => {
+      // 先頭グループ(allorigins×2)は即時、後続は50ms間隔でずらして起動
+      // これにより先頭が成功すれば後続リクエストを無駄に出さない効果がある
+      const delay = idx < 2 ? 0 : idx * 50;
+      setTimeout(() => {
+        if (settled) return; // すでに解決済みなら起動しない
+        const label = p.build(url).replace(/https?:\/\/([^/]+).*/, '$1');
+        tryProxy(p, url).then(html => {
+          if (!settled) {
+            settled = true;
+            resolve(html);
+          }
+        }).catch(e => {
+          errors.push(label + ': ' + e.message);
+          failCount++;
+          if (failCount === PROXIES.length && !settled) {
+            settled = true;
+            reject(new Error(
+              'ページ取得失敗。なろう等は直接取得できない場合があります。\n' +
+              '📋 ' + errors.slice(0,4).join(' ／ ')
+            ));
+          }
+        });
+      }, delay);
+    });
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -2184,10 +2203,25 @@ async function resumeFrom(novelId) {
   document.getElementById('urlIn').value = bk.novelId;
   stop(); disable(true); showFetch('load','履歴から読み込み中…');
   try {
-    // [FIX] makePageCacheKeyでURL全体ハッシュを使用（旧btoa先頭40文字は全作品で同一キーになるバグがあった）
+    // [FIX] makePageCacheKeyでURL全体ハッシュを使用
     const cacheKey = makePageCacheKey(bk.chapterUrl);
-    let html;
     const cached = sessionStorage.getItem(cacheKey);
+
+    // [FIX] カクヨムはエピソードURLへのプロキシアクセスが失敗しやすいため
+    // sessionStorageキャッシュがない場合は loadChapterUrl に委譲
+    const isKakuyomu = bk.chapterUrl && bk.chapterUrl.includes('kakuyomu.jp');
+    if (!cached && isKakuyomu) {
+      hideFetch();
+      disable(false);
+      currentNovelId = novelId;
+      currentNovelTitle = bk.novelTitle || bk.chapterTitle || '';
+      await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId,
+        chapNumFromUrl(bk.chapterUrl) || bk.chapterNum || 1,
+        bk.novelTitle || '');
+      return;
+    }
+
+    let html;
     if (cached) {
       html = cached;
       showFetch('load','キャッシュから復元中…');
