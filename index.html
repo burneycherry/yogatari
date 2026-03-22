@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v69</span></div>
+  <div class="app-name">夜語り <span class="ver">v70</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v69';
+const APP_VER = 'v70';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -875,26 +875,24 @@ async function tryProxy(p, url) {
   return raw;
 }
 
-// [FIX] 並列fetch: 全プロキシを同時に試し最初に成功したものを使う
-// 従来の直列方式では allorigins×2=最悪16秒待ちだったが、並列化で大幅短縮
+// [FIX] 波状並列fetch: 2つずつ間隔をあけて起動し最初に成功したものを使う
+// 完全並列（7同時）はalloriginsのレート制限を引き起こすため
+// 2+2+2+1の波状（0ms/400ms/800ms/1200ms）に変更
 async function fetchHtml(url) {
   return new Promise((resolve, reject) => {
     let settled = false;
     let failCount = 0;
     const errors = [];
 
-    PROXIES.forEach((p, idx) => {
-      // 先頭グループ(allorigins×2)は即時、後続は50ms間隔でずらして起動
-      // これにより先頭が成功すれば後続リクエストを無駄に出さない効果がある
-      const delay = idx < 2 ? 0 : idx * 50;
+    PROXIES.forEach((p, i) => {
+      // 2つずつ波状に起動: 0,1番→即時、2,3番→400ms後、4,5番→800ms後、6番→1200ms後
+      const wave = Math.floor(i / 2);
+      const delay = wave * 400;
       setTimeout(() => {
-        if (settled) return; // すでに解決済みなら起動しない
+        if (settled) return;
         const label = p.build(url).replace(/https?:\/\/([^/]+).*/, '$1');
         tryProxy(p, url).then(html => {
-          if (!settled) {
-            settled = true;
-            resolve(html);
-          }
+          if (!settled) { settled = true; resolve(html); }
         }).catch(e => {
           errors.push(label + ': ' + e.message);
           failCount++;
@@ -1410,7 +1408,8 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
 
   if (nextUrl) {
     clearNextChapterCache();
-    setTimeout(() => prefetchNextChapter(nextUrl), 1000);
+    // [FIX] レート制限対策: 先読みを3秒後に遅らせて本文fetchと競合させない
+    setTimeout(() => prefetchNextChapter(nextUrl), 3000);
   }
 }
 
@@ -2044,8 +2043,12 @@ async function goNext() {
 
     if(queue[qi]) queue[qi].title = page.title;
     currentChapterTitle = page.title;
-    // カクヨムはchapNumFromUrlが0を返すので、現在値+1でインクリメントして正確な話数を維持
-    currentChapterNum = chapNumFromUrl(url) || (currentChapterNum > 0 ? currentChapterNum + 1 : 1);
+    // [FIX] カクヨム: タイトルに「第N話」が含まれていれば抽出して正確な話数を維持
+    // URLからは取れない(0を返す)ためタイトル→インクリメントの順で優先
+    const nextTitleNum = (page.title || '').match(/^第(\d+)話/);
+    currentChapterNum = chapNumFromUrl(url)
+      || (nextTitleNum ? parseInt(nextTitleNum[1]) : 0)
+      || (currentChapterNum > 0 ? currentChapterNum + 1 : 1);
 
     if (_nextAudioCache.length > 0 && hasGoogleKey()) {
       clearPrefetchCache();
@@ -2241,7 +2244,12 @@ async function resumeFrom(novelId) {
     // bk.chapterNum を優先すると旧バグで誤保存された値が使われ続ける問題が起きるため
     // URLから取れる場合はURLを信頼する
     const resumeUrlNum = chapNumFromUrl(bk.chapterUrl);
-    currentChapterNum = resumeUrlNum || bk.chapterNum || 1;
+    // [FIX] カクヨム等URLから話数が取れないサイト向け:
+    // chapterTitleに「第N話」形式が含まれていれば正確な話数を抽出する
+    // (旧バグで誤保存されたbk.chapterNumの参照を避ける)
+    const titleNumMatch = (bk.chapterTitle || '').match(/^第(\d+)話/);
+    const titleNum = titleNumMatch ? parseInt(titleNumMatch[1]) : 0;
+    currentChapterNum = resumeUrlNum || titleNum || bk.chapterNum || 1;
     if (!queue.find(q=>q.url===bk.chapterUrl)) { queue.push({url:bk.chapterUrl,title:page.title,done:false}); qi=queue.length-1; }
     else qi = queue.findIndex(q=>q.url===bk.chapterUrl);
     // [FIX1] 履歴からの再開はフレッシュロードなのでprevUrlHint=null
