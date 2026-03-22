@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v65</span></div>
+  <div class="app-name">夜語り <span class="ver">v67</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v65';
+const APP_VER = 'v67';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -650,8 +650,10 @@ function stopSilentAudio() {
 // ═══════════════════════════════════════════
 // iOSはMediaSessionを正しく受け取るには:
 //   ① <audio>要素が実際に再生中であること（Google TTS使用時は満たされる）
-//   ② Kyoko(Web Speech API)使用時はサポート外（AudioContextのみ）のため
-//      ロック画面ボタンはGoogle TTSのみ有効になる
+//   ② Kyoko(Web Speech API)使用時はiOS制限でロック画面ボタンが効かない場合がある
+//
+// 注意: setPositionState() は1段落分のaudio時間を渡すと
+//       段落終了時に position≒duration となりiOSがセッション終了と誤判定するため使用しない
 const _msSupported = ('mediaSession' in navigator);
 
 function msSetMetadata() {
@@ -661,7 +663,6 @@ function msSetMetadata() {
       title: currentChapterTitle || '読み上げ中',
       artist: currentNovelTitle  || '夜語り',
       album: '夜語り',
-      // アートワーク: シンプルな夜空色の画像をSVGで生成
       artwork: [{
         src: 'data:image/svg+xml,' + encodeURIComponent(
           '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">' +
@@ -682,63 +683,32 @@ function msSetState(state) {
   try { navigator.mediaSession.playbackState = state; } catch(e) {}
 }
 
-function msSetPositionState() {
-  if (!_msSupported || !segs.length) return;
-  try {
-    // Google TTS使用中はaudio要素の実際の時間を使用
-    if (hasGoogleKey()) {
-      const el = getAudioEl();
-      if (el && el.duration && isFinite(el.duration)) {
-        navigator.mediaSession.setPositionState({
-          duration: el.duration,
-          playbackRate: getRate(),
-          position: el.currentTime || 0
-        });
-        return;
-      }
-    }
-    // Kyoko使用時: 段落ベースの擬似的な位置（ロック画面のシークバーに使用）
-    const totalSegs = segs.length;
-    const approxDur  = totalSegs * 4; // 1段落約4秒の概算
-    const approxPos  = idx * 4;
-    navigator.mediaSession.setPositionState({
-      duration: approxDur,
-      playbackRate: getRate(),
-      position: Math.min(approxPos, approxDur)
-    });
-  } catch(e) {}
-}
-
 function msRegisterHandlers() {
   if (!_msSupported) return;
   try {
-    // ▶/⏸
     navigator.mediaSession.setActionHandler('play', () => {
       if (!playing && segs.length) startPlay();
     });
     navigator.mediaSession.setActionHandler('pause', () => {
       if (playing) togglePlay();
     });
-    // ⏮/⏭ = 前話/次話
+    // ⏮/⏭ = 前話/次話（なければ段落移動）
     navigator.mediaSession.setActionHandler('previoustrack', () => {
-      if (prevUrl) goPrev();
-      else prevSeg();
+      if (prevUrl) goPrev(); else prevSeg();
     });
     navigator.mediaSession.setActionHandler('nexttrack', () => {
-      if (nextUrl) goNext();
-      else nextSeg();
+      if (nextUrl) goNext(); else nextSeg();
     });
-    // シーク（5秒スキップ）
+    // ±10秒スキップ（iOSデフォルトは10秒）
     navigator.mediaSession.setActionHandler('seekbackward', (d) => {
-      skipSec(-(d?.seekOffset || 5));
+      skipSec(-(d?.seekOffset || 10));
     });
     navigator.mediaSession.setActionHandler('seekforward', (d) => {
-      skipSec(d?.seekOffset || 5);
+      skipSec(d?.seekOffset || 10);
     });
   } catch(e) {}
 }
 
-// 初回1回だけハンドラ登録
 let _msHandlersRegistered = false;
 function msInit() {
   if (!_msSupported || _msHandlersRegistered) return;
@@ -1130,6 +1100,29 @@ function extractPage(html, pageUrl) {
   // フォールバックは削除: 最終話では前話リンクのみ存在するため
   // epLinks[last]=前話URL を nextUrl と誤設定して30話に戻る問題が発生していた。
 
+  // [FIX] カクヨム: 上記で取れなかった場合に __NEXT_DATA__ JSON からnextEpisodeIdを取得
+  // プロキシ経由のHTMLが不完全でナビリンクが欠落するケースへの対策
+  if (!nextPageUrl && phost.includes('kakuyomu.jp') && pageUrl.includes('/episodes/')) {
+    try {
+      const nd = doc.querySelector('script#__NEXT_DATA__');
+      if (nd) {
+        const json = JSON.parse(nd.textContent);
+        // 'nextEpisode' または 'nextEpisodeId' キーを再帰的に探索
+        const nextEp = findInObj(json, 'nextEpisode') || findInObj(json, 'nextEpisodeId');
+        if (nextEp) {
+          const wm = pageUrl.match(/\/works\/([^/]+)\//);
+          // nextEpがオブジェクトの場合はid/slugを取得、文字列の場合はそのまま使用
+          const epId = (typeof nextEp === 'object')
+            ? (nextEp.id || nextEp.slug || nextEp.__id || null)
+            : String(nextEp);
+          if (wm && epId) {
+            nextPageUrl = 'https://kakuyomu.jp/works/' + wm[1] + '/episodes/' + epId;
+          }
+        }
+      }
+    } catch(e) {}
+  }
+
   ['script','style','iframe','nav','header','footer',
    '.ad','.advertisement','.banner','.sns','.share',
    '#global-header','#global-footer','.novel_bn','.index_box',
@@ -1386,7 +1379,11 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
   renderText();
   updProg();
   ctrlEnable(true);
-  document.getElementById('bNext').disabled = !nextUrl;
+  // [FIX] カクヨムはプロキシHTML不完全でnextUrlがnullになる場合がある。
+  // その場合も「次話→」ボタンを完全無効化せず、goNext側で取得を試みる。
+  // なろうはURLフォールバックがあるので問題なし。
+  const isKakuyomu = currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp');
+  document.getElementById('bNext').disabled = !(nextUrl || isKakuyomu);
   document.getElementById('bPrev2').disabled = !prevUrl;
   renderQueue();
 
@@ -1694,8 +1691,9 @@ function speakIdx(i) {
   idx = i;
   updHighlight(); updProg();
   if (i % 5 === 0) saveBookmarkCurrent(i);
-  // MediaSession: ポジション更新（ロック画面のシークバーに反映）
-  msSetPositionState();
+  // MediaSession: 段落開始ごとに playing 状態を再通知
+  // (段落間ギャップでiOSがセッション終了と誤判定するのを防ぐ)
+  msSetState('playing');
 
   if (hasGoogleKey()) {
     SS.cancel();
@@ -1723,6 +1721,8 @@ function speakIdx(i) {
         _prefetchCache.delete(i);
         if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 600);
       });
+      // play()成功後にMediaSession状態を再確認（iOSがリセットした場合に備える）
+      el.onplay = () => { msSetState('playing'); };
       startWatchdog(getRate(), true);
       prefetchNext(i);
     }).catch(e => {
@@ -1966,6 +1966,32 @@ async function goPrev() {
 }
 
 async function goNext() {
+  // [FIX] カクヨムでnextUrlがnullの場合、目次から現在話の次を取得して試みる
+  if (!nextUrl && currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
+    showFetch('load', '次話URLを取得中…');
+    disable(true);
+    try {
+      const tocUrl = inferTocUrl(currentChapterUrl);
+      if (tocUrl) {
+        const html = await fetchHtml(tocUrl);
+        const items = parseKakuyomuToc(html, tocUrl);
+        const curIdx = items.findIndex(it => it.url === currentChapterUrl);
+        if (curIdx >= 0 && curIdx < items.length - 1) {
+          nextUrl = items[curIdx + 1].url;
+          document.getElementById('bNext').disabled = false;
+        } else if (curIdx === items.length - 1) {
+          hideFetch();
+          disable(false);
+          toast('📖 最終話まで読み終わりました');
+          document.getElementById('bNext').disabled = true;
+          return;
+        }
+      }
+    } catch(e) {}
+    disable(false);
+    if (!nextUrl) { toast('次のページなし'); hideFetch(); return; }
+  }
+
   if(!nextUrl){toast('次のページなし');return;}
   const url=nextUrl;
   document.getElementById('urlIn').value=url;
@@ -2024,8 +2050,12 @@ async function goNext() {
     } else if (isNetErr) {
       clearNextChapterCache();
       showFetch('err', '⚠ ページ取得に失敗しました。「次話→」で再試行できます');
+      // nextUrlが残っていれば次話ボタンを有効に戻す
+      document.getElementById('bNext').disabled = !nextUrl;
     } else {
       showFetch('err', msg.slice(0, 80));
+      // 不明なエラーでもnextUrlが残っていれば次話ボタンを有効に戻す
+      document.getElementById('bNext').disabled = !nextUrl;
     }
   }
   disable(false);
