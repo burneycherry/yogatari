@@ -256,7 +256,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v55</span></div>
+  <div class="app-name">夜語り <span class="ver">v56</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -616,7 +616,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v55';
+const APP_VER = 'v56';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -729,12 +729,25 @@ function bkGet(novelId) { return bkLoad()[novelId] || null; }
 function bkDel(novelId) { const a = bkLoad(); delete a[novelId]; bkSave(a); }
 function bkAll() { return Object.values(bkLoad()).sort((a,b)=>b.ts-a.ts); }
 
+// novelIdはしおり・履歴のキー。章URLを作品単位のURLに正規化する。
+// なろう: /n1234ab/3/ → /n1234ab/
+// カクヨム: /works/XXXX/episodes/YYYY → /works/XXXX
+// ハーメルン: /novel/XXXX/1/ → /novel/XXXX/
+// 未対応サイト: URLそのまま（章ごとに別作品扱い）
 function toNovelId(url) {
   try {
     const u = new URL(url);
     if (u.hostname.includes('syosetu.com')) {
       const m = u.pathname.match(/^\/([^/]+)/);
       return m ? u.origin + '/' + m[1] + '/' : url;
+    }
+    if (u.hostname.includes('kakuyomu.jp')) {
+      const m = u.pathname.match(/^(\/works\/[^/]+)/);
+      return m ? u.origin + m[1] : url;
+    }
+    if (u.hostname.includes('syosetu.org')) { // ハーメルン
+      const m = u.pathname.match(/^(\/novel\/[^/]+)/);
+      return m ? u.origin + m[1] + '/' : url;
     }
     return url;
   } catch(e) { return url; }
@@ -800,16 +813,21 @@ async function fetchHtml(url) {
 //  SITE RULES
 // ═══════════════════════════════════════════
 const SITE_RULES = [
-  { host:'ncode.syosetu.com',   body:'#novel_honbun',                   next:'.novel_bn a:last-of-type',
+  { host:'ncode.syosetu.com',   body:'#novel_honbun',                        next:'.novel_bn a:last-of-type',
     toc:'#novel_color', tocItem:'.novel_sublist2 a, dd a' },
-  { host:'novel18.syosetu.com', body:'#novel_honbun',                   next:'.novel_bn a:last-of-type' },
-  { host:'kakuyomu.jp',         body:'.widget-episodeBody,.js-episode-body', next:'a.widget-episodeNavigation-button-next,a[rel="next"]' },
-  { host:'alphapolis.co.jp',    body:'.content-text,.novel_text',        next:'a.next,a[href*="next"]' },
-  { host:'hameln.jp',           body:'#honbun',                          next:'a#nextpage,td.no_right a:last-child' },
-  { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0',  next:'' },
-  { host:'estar.jp',            body:'#novel-content,.novel-content',    next:'.pager-next a' },
+  { host:'novel18.syosetu.com', body:'#novel_honbun',                        next:'.novel_bn a:last-of-type' },
+  // カクヨム: body は旧クラス→新クラス順にフォールバック。next は次エピソードリンク
+  { host:'kakuyomu.jp',         body:'.p-novel__body,.widget-episodeBody,.js-episode-body',
+    next:'a.widget-episodeNavigation-button-next,a[rel="next"],a[href*="/episodes/"][class*="next"]' },
+  { host:'alphapolis.co.jp',    body:'.content-text,.novel_text',             next:'a.next,a[href*="next"]' },
+  // ハーメルン: body は #honbun、next は nextpageリンク
+  { host:'syosetu.org',         body:'#honbun',                               next:'a#nextpage,.ss_rightbutton a,td.no_right a:last-child' },
+  { host:'hameln.jp',           body:'#honbun',                               next:'a#nextpage,td.no_right a:last-child' },
+  { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0',       next:'' },
+  { host:'estar.jp',            body:'#novel-content,.novel-content',         next:'.pager-next a' },
 ];
-const NEXT_TEXTS = ['次の話','次話','次章','次のページ','次へ','次話へ','>>','→','next','次回'];
+// 「次のエピソード」(カクヨム)、「次のページへ」(ハーメルン等)を追加
+const NEXT_TEXTS = ['次の話','次話','次章','次のページ','次へ','次話へ','次のエピソード','次のページへ','>>','→','next','次回'];
 
 function getRule(url) {
   const host = new URL(url).hostname.replace('www.','');
@@ -819,11 +837,23 @@ function getRule(url) {
 // ═══════════════════════════════════════════
 //  INDEX / TOC DETECTION
 // ═══════════════════════════════════════════
+// 目次URLかどうかを判定する（章URLではなく作品トップURL）
+// なろう:   /nXXXXXX/        (数字なし)
+// カクヨム: /works/XXXXXX    (episodes/を含まない)
+// ハーメルン: /novel/XXXXXX/ (数字サフィックスなし)
 function isIndexUrl(url) {
   try {
     const u = new URL(url);
     if (u.hostname.includes('syosetu.com')) {
       return /^\/[^/]+\/?$/.test(u.pathname);
+    }
+    if (u.hostname.includes('kakuyomu.jp')) {
+      // /works/XXXX はOK、/works/XXXX/episodes/YYYY はNG
+      return /^\/works\/[^/]+\/?$/.test(u.pathname);
+    }
+    if (u.hostname.includes('syosetu.org')) { // ハーメルン
+      // /novel/XXXX/ はOK、/novel/XXXX/1/ はNG
+      return /^\/novel\/[^/]+\/?$/.test(u.pathname);
     }
   } catch(e) {}
   return false;
@@ -854,6 +884,138 @@ function parseSyosetuToc(html, baseUrl) {
     });
   }
   return items;
+}
+
+// ── カクヨム目次パーサー ──
+// 作品ページ内の /works/XXXX/episodes/YYYY 形式リンクを全抽出。
+// Next.jsの __NEXT_DATA__ JSONが取れる場合はそちらを優先（タイトルが正確）。
+function parseKakuyomuToc(html, baseUrl) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const items = [];
+  const seen = new Set();
+  let num = 0;
+
+  // ① __NEXT_DATA__ JSON からエピソード一覧を取得（信頼度が高い）
+  try {
+    const nd = doc.querySelector('script#__NEXT_DATA__');
+    if (nd) {
+      const json = JSON.parse(nd.textContent);
+      // カクヨムのJSON構造を再帰的に探索してepisodes配列を見つける
+      const eps = findInObj(json, 'episodes') || findInObj(json, 'episodeUnions');
+      if (eps && Array.isArray(eps) && eps.length > 0) {
+        eps.forEach((ep, i) => {
+          // ep.id or ep.node.id でエピソードIDを取得
+          const epId = ep.id || ep.node?.id || ep.__id;
+          const epTitle = ep.title || ep.node?.title || ('第' + (i+1) + '話');
+          if (!epId) return;
+          // workIdを baseURL から抽出
+          const wm = new URL(baseUrl).pathname.match(/\/works\/([^/]+)/);
+          if (!wm) return;
+          const epUrl = new URL('/works/' + wm[1] + '/episodes/' + epId, baseUrl).href;
+          if (seen.has(epUrl)) return;
+          seen.add(epUrl);
+          num++;
+          items.push({ title: epTitle.trim(), url: epUrl, num });
+        });
+        if (items.length > 0) return items;
+      }
+    }
+  } catch(e) { /* JSONパース失敗は無視してDOMフォールバック */ }
+
+  // ② DOMから /works/XXXX/episodes/YYYY 形式リンクを抽出（フォールバック）
+  doc.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href || !href.includes('/episodes/')) return;
+    // 作品IDが一致するエピソードURLのみ（他作品のリンクを除外）
+    const wm = new URL(baseUrl).pathname.match(/\/works\/([^/]+)/);
+    if (wm && !href.includes('/works/' + wm[1] + '/episodes/')) return;
+    const url = resolveUrl(href, baseUrl);
+    if (!url || seen.has(url)) return;
+    const txt = a.textContent.trim();
+    if (!txt || txt.length > 80) return; // 空・長すぎるリンクテキストを除外
+    seen.add(url);
+    num++;
+    items.push({ title: txt, url, num });
+  });
+  return items;
+}
+
+// JSON オブジェクトを再帰的に探索してキーに対応する値を返す（深さ制限あり）
+function findInObj(obj, key, depth = 0) {
+  if (depth > 8 || !obj || typeof obj !== 'object') return null;
+  if (Array.isArray(obj)) {
+    for (const v of obj) {
+      const r = findInObj(v, key, depth + 1);
+      if (r) return r;
+    }
+    return null;
+  }
+  if (key in obj) return obj[key];
+  for (const v of Object.values(obj)) {
+    const r = findInObj(v, key, depth + 1);
+    if (r) return r;
+  }
+  return null;
+}
+
+// ── ハーメルン目次パーサー ──
+// syosetu.org/novel/XXXXX/ の話リンク /novel/XXXXX/N/ を抽出
+function parseHamelnToc(html, baseUrl) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const items = [];
+  const seen = new Set();
+  let num = 0;
+
+  // ハーメルン: .ss_shosai / .novel_sublist / テーブル内の話リンク
+  const wm = new URL(baseUrl).pathname.match(/\/novel\/([^/]+)/);
+  if (!wm) return items;
+  const novelPath = '/novel/' + wm[1] + '/';
+
+  doc.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href) return;
+    // /novel/XXXXX/N/ パターンに一致するものだけ
+    if (!href.startsWith(novelPath) && !href.includes(novelPath)) return;
+    const m = href.match(/\/novel\/[^/]+\/(\d+)\/?$/);
+    if (!m) return;
+    const url = resolveUrl(href, baseUrl);
+    if (!url || seen.has(url)) return;
+    const txt = a.textContent.trim();
+    if (!txt || txt.length > 100) return;
+    // ナビゲーションリンク（「前のページ」「次のページ」）を除外
+    if (/^(前|次|目次|back|next|トップ)/i.test(txt)) return;
+    seen.add(url);
+    num++;
+    items.push({ title: txt, url, num });
+  });
+  return items;
+}
+
+// ── 統合目次パーサー ── サイトに応じてパーサーを選択
+function parseToc(url, html) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('kakuyomu.jp'))  return parseKakuyomuToc(html, url);
+    if (u.hostname.includes('syosetu.org'))  return parseHamelnToc(html, url);
+  } catch(e) {}
+  return parseSyosetuToc(html, url); // なろう系はデフォルト
+}
+
+// ── 統合目次タイトル取得 ── サイトに応じてタイトル要素を選択
+function parseTocTitle(url, doc) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('kakuyomu.jp')) {
+      // カクヨム: h1 が作品タイトル
+      return doc.querySelector('h1')?.textContent?.trim() ||
+             doc.querySelector('.WorkTitle')?.textContent?.trim() || '小説';
+    }
+    if (u.hostname.includes('syosetu.org')) {
+      // ハーメルン: .ss_title or h1
+      return doc.querySelector('.ss_title,.novel_title,h1')?.textContent?.trim() || '小説';
+    }
+  } catch(e) {}
+  return doc.querySelector('.novel_title,.title,h1')?.textContent?.trim() || '小説';
 }
 
 // ═══════════════════════════════════════════
@@ -892,7 +1054,12 @@ function extractPage(html, pageUrl) {
 
   ['script','style','iframe','nav','header','footer',
    '.ad','.advertisement','.banner','.sns','.share',
-   '#global-header','#global-footer','.novel_bn','.index_box'].forEach(s => {
+   '#global-header','#global-footer','.novel_bn','.index_box',
+   // カクヨム: ナビ・ギフト・登録促進・コメントエリアを除去
+   '.widget-episodeNavigation','.widget-share','.widget-episodeFooterBanner',
+   '#GiftBox','.widget-episodeActions','.js-giftToast',
+   // ハーメルン: フッターナビ・SS共通UI
+   '.ss_read_tools','.ss_footerbanner','.ss_related'].forEach(s => {
     try { doc.querySelectorAll(s).forEach(el=>el.remove()); } catch(e) {}
   });
 
@@ -921,10 +1088,7 @@ function extractPage(html, pageUrl) {
   }
   const rawText = domToText(bodyEl || doc.body).trim();
 
-  const title = (
-    doc.querySelector('.novel-title,.episode-title,.chapter-title,.novel_title,h1')?.textContent?.trim() ||
-    doc.querySelector('title')?.textContent?.trim() || pageUrl
-  ).replace(/\s*[-|｜–—]\s*.+$/, '').trim();
+  const title = extractTitle(doc, pageUrl);
 
   if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) {
     throw new Error('本文を取得できませんでした（最終話の可能性があります）');
@@ -935,12 +1099,44 @@ function extractPage(html, pageUrl) {
   return { title, text: rawText, nextUrl: nextPageUrl };
 }
 
+// ── サイト別タイトル取得 ──
+// 問題: カクヨムでは h1 = 作品タイトル、h2 = エピソードタイトル
+//       なろうでは .novel_title = 作品タイトル（章タイトルは別要素）
+// 対策: サイト別に優先セレクタを変える。カクヨムは <title> タグが最も信頼できる。
+function extractTitle(doc, pageUrl) {
+  try {
+    const u = new URL(pageUrl);
+    if (u.hostname.includes('kakuyomu.jp') && u.pathname.includes('/episodes/')) {
+      // カクヨムエピソード: <title> = 「第N話 タイトル - 作品名 - カクヨム」→ 最初の区切り前を取得
+      const t = doc.querySelector('title')?.textContent?.trim() || '';
+      // 「第1話 祝福の儀 - ハズレスキル...」→ 「第1話 祝福の儀」
+      return t.split(/\s*[-－]\s*/)[0].trim() || pageUrl;
+    }
+    if (u.hostname.includes('syosetu.org')) { // ハーメルン
+      return (
+        doc.querySelector('.novel_title,.ss_title,h1')?.textContent?.trim() ||
+        doc.querySelector('title')?.textContent?.trim() || pageUrl
+      ).replace(/\s*[-|｜–—]\s*.+$/, '').trim();
+    }
+  } catch(e) {}
+  // デフォルト（なろう等）
+  return (
+    doc.querySelector('.novel-title,.episode-title,.chapter-title,.novel_title,h1')?.textContent?.trim() ||
+    doc.querySelector('title')?.textContent?.trim() || pageUrl
+  ).replace(/\s*[-|｜–—]\s*.+$/, '').trim();
+}
+
 function resolveUrl(href, base) {
   if (!href) return null;
   try { return new URL(href, base).href; } catch(e) { return null; }
 }
 
+// カクヨムのepisode IDは18桁の数字で話数として使えないため除外する
 function chapNumFromUrl(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('kakuyomu.jp')) return 0; // ピッカー経由でitem.numを使用
+  } catch(e) {}
   const m = url.match(/\/(\d+)\/?$/);
   return m ? parseInt(m[1]) : 1;
 }
@@ -963,11 +1159,11 @@ async function go() {
     showFetch('load', '目次を取得中…');
     try {
       const html = await fetchHtml(url);
-      const items = parseSyosetuToc(html, url);
+      const items = parseToc(url, html); // サイト別ディスパッチ
       if (!items.length) throw new Error('目次が見つかりませんでした');
       hideFetch();
-      const doc = new DOMParser().parseFromString(html,'text/html');
-      const nTitle = doc.querySelector('.novel_title,.title,h1')?.textContent?.trim() || '小説';
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const nTitle = parseTocTitle(url, doc); // サイト別タイトル取得
       bkSetToc(novelId, url, items.length);
       openChapPicker(nTitle, items, novelId, bk);
     } catch(e) {
@@ -989,7 +1185,8 @@ async function go() {
 
 // ─── 章URLを直接ロード ───
 // [FIX1] prevUrlHint=null で呼ぶことで、フレッシュロード時に無関係なprevUrlが残らないようにする
-async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null) {
+// chapNumOverride: 章ピッカー経由の場合に item.num を渡すことでカクヨム等の話数を正確に表示
+async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNumOverride = null) {
   disable(true);
   showFetch('load', '取得中… ' + url);
   try {
@@ -999,7 +1196,7 @@ async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null) {
     currentNovelId = novelId;
     currentNovelTitle = page.novelTitle || page.title;
     currentChapterTitle = page.title;
-    currentChapterNum = chapNumFromUrl(url);
+    currentChapterNum = chapNumOverride || chapNumFromUrl(url) || 1;
 
     if (!queue.find(q=>q.url===url)) { queue.push({url, title:page.title, done:false}); qi=queue.length-1; }
     else qi = queue.findIndex(q=>q.url===url);
@@ -1053,7 +1250,8 @@ async function pickChapter(i) {
   const novelId = _pickerNovelId;
   const bk = bkGet(novelId);
   const startSeg = (bk && bk.chapterUrl === item.url) ? (bk.segIdx || 0) : 0;
-  await loadChapterUrl(item.url, startSeg, novelId);
+  // item.num を chapNumOverride として渡すことでカクヨム等の18桁IDを使わず正確な話数を記録
+  await loadChapterUrl(item.url, startSeg, novelId, item.num);
 }
 
 function closeModal(e) {
@@ -1123,8 +1321,13 @@ function splitText(t) {
   return t.replace(/\r\n/g,'\n').split(/\n+/).map(s=>s.trim()).filter(s=>{
     if (!s.length) return false;
     if (s.length > 20) return true;
-    if (/^(前へ|次へ|目次|<<|>>|＜＜|＞＞|PREV|NEXT)/.test(s)) return false;
+    // ナビゲーション系UI文言を除外（なろう・カクヨム・ハーメルン共通）
+    if (/^(前へ|次へ|目次|<<|>>|＜＜|＞＞|PREV|NEXT|前の話|次の話|前のエピソード|次のエピソード)/.test(s)) return false;
     if (/^[←→◀▶]/.test(s) && s.length < 10) return false;
+    // カクヨム: 登録促進・応援UI
+    if (/^(新規登録で充実|作者を応援|応援する|応援コメント|ハートをクリック|ギフトを贈る)/.test(s)) return false;
+    // ハーメルン: フッターUI
+    if (/^(前のページへ|次のページへ|目次へ|ブックマーク|感想を書く)/.test(s)) return false;
     return true;
   });
 }
@@ -1698,7 +1901,8 @@ async function goNext() {
 
     if(queue[qi]) queue[qi].title = page.title;
     currentChapterTitle = page.title;
-    currentChapterNum = chapNumFromUrl(url);
+    // カクヨムはchapNumFromUrlが0を返すので、現在値+1でインクリメントして正確な話数を維持
+    currentChapterNum = chapNumFromUrl(url) || (currentChapterNum > 0 ? currentChapterNum + 1 : 1);
 
     if (_nextAudioCache.length > 0 && hasGoogleKey()) {
       clearPrefetchCache();
