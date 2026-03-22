@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v62</span></div>
+  <div class="app-name">夜語り <span class="ver">v63</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v62';
+const APP_VER = 'v63';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -677,6 +677,16 @@ setTimeout(() => {
 }, 300);
 
 setTimeout(() => { startupNewCheck(); }, 3000);
+
+// [FIX] 起動時に旧バグキャッシュを全削除
+// v62以前の btoa先頭40文字キャッシュは全作品で衝突するため起動時に一括削除する
+(function cleanLegacyCache() {
+  try {
+    Object.keys(sessionStorage)
+      .filter(k => k.startsWith('yogatari_pc_'))
+      .forEach(k => sessionStorage.removeItem(k));
+  } catch(e) {}
+})();
 
 async function startupNewCheck() {
   const items = bkAll();
@@ -2136,7 +2146,8 @@ async function resumeFrom(novelId) {
   document.getElementById('urlIn').value = bk.novelId;
   stop(); disable(true); showFetch('load','履歴から読み込み中…');
   try {
-    const cacheKey = 'yogatari_pc_' + btoa(encodeURIComponent(bk.chapterUrl)).slice(0,40);
+    // [FIX] makePageCacheKeyでURL全体ハッシュを使用（旧btoa先頭40文字は全作品で同一キーになるバグがあった）
+    const cacheKey = makePageCacheKey(bk.chapterUrl);
     let html;
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
@@ -2174,6 +2185,26 @@ function delHist(novelId) {
   bkDel(novelId);
   renderHistList();
   toast('削除しました');
+}
+
+// ─── [FIX] sessionStorageページキャッシュキー生成 ───
+// 問題: btoa(encodeURIComponent(url)).slice(0,40) は
+//       URLの先頭部分（ドメイン+パス共通部分）しかエンコードされないため
+//       カクヨムの全作品・なろうの全話が同一キーになる衝突バグがあった。
+// 修正: URL全体を使った簡易ハッシュ（djb2）でキーを生成する。
+//       Safari未対応のWebCrypto非同期APIを避け同期処理で実装。
+function urlHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i);
+    h = h >>> 0; // 32bit符号なし整数に正規化
+  }
+  return h.toString(16).padStart(8, '0');
+}
+function makePageCacheKey(url) {
+  // URL全体をハッシュ化して衝突を防ぐ
+  // 例: kakuyomu.jp/works/A/episodes/B と kakuyomu.jp/works/C/episodes/D は別キー
+  return SS_PAGE_CACHE_PREFIX + urlHash(url) + '_' + urlHash(url.split('').reverse().join(''));
 }
 
 // ─── [FIX10] sessionStorage 安全書き込みラッパー ───
