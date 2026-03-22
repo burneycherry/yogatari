@@ -14,7 +14,6 @@
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;}
-/* body: 上で定義済み */
 
 /* ── TOP BAR ── */
 .topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 18px 10px;border-bottom:1px solid #302618;background:rgba(10,9,8,0.88);position:relative;z-index:1}
@@ -131,20 +130,17 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 
 /* ── BOTTOM CONTROLS ── */
 .ctrl-bar{flex-shrink:0;background:rgba(20,18,16,0.90);border-top:1px solid #302618;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));position:relative;z-index:20}
-/* ステッパー行 */
 .stepper-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:8px}
 .stepper-row{display:flex;align-items:center;gap:6px}
 .st-label{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
 .st-val{font-family:‘Courier New’,Consolas,monospace;font-size:13px;color:#c8991e;width:34px;text-align:center;flex-shrink:0;font-weight:bold}
 .st-btn{width:32px;height:32px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;user-select:none;-webkit-appearance:none;transition:all 0.12s}
 .st-btn:active{background:rgba(200,153,30,0.12);border-color:#c8991e;color:#c8991e}
-/* 音声選択 */
 .voice-remain-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .voice-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .remain-box{display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
 .voice-lbl{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
 select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
-/* 再生ボタン */
 .btn-row{display:flex;align-items:center;justify-content:center;gap:8px}
 .cb{width:44px;height:44px;border-radius:50%;background:none;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-appearance:none;appearance:none;transition:all 0.15s;user-select:none;-webkit-appearance:none}
 .cb:active:not(:disabled){border-color:#c8991e;color:#c8991e;background:rgba(200,153,30,0.12)}
@@ -254,18 +250,13 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </head>
 <body>
 
-<!-- iOS Audio アンロック用DOM要素 -->
-
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
-
-<!-- 背景エフェクト Canvas -->
-
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v53</span></div>
+  <div class="app-name">夜語り <span class="ver">v55</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -297,18 +288,15 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <button class="btn btn-o" onclick="resetAll()">✕</button>
 </div>
 
-<!-- fetch status -->
 <div class="fetch-box" id="fetchBox">
   <div class="spin" id="spin"></div>
   <span id="fetchMsg">取得中…</span>
 </div>
 
-<!-- iOS アンロックヒント -->
 <div class="ios-hint" id="iosHint">
   🍎 iPhoneは最初に <b>▶を1回タップ</b> すると次の話への自動進行が有効になります
 </div>
 
-<!-- resume banner -->
 <div class="resume-banner" id="resumeBanner" onclick="resumeBookmark()">
   <div class="resume-icon">🔖</div>
   <div class="resume-text">
@@ -318,40 +306,33 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <div class="resume-arrow">›</div>
 </div>
 
-<!-- chapter info -->
 <div class="chap-info" id="chapInfo">
   <div class="chap-title-disp" id="chapTitle">—</div>
   <a class="chap-link" id="chapLink" href="#" target="_blank"></a>
 </div>
 
-<!-- progress -->
 <div class="prog-wrap" id="progWrap">
   <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
   <div class="prog-num" id="progNum">0 / 0</div>
 </div>
 
-<!-- タップゾーン（左:1文戻る / 右:1文進む）-->
 <div id="tapZones" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10">
   <div id="tapL" onclick="skipSec(-5)" style="position:absolute;top:10%;left:0;width:30%;height:55%;pointer-events:none;opacity:0;"></div>
   <div id="tapR" onclick="skipSec(5)" style="position:absolute;top:10%;right:0;width:30%;height:55%;pointer-events:none;opacity:0;"></div>
 </div>
 
-<!-- text -->
 <div class="novel-text" id="novelText">
   <span style="color:#564838;font-family:'Courier New',Consolas,monospace;font-size:12px;">URLを入力して「読込」を押してください</span>
 </div>
 
-<!-- auto-next -->
 <div class="next-notice" id="nextNotice">
   <span>次のページへ…</span>
-  <span class="next-cd" id="nextCd">5</span>
+  <span class="next-cd" id="nextCd">3</span>
   <span class="next-cancel" onclick="cancelNext()">キャンセル</span>
 </div>
 
-<!-- queue chips -->
 <div class="queue-row" id="queueRow"></div>
 
-<!-- bg tip -->
 <div class="bg-tip" id="bgTip">
   ⚠ 画面ロック中も再生を続けるには「画面ロックしない」設定をONにしてください。<br>
   止まった場合は画面をタップすると再開します。
@@ -577,14 +558,12 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   </ul>
   <h3>// 画面タップで5秒スキップ（再生中のみ）</h3>
   <ul>
-    <li><b>画面左1/3タップ</b> → 5秒戻る（画面中央に表示）</li>
-    <li><b>画面右1/3タップ</b> → 5秒進む（画面中央に表示）</li>
+    <li><b>画面左1/3タップ</b> → 5秒戻る</li>
+    <li><b>画面右1/3タップ</b> → 5秒進む</li>
     <li><b>画面中央</b> → 通常スクロール</li>
   </ul>
-  <p style="font-size:12px;color:#564838">画面を見ずに片手で操作できます。再生中のみ有効。</p>
 
   <h3>// バックグラウンド再生（iPhone）</h3>
-  <p>Safariのまま画面を閉じると止まる場合があります。対策：</p>
   <ul>
     <li>設定 → 画面表示と明るさ → <b>自動ロックをオフ</b></li>
     <li>止まったら<b>▶ボタン</b>をタップすると再開</li>
@@ -592,28 +571,17 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   </ul>
   <div class="rdm-note" style="margin-top:4px">
     📌 再生が止まった・次の話に進まない場合は<br>
-    まず <b>▶ボタンを1回タップ</b> してみてください。<br>
-    iOSの音声制限がリセットされ、多くの場合これで解決します。
+    まず <b>▶ボタンを1回タップ</b> してみてください。
   </div>
 
   <h3>// Google TTS 高品質音声（任意）</h3>
-  <p style="color:#564838;font-size:12px;">PCやAndroidで取得してiPhoneに貼るだけでOKです</p>
-
-  <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt"><b>Google Cloud Consoleを開く</b><br>ブラウザで下記にアクセスしGoogleアカウントでログイン<br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#c8991e">console.cloud.google.com</span></div></div>
-
-  <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt"><b>プロジェクトを作成</b><br>画面上部「プロジェクトを選択」→「新しいプロジェクト」→ 名前は何でもOK（例: novel-reader）→「作成」</div></div>
-
-  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>Text-to-Speech APIを有効化</b><br>左メニュー「APIとサービス」→「ライブラリ」→ 検索欄に <b>text to speech</b> と入力 →「Cloud Text-to-Speech API」→「有効にする」</div></div>
-
-  <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt"><b>請求先を設定</b>（無料利用でも必要）<br>クレジットカードを登録しますが <b>月100万文字まで無料</b> です。このアプリは90万文字で警告・100万文字で自動停止するので通常は課金されません</div></div>
-
-  <div class="rdm-step"><div class="rdm-step-num">5</div><div class="rdm-step-txt"><b>APIキーを発行</b><br>「APIとサービス」→「認証情報」→「＋認証情報を作成」→「APIキー」<br>→ <b>AIzaSy…</b> で始まるキーが表示される → コピー</div></div>
-
-  <div class="rdm-step"><div class="rdm-step-num">6</div><div class="rdm-step-txt"><b>（推奨）キーを制限</b><br>「キーを制限する」→「APIの制限」→「Cloud Text-to-Speech API」のみ選択 → 保存。他のAPIに使われなくなり安全</div></div>
-
-  <div class="rdm-step"><div class="rdm-step-num">7</div><div class="rdm-step-txt"><b>このアプリに貼り付け</b><br>「設定」タブ → APIキー欄にペースト →「保存して使う」→ 完了！</div></div>
-
-  <div class="rdm-note">🔒 キーはこの端末にのみ保存。外部サーバーには送信しません。<br>📊 使用量は「設定」タブで確認できます。<br>💰 90万文字で警告 / 100万文字でKyokoに自動切替（課金防止）<br>🔄 翌月1日に自動リセット。課金プランの場合は手動リセット可</div>
+  <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt"><b>Google Cloud Consoleを開く</b><br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#c8991e">console.cloud.google.com</span></div></div>
+  <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt"><b>プロジェクトを作成</b> → 名前は何でもOK</div></div>
+  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>Text-to-Speech APIを有効化</b> → APIとサービス → ライブラリ → text to speech</div></div>
+  <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt"><b>請求先を設定</b>（月100万文字まで無料）</div></div>
+  <div class="rdm-step"><div class="rdm-step-num">5</div><div class="rdm-step-txt"><b>APIキーを発行</b> → 認証情報 → APIキー作成 → <b>AIzaSy…</b> をコピー</div></div>
+  <div class="rdm-step"><div class="rdm-step-num">6</div><div class="rdm-step-txt"><b>設定タブに貼り付け</b> → 保存して使う → 完了！</div></div>
+  <div class="rdm-note">🔒 キーはこの端末にのみ保存。外部サーバーには送信しません。</div>
 
   <h3>// 対応サイト</h3>
   <ul>
@@ -648,7 +616,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v53';
+const APP_VER = 'v55';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -696,7 +664,7 @@ function loadVoices() {
 }
 SS.addEventListener ? SS.addEventListener('voiceschanged', loadVoices) : (SS.onvoiceschanged = loadVoices);
 loadVoices();
-// 起動時に音声設定をDOMに同期
+
 setTimeout(() => {
   syncVoiceSelect();
   updModeDisplay();
@@ -704,24 +672,21 @@ setTimeout(() => {
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
 }, 300);
 
-// 起動3秒後にバックグラウンドで新着チェック開始（通信負荷分散）
 setTimeout(() => { startupNewCheck(); }, 3000);
 
 async function startupNewCheck() {
   const items = bkAll();
   for (const bk of items) {
     const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
-    if (Date.now() - lastCheck < 3600000) continue; // 1時間以内はスキップ
+    if (Date.now() - lastCheck < 3600000) continue;
     await checkNewChapter(bk);
-    await new Promise(r => setTimeout(r, 1500)); // 1.5秒間隔（サーバー負荷対策）
+    await new Promise(r => setTimeout(r, 1500));
   }
 }
 
 // ═══════════════════════════════════════════
 //  BOOKMARKS (localStorage)
 // ═══════════════════════════════════════════
-// key: novelId (e.g. https://ncode.syosetu.com/n1234ab/)
-// val: { novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx, ts }
 function bkLoad() {
   try { return JSON.parse(localStorage.getItem('yogatari_bk') || '{}'); } catch(e) { return {}; }
 }
@@ -739,8 +704,6 @@ function bkSet(novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx
   };
   bkSave(all);
 }
-
-// TOCを保存（目次URL確定時に呼ぶ）
 function bkSetToc(novelId, tocUrl, totalChap) {
   const all = bkLoad();
   if (!all[novelId]) return;
@@ -748,17 +711,13 @@ function bkSetToc(novelId, tocUrl, totalChap) {
   if (totalChap) all[novelId].totalChap = totalChap;
   bkSave(all);
 }
-
-// 章URLから目次URLを推定（なろう系対応）
 function inferTocUrl(chapterUrl) {
   try {
     const u = new URL(chapterUrl);
     if (u.hostname.includes('syosetu.com')) {
-      // https://ncode.syosetu.com/n1234ab/3/ → https://ncode.syosetu.com/n1234ab/
       const m = u.pathname.match(/^(\/[^\/]+)\/\d+\/?$/);
       if (m) return u.origin + m[1] + '/';
     }
-    // kakuyomu: /works/12345/episodes/67890 → /works/12345
     if (u.hostname.includes('kakuyomu.jp')) {
       const m = u.pathname.match(/^(\/works\/[^\/]+)/);
       if (m) return u.origin + m[1];
@@ -770,7 +729,6 @@ function bkGet(novelId) { return bkLoad()[novelId] || null; }
 function bkDel(novelId) { const a = bkLoad(); delete a[novelId]; bkSave(a); }
 function bkAll() { return Object.values(bkLoad()).sort((a,b)=>b.ts-a.ts); }
 
-// novelId = ベースURL (章番号なし)
 function toNovelId(url) {
   try {
     const u = new URL(url);
@@ -794,22 +752,13 @@ let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentCh
 // ═══════════════════════════════════════════
 //  CORS PROXIES
 // ═══════════════════════════════════════════
-// ─── CORSプロキシ（上から順に試行）───
-// なろう等がプロキシをブロックする場合があるため複数用意
 const PROXIES = [
-  // allorigins raw（JSONでなく生HTML）
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:20000 },
-  // allorigins JSON
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:20000 },
-  // cors.eu.org
   { build: u=>'https://cors.eu.org/'+u, isJson:false, ms:12000 },
-  // yacdn
   { build: u=>'https://yacdn.org/serve/'+u, isJson:false, ms:12000 },
-  // codetabs
   { build: u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u), isJson:false, ms:12000 },
-  // corsproxy.io
   { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u), isJson:false, ms:12000 },
-  // thingproxy
   { build: u=>'https://thingproxy.freeboard.io/fetch/'+u, isJson:false, ms:12000 },
 ];
 
@@ -824,7 +773,6 @@ async function tryProxy(p, url) {
     if (!html || html.length < 200) throw new Error('コンテンツ空');
     return html;
   }
-  // ブロック検出
   if (/Access denied|403 Forbidden|Blocked|bot detection|Enable JavaScript|just a moment/i.test(raw.slice(0,2000))) {
     throw new Error('ブロック検出');
   }
@@ -875,14 +823,12 @@ function isIndexUrl(url) {
   try {
     const u = new URL(url);
     if (u.hostname.includes('syosetu.com')) {
-      // /nXXXXXX/ だけで数字の話番号がない
       return /^\/[^/]+\/?$/.test(u.pathname);
     }
   } catch(e) {}
   return false;
 }
 
-// なろう目次HTML → 章リスト [{title, url, num}]
 function parseSyosetuToc(html, baseUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const items = [];
@@ -895,7 +841,6 @@ function parseSyosetuToc(html, baseUrl) {
     num++;
     items.push({ title: a.textContent.trim(), url, num });
   });
-  // フォールバック: すべての /nXXXX/N/ 形式のリンク
   if (!items.length) {
     const seen = new Set();
     doc.querySelectorAll('a[href]').forEach(a => {
@@ -919,7 +864,6 @@ function extractPage(html, pageUrl) {
   const phost = new URL(pageUrl).hostname.replace('www.','');
   const rule = SITE_RULES.find(r => phost.includes(r.host.replace('www.','')));
 
-  // 次ページURL (ノイズ除去前に取得)
   let nextPageUrl = null;
   if (rule && rule.next) {
     const a = doc.querySelector(rule.next);
@@ -941,20 +885,17 @@ function extractPage(html, pageUrl) {
     const rn = doc.querySelector('link[rel="next"],a[rel="next"]');
     if (rn) nextPageUrl = resolveUrl(rn.getAttribute('href'), pageUrl);
   }
-  // なろうURLパターンフォールバック
   if (!nextPageUrl && phost.includes('syosetu.com')) {
     const m = pageUrl.match(/^(https?:\/\/[^/]+\/[^/]+\/)(\d+)\/?$/);
     if (m) nextPageUrl = m[1] + (parseInt(m[2])+1) + '/';
   }
 
-  // ノイズ除去
   ['script','style','iframe','nav','header','footer',
    '.ad','.advertisement','.banner','.sns','.share',
    '#global-header','#global-footer','.novel_bn','.index_box'].forEach(s => {
     try { doc.querySelectorAll(s).forEach(el=>el.remove()); } catch(e) {}
   });
 
-  // 本文要素
   let bodyEl = null;
   if (rule) bodyEl = doc.querySelector(rule.body);
   if (!bodyEl) {
@@ -980,13 +921,11 @@ function extractPage(html, pageUrl) {
   }
   const rawText = domToText(bodyEl || doc.body).trim();
 
-  // タイトル
   const title = (
     doc.querySelector('.novel-title,.episode-title,.chapter-title,.novel_title,h1')?.textContent?.trim() ||
     doc.querySelector('title')?.textContent?.trim() || pageUrl
   ).replace(/\s*[-|｜–—]\s*.+$/, '').trim();
 
-  // なろう系エラーページ検出（本文が短くかつエラー文言を含む場合のみ）
   if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) {
     throw new Error('本文を取得できませんでした（最終話の可能性があります）');
   }
@@ -1001,18 +940,15 @@ function resolveUrl(href, base) {
   try { return new URL(href, base).href; } catch(e) { return null; }
 }
 
-// ═══════════════════════════════════════════
-//  CHAPTER NUMBER FROM URL
-// ═══════════════════════════════════════════
 function chapNumFromUrl(url) {
   const m = url.match(/\/(\d+)\/?$/);
   return m ? parseInt(m[1]) : 1;
 }
 
 // ═══════════════════════════════════════════
-//  MAIN: GO (URL入力から)
+//  MAIN: GO
 // ═══════════════════════════════════════════
-let _pendingTocItems = null; // 目次ピッカー用
+let _pendingTocItems = null;
 
 async function go() {
   let url = document.getElementById('urlIn').value.trim();
@@ -1020,11 +956,9 @@ async function go() {
 
   disable(true); cancelNext(); stop();
 
-  // しおり確認
   const novelId = toNovelId(url);
   const bk = bkGet(novelId);
 
-  // 目次URLの場合 → 目次取得 → ピッカー表示
   if (isIndexUrl(url)) {
     showFetch('load', '目次を取得中…');
     try {
@@ -1032,10 +966,9 @@ async function go() {
       const items = parseSyosetuToc(html, url);
       if (!items.length) throw new Error('目次が見つかりませんでした');
       hideFetch();
-      // 小説タイトル取得
       const doc = new DOMParser().parseFromString(html,'text/html');
       const nTitle = doc.querySelector('.novel_title,.title,h1')?.textContent?.trim() || '小説';
-      bkSetToc(novelId, url, items.length); // TOC情報を保存（新着検出用）
+      bkSetToc(novelId, url, items.length);
       openChapPicker(nTitle, items, novelId, bk);
     } catch(e) {
       showFetch('err', e.message);
@@ -1044,11 +977,9 @@ async function go() {
     return;
   }
 
-  // 章URLの場合 → しおりがあれば復帰確認バナー表示、なければ直接ロード
   if (bk && bk.chapterUrl !== url) {
     // 別の章に直接URLが入っている場合はそのまま進む
   } else if (bk) {
-    // 同じ小説のURLがしおりにある
     showResumeBanner(bk);
   }
 
@@ -1057,6 +988,7 @@ async function go() {
 }
 
 // ─── 章URLを直接ロード ───
+// [FIX1] prevUrlHint=null で呼ぶことで、フレッシュロード時に無関係なprevUrlが残らないようにする
 async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null) {
   disable(true);
   showFetch('load', '取得中… ' + url);
@@ -1069,11 +1001,12 @@ async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null) {
     currentChapterTitle = page.title;
     currentChapterNum = chapNumFromUrl(url);
 
-    // queue
     if (!queue.find(q=>q.url===url)) { queue.push({url, title:page.title, done:false}); qi=queue.length-1; }
     else qi = queue.findIndex(q=>q.url===url);
 
-    displayPage(page, url, startSeg);
+    // [FIX1] フレッシュロードなので prevUrlHint=null を明示。
+    // 別の小説・別セッションの currentChapterUrl が prevUrl に混入するのを防ぐ。
+    displayPage(page, url, startSeg, null);
     startSilentAudio();
     startPlay();
     hideFetch();
@@ -1103,7 +1036,6 @@ function openChapPicker(novelTitle, items, novelId, bk) {
       ${isBk ? '<div class="bookmark-dot"></div>' : ''}
     </div>`;
   }).join('');
-  // しおり位置にスクロール
   if (bk) {
     const bkIdx = items.findIndex(it => it.url === bk.chapterUrl);
     if (bkIdx >= 0) setTimeout(() => {
@@ -1153,8 +1085,16 @@ async function resumeBookmark() {
 // ═══════════════════════════════════════════
 //  DISPLAY PAGE
 // ═══════════════════════════════════════════
-function displayPage(page, url, startSeg = 0) {
-  prevUrl = currentChapterUrl || null; // 前話URLを保存
+// [FIX1] prevUrlHint 引数を追加。
+//   undefined  → 従来通り currentChapterUrl を使う（goNext等の内部ナビ）
+//   null       → prevUrl をリセット（フレッシュロード・goPrev・jumpQ）
+//   <string>   → その値を prevUrl に使う（将来の拡張用）
+function displayPage(page, url, startSeg = 0, prevUrlHint) {
+  if (prevUrlHint !== undefined) {
+    prevUrl = prevUrlHint;
+  } else {
+    prevUrl = currentChapterUrl || null;
+  }
   currentChapterUrl = url;
   nextUrl = page.nextUrl || null;
   document.getElementById('chapTitle').textContent = page.title || url;
@@ -1167,12 +1107,12 @@ function displayPage(page, url, startSeg = 0) {
   updProg();
   ctrlEnable(true);
   document.getElementById('bNext').disabled = !nextUrl;
+  document.getElementById('bPrev2').disabled = !prevUrl;
   renderQueue();
 
-  // 次話HTMLをバックグラウンドで先読み開始（読み終わり前に取得完了させる）
   if (nextUrl) {
     clearNextChapterCache();
-    setTimeout(() => prefetchNextChapter(nextUrl), 1000); // 1秒後に開始
+    setTimeout(() => prefetchNextChapter(nextUrl), 1000);
   }
 }
 
@@ -1193,7 +1133,6 @@ function renderText() {
   box.innerHTML = segs.map((s,i)=>'<span class="seg" id="s'+i+'">'+esc(s)+'</span><br>').join('');
   box.classList.add('show');
   document.getElementById('progWrap').classList.add('show');
-  // スタート位置へスクロール
   setTimeout(() => {
     const el = document.getElementById('s'+idx);
     if (el) el.scrollIntoView({behavior:'instant',block:'center'});
@@ -1202,67 +1141,56 @@ function renderText() {
 function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ═══════════════════════════════════════════
-//  SPEECH
-// ═══════════════════════════════════════════
-// ═══════════════════════════════════════════
-//  GOOGLE TTS ENGINE  (v11: プリフェッチ・ギャップ解消)
+//  GOOGLE TTS ENGINE
 // ═══════════════════════════════════════════
 let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
 let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Wavenet-A';
-let _gAudio  = null;   // DOM要素への参照（起動後に設定）
+let _gAudio  = null;
 let _busy    = false;
-let _tabSw   = false;  // タブ切替中（音声再起動防止）
-let _audioUnlocked = false; // iOSオーディオアンロック済みフラグ
+let _tabSw   = false;
+let _audioUnlocked = false;
 
-// DOM audio要素を取得（遅延初期化）
 function getAudioEl() {
   if (!_gAudio) _gAudio = document.getElementById('gAudioEl');
   return _gAudio;
 }
 
-// ユーザー操作時にaudio要素をアンロック
 function unlockAudio() {
   if (_audioUnlocked) return;
   const el = getAudioEl();
   if (!el) return;
-  // 無音の短いMP3をbase64で再生してアンロック
   el.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSjAT' +
             'HQAAAA6AAAALMef+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
-            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
   el.volume = 0;
   el.play().then(() => {
     _audioUnlocked = true;
     el.pause();
     el.src = '';
     el.volume = 1;
-    // アンロック成功 → ヒントを非表示
     const hint = document.getElementById('iosHint');
     if (hint) hint.classList.add('hidden');
   }).catch(() => {});
 }
 
 // ── プリフェッチキャッシュ ──
-// { idx: Promise<audioSrc> } を最大2件保持
 const _prefetchCache = new Map();
 
 // ── 次話HTML先読みキャッシュ ──
-let _nextHtmlCache = null;  // { url, promise } 次話HTMLのPromise
-let _nextPageCache = null;  // { url, page }   解析済みページ
+let _nextHtmlCache = null;
+let _nextPageCache = null;
 
 function prefetchNextChapter(url) {
   if (!url) return;
-  // 同じURLは再fetchしない
   if (_nextHtmlCache && _nextHtmlCache.url === url) return;
   _nextHtmlCache = {
     url,
     promise: fetchHtml(url).then(html => {
       const page = extractPage(html, url);
       _nextPageCache = { url, page };
-      // HTMLが取れたら次話の最初の音声も先読み
       if (hasGoogleKey() && page.text) {
         const nextSegs = splitText(page.text);
         if (nextSegs.length > 0) {
-          // 最初の2段落を先読み（_prefetchCacheとは別管理）
           _nextAudioCache = [];
           for (let k = 0; k < Math.min(2, nextSegs.length); k++) {
             _nextAudioCache.push({ idx: k, promise: fetchGoogleAudio(nextSegs[k]) });
@@ -1273,7 +1201,7 @@ function prefetchNextChapter(url) {
     }).catch(() => null)
   };
 }
-let _nextAudioCache = []; // 次話の最初の音声先読み
+let _nextAudioCache = [];
 
 function clearNextChapterCache() {
   _nextHtmlCache = null;
@@ -1282,8 +1210,6 @@ function clearNextChapterCache() {
 }
 
 function hasGoogleKey() { return _gApiKey.trim().length > 10; }
-
-// _gVoice が唯一の情報源。DOM selectは表示用のみ。
 function currentGVoice() { return _gVoice; }
 
 async function fetchGoogleAudio(text) {
@@ -1300,7 +1226,8 @@ async function fetchGoogleAudio(text) {
   const res = await fetch(
     'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + _gApiKey.trim(),
     { method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(body), signal: typeof AbortSignal.timeout==='function'?AbortSignal.timeout(15000):undefined }
+      body: JSON.stringify(body),
+      signal: typeof AbortSignal.timeout==='function' ? AbortSignal.timeout(15000) : undefined }
   );
   if (!res.ok) {
     const err = await res.json().catch(()=>({}));
@@ -1311,7 +1238,6 @@ async function fetchGoogleAudio(text) {
   return 'data:audio/mp3;base64,' + data.audioContent;
 }
 
-// キャッシュ付き取得（同じidxは1回だけfetch）
 function getAudioCached(i) {
   if (!_prefetchCache.has(i)) {
     if (i < segs.length) {
@@ -1321,7 +1247,6 @@ function getAudioCached(i) {
   return _prefetchCache.get(i);
 }
 
-// 古いキャッシュを削除（メモリ節約）
 function evictCache(currentIdx) {
   for (const key of _prefetchCache.keys()) {
     if (key < currentIdx - 1 || key > currentIdx + 2) {
@@ -1330,11 +1255,10 @@ function evictCache(currentIdx) {
   }
 }
 
-// 次の段落を先読み（再生開始直後に呼ぶ）
 function prefetchNext(i) {
   if (!hasGoogleKey()) return;
   if (i + 1 < segs.length && !_prefetchCache.has(i + 1)) {
-    getAudioCached(i + 1); // Promiseを走らせるだけ（awaitしない）
+    getAudioCached(i + 1);
   }
 }
 
@@ -1352,29 +1276,21 @@ function stopGoogleAudio() {
   }
 }
 
-
-
-// 5秒スキップ（タップゾーン用）
+// ── 5秒スキップ ──
 let _skipLabel = null;
 function skipSec(sec) {
   if (!playing || !segs.length) return;
   const el = getAudioEl();
-
   if (hasGoogleKey() && el && el.src && !el.paused) {
-    // Google TTS: currentTimeで±5秒
     const newTime = Math.max(0, el.currentTime + sec);
     if (newTime < el.duration) {
       el.currentTime = newTime;
     } else {
-      // 次/前の段落へ
       if (sec > 0) nextSeg(); else prevSeg();
     }
   } else {
-    // Kyoko: 段落単位で代替
     if (sec > 0) nextSeg(); else prevSeg();
   }
-
-  // 画面中央にラベル表示
   showSkipLabel(sec > 0 ? '+5秒' : '-5秒');
 }
 
@@ -1394,34 +1310,33 @@ function showSkipLabel(text) {
   _skipLabel = setTimeout(() => { lbl.style.opacity = '0'; }, 800);
 }
 
-// ── 1文単位の移動 ──
-// 文の区切り: 。！？…の後（引用符・括弧考慮）
+// ── 文分割（1文移動用）──
+// [FIX3] 連続する「…」を1つに正規化してから分割し、空文字をフィルタする
 function splitSentences(text) {
-  // lookbehindはSafari非対応のため代替実装
-  // 句点・感嘆符・疑問符の後で分割し、区切り文字を前の文に残す
+  // 連続する「…」を単一に正規化（例: 「…………」→「…」）
+  const normalized = text.replace(/…+/g, '…');
   const result = [];
   let buf = '';
-  for (let i = 0; i < text.length; i++) {
-    buf += text[i];
-    if ('。！？…」』.!?'.includes(text[i]) && buf.trim().length > 0) {
+  for (let i = 0; i < normalized.length; i++) {
+    buf += normalized[i];
+    if ('。！？…」』.!?'.includes(normalized[i]) && buf.trim().length > 0) {
       result.push(buf);
       buf = '';
     }
   }
   if (buf.trim().length > 0) result.push(buf);
-  return result.length > 0 ? result : [text];
+  // 空文字・空白のみの要素を除去
+  const filtered = result.filter(s => s.trim().length > 0);
+  return filtered.length > 0 ? filtered : [text];
 }
 
-// 現在セグメント内での文インデックス管理
-let _sentIdx = -1; // -1 = セグメント全体再生中
+let _sentIdx = -1;
 
 function prevSent() {
   if (!segs.length || !playing) return;
   const sents = splitSentences(segs[idx]);
   if (sents.length <= 1) { prevSeg(); return; }
-
   if (_sentIdx <= 0) {
-    // セグメントの最初文より前 → 前段落へ
     prevSegFull();
   } else {
     _sentIdx = Math.max(0, _sentIdx - 1);
@@ -1433,7 +1348,6 @@ function nextSent() {
   if (!segs.length || !playing) return;
   const sents = splitSentences(segs[idx]);
   if (sents.length <= 1) { nextSeg(); return; }
-
   _sentIdx = Math.min(sents.length - 1, (_sentIdx < 0 ? 0 : _sentIdx) + 1);
   if (_sentIdx >= sents.length - 1) { nextSeg(); return; }
   playSentence(_sentIdx);
@@ -1481,7 +1395,7 @@ function playSentence(si) {
 // ═══════════════════════════════════════════
 function speakIdx(i) {
   if (_busy) return;
-  _sentIdx = -1; // 文インデックスをリセット
+  _sentIdx = -1;
   clearWatchdog();
 
   if (i >= segs.length) {
@@ -1499,7 +1413,6 @@ function speakIdx(i) {
   if (i % 5 === 0) saveBookmarkCurrent(i);
 
   if (hasGoogleKey()) {
-    // ── Google TTS（プリフェッチ対応）──
     SS.cancel();
     _busy = true;
     evictCache(i);
@@ -1526,11 +1439,10 @@ function speakIdx(i) {
         if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 600);
       });
       startWatchdog(getRate(), true);
-      // 再生開始と同時に次の段落を先読み
       prefetchNext(i);
     }).catch(e => {
       _busy = false;
-      _prefetchCache.delete(i); // エラーはキャッシュから削除
+      _prefetchCache.delete(i);
       if (!playing) return;
       const msg = (e.message || 'Google TTSエラー').slice(0, 60);
       toast('⚠ ' + msg);
@@ -1542,9 +1454,7 @@ function speakIdx(i) {
     });
 
   } else {
-    // ── Web Speech API (Kyoko) ──
     stopGoogleAudio();
-    // iOSで止まりやすいので短いセグメントは結合
     const utt = new SpeechSynthesisUtterance(segs[i]);
     if (selVoice) utt.voice = selVoice;
     utt.rate   = getRate();
@@ -1562,8 +1472,20 @@ function speakIdx(i) {
   }
 }
 
+// ─── Watchdog ───
+// [FIX4] タイムアウト計算を改善:
+//   - 最低保証値を設定（Google:5秒 / Kyoko:2秒）でヘアトリガーを防ぐ
+//   - バッファをGoogleは12秒に増やし、ネットワーク遅延の余裕を確保
+//   - 上限を45秒から60秒に緩和（長い段落でwatchdogが早まるケースに対処）
 function startWatchdog(rate, isGoogle = false) {
-  const ms = Math.min((segs[idx]?.length || 20) / (rate * 3) * 1000 + (isGoogle ? 10000 : 5000), 45000);
+  const segLen = segs[idx]?.length || 20;
+  // 読み上げ所要時間の見積もり（文字数 / (速度 × 読み上げ速度係数)）
+  const estimatedSpeechMs = segLen / (rate * 4) * 1000;
+  // バッファ: Googleはネットワーク取得時間を考慮して多め
+  const bufferMs = isGoogle ? 12000 : 5000;
+  // 最低保証: 短い段落でwatchdogが誤発火しないように下限を設ける
+  const minMs = isGoogle ? 5000 : 2000;
+  const ms = Math.min(Math.max(estimatedSpeechMs + bufferMs, minMs), 60000);
   watchdog = setTimeout(() => {
     if (!playing) return;
     _busy = false;
@@ -1575,7 +1497,6 @@ function clearWatchdog() { if (watchdog) { clearTimeout(watchdog); watchdog = nu
 
 function startPlay() {
   if (playing) return;
-  // iOSアンロック（ユーザー操作から呼ばれた場合のみ有効）
   unlockAudio();
   playing = true; _busy = false;
   updBtn(); setBadge(true);
@@ -1600,9 +1521,7 @@ function stop() {
   SS.cancel(); stopGoogleAudio();
   clearWatchdog(); clearPrefetchCache();
   updBtn(); setBadge(false); cancelNext();
-  // 次話先読みはキャンセルしない（キャッシュは維持）
 }
-// ⏮⏭ = 1段落移動
 function prevSeg() {
   if (_busy) return;
   SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false; _sentIdx = -1;
@@ -1615,7 +1534,6 @@ function nextSeg() {
   const i = Math.min(segs.length - 1, idx + 1);
   if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
 }
-// 段落移動（prevSent/nextSentからも利用）
 function prevSegFull() { prevSeg(); }
 function nextSegFull() { nextSeg(); }
 
@@ -1623,18 +1541,15 @@ function nextSegFull() { nextSeg(); }
 //  SETTINGS
 // ═══════════════════════════════════════════
 function initSettings() {
-  // APIキー
   if (_gApiKey) {
     document.getElementById('apiKeyInput').value = _gApiKey;
     document.getElementById('googleVoiceSection').style.display = 'block';
   }
-  // _gVoice（=localStorage）→ DOM select に同期（_gVoiceが正）
   syncVoiceSelect();
   updModeDisplay();
   updUsageDisplay();
 }
 
-// DOM selectを _gVoice に合わせる（起動時・音声変更時に呼ぶ）
 function syncVoiceSelect() {
   const sel = document.getElementById('googleVoiceSel');
   if (!sel) return;
@@ -1674,9 +1589,7 @@ function showApiStatus(type, msg) {
   el.className = 'api-status show ' + type;
 }
 
-// 音声APIキー → 表示名
 function friendlyVoiceName(v) {
-  // 例: ja-JP-Wavenet-A → WaveNet-A
   const m = v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);
   if (m) {
     const type = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
@@ -1691,7 +1604,7 @@ function updModeDisplay() {
   const row   = document.getElementById('voiceRowKyoko');
   const rowG  = document.getElementById('voiceRowGoogle');
   const badge = document.getElementById('googleBadge');
-    if (hasGoogleKey()) {
+  if (hasGoogleKey()) {
     const fname = friendlyVoiceName(_gVoice);
     const lim   = (USAGE_LIMIT() / 10000).toFixed(0) + '万文字/月無料';
     el.innerHTML = '<span class="mode-badge google">🎙 ' + fname + '<br><span style="font-size:9px;opacity:0.7">' + lim + '</span></span>';
@@ -1732,6 +1645,7 @@ function cancelNext() {
   if(nextTimer){clearInterval(nextTimer);nextTimer=null;}
   document.getElementById('nextNotice').classList.remove('show');
 }
+
 async function goPrev() {
   if (!prevUrl) { toast('前の話はありません'); return; }
   const url = prevUrl;
@@ -1745,7 +1659,8 @@ async function goPrev() {
     if (queue[qi]) queue[qi].title = page.title;
     currentChapterTitle = page.title;
     currentChapterNum = chapNumFromUrl(url);
-    displayPage(page, url, 0);
+    // [FIX1] goPrevではさらに前の話は不明なのでprevUrlHint=null
+    displayPage(page, url, 0, null);
     hideFetch();
     if (_actx && _actx.state === 'suspended') await _actx.resume().catch(()=>{});
     await new Promise(r=>setTimeout(r,200));
@@ -1765,13 +1680,11 @@ async function goNext() {
   try {
     let page = null;
 
-    // キャッシュチェック（先読み済みなら即使用）
     if (_nextPageCache && _nextPageCache.url === url) {
       page = _nextPageCache.page;
       showFetch('load', '✓ 先読み済み — 即開始');
       await new Promise(r => setTimeout(r, 300));
     } else {
-      // キャッシュなし → 通常fetch（Promiseが走っていれば待つ）
       if (_nextHtmlCache && _nextHtmlCache.url === url) {
         showFetch('load', '先読み中… しばらくお待ちください');
         page = await _nextHtmlCache.promise;
@@ -1787,14 +1700,15 @@ async function goNext() {
     currentChapterTitle = page.title;
     currentChapterNum = chapNumFromUrl(url);
 
-    // 次話の音声先読みをメインキャッシュに移す
     if (_nextAudioCache.length > 0 && hasGoogleKey()) {
       clearPrefetchCache();
       _nextAudioCache.forEach(({idx: k, promise}) => _prefetchCache.set(k, promise));
       _nextAudioCache = [];
     }
 
-    displayPage(page, url, 0);
+    // goNext: currentChapterUrl がまだ旧話URLなので prevUrlHint を明示
+    const prevUrlForNext = currentChapterUrl;
+    displayPage(page, url, 0, prevUrlForNext);
     hideFetch();
     if(_actx && _actx.state==='suspended') await _actx.resume().catch(()=>{});
     await new Promise(r => setTimeout(r, 200));
@@ -1802,22 +1716,16 @@ async function goNext() {
     if (!playing) startPlay();
   } catch(e) {
     const msg = e.message || '';
-
-    // 「本当の最終話」= なろうのエラーページ検出時のみ
     const isTrulyFinal = msg.includes('最終話の可能性');
-
-    // プロキシ/ネットワーク失敗 = nextUrlを保持してリトライ可能に
     const isNetErr = msg.includes('取得失敗') || msg.includes('HTTP') ||
                      msg.includes('Load failed') || msg.includes('全プロキシ');
 
     if (isTrulyFinal) {
-      // 本当の最終話 → nextUrlをクリア・リトライ不要
       nextUrl = null;
       clearNextChapterCache();
       document.getElementById('bNext').disabled = true;
       showFetch('err', '📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');
     } else if (isNetErr) {
-      // ネットワーク失敗 → nextUrlは保持・次話ボタンは有効のまま
       clearNextChapterCache();
       showFetch('err', '⚠ ページ取得に失敗しました。「次話→」で再試行できます');
     } else {
@@ -1841,18 +1749,23 @@ function renderQueue() {
     return '<span class="'+c+'" onclick="jumpQ('+i+')" title="'+esc(q.url)+'">'+esc(t)+'</span>';
   }).join('');
 }
+
 async function jumpQ(i) {
   if(i===qi)return; qi=i;
   const url=queue[i].url;
   document.getElementById('urlIn').value=url;
   stop(); disable(true); showFetch('load','取得中…');
+  // [FIX2] jumpQ経由の章ジャンプ時に次話先読みキャッシュをクリア
+  // （古い次話キャッシュが残るとジャンプ後の nextUrl と不整合が起きる）
+  clearNextChapterCache();
   try {
     const html=await fetchHtml(url);
     const page=extractPage(html,url);
     queue[i].title=page.title;
     currentChapterTitle=page.title;
     currentChapterNum=chapNumFromUrl(url);
-    displayPage(page,url,0);
+    // [FIX1] jumpQはフレッシュジャンプなのでprevUrlHint=null
+    displayPage(page, url, 0, null);
     startPlay();
     hideFetch();
   } catch(e){showFetch('err',e.message);}
@@ -1862,7 +1775,6 @@ async function jumpQ(i) {
 // ═══════════════════════════════════════════
 //  HISTORY LIST
 // ═══════════════════════════════════════════
-// 新着チェックキャッシュ（セッション内）
 const _newChapCache = {};
 
 function renderHistList() {
@@ -1894,36 +1806,27 @@ function renderHistList() {
     </div>`;
   }).join('');
 
-  // 非同期で新着チェック（TOCがあるものだけ・最近24時間以内に確認していないもの）
   items.forEach(bk => {
     if (!bk.tocUrl || !bk.totalChap) return;
     const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
-    if (Date.now() - lastCheck < 3600000) return; // 1時間以内はスキップ
+    if (Date.now() - lastCheck < 3600000) return;
     checkNewChapter(bk);
   });
 }
 
 async function checkNewChapter(bk) {
-  // tocUrlがなければ章URLから推定
   const tocUrl = bk.tocUrl || inferTocUrl(bk.chapterUrl);
   if (!tocUrl) return;
-
   try {
     const html = await fetchHtml(tocUrl);
     const items = parseSyosetuToc(html, tocUrl);
     if (!items.length) return;
-
     const current = items.length;
     const saved = bk.totalChap || bk.chapterNum || 0;
     const diff = Math.max(0, current - saved);
-
     _newChapCache[bk.novelId] = { total: current, diff, checkedAt: Date.now() };
-
-    // tocUrl・totalChap を更新保存
     if (!bk.tocUrl) bkSetToc(bk.novelId, tocUrl, current);
-
     if (diff > 0) {
-      // 新着フラグをlocalStorageにも永続保存
       const all = bkLoad();
       if (all[bk.novelId]) {
         all[bk.novelId].hasNew = true;
@@ -1932,13 +1835,12 @@ async function checkNewChapter(bk) {
       }
       renderHistList();
     }
-  } catch(e) { /* ネットワークエラーは無視 */ }
+  } catch(e) {}
 }
 
 async function resumeFrom(novelId) {
   const bk = bkGet(novelId);
   if (!bk) { toast('しおりが見つかりません'); return; }
-  // NEWフラグをクリア
   const all = bkLoad();
   if (all[novelId]) { delete all[novelId].hasNew; delete all[novelId].newDiff; bkSave(all); }
   delete _newChapCache[novelId];
@@ -1946,18 +1848,16 @@ async function resumeFrom(novelId) {
   document.getElementById('urlIn').value = bk.novelId;
   stop(); disable(true); showFetch('load','履歴から読み込み中…');
   try {
-    // ページキャッシュを確認（最近読んだページは高速表示）
     const cacheKey = 'yogatari_pc_' + btoa(encodeURIComponent(bk.chapterUrl)).slice(0,40);
-    const cached = sessionStorage.getItem(cacheKey);
     let html;
+    const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
       html = cached;
       showFetch('load','キャッシュから復元中…');
     } else {
       showFetch('load','ページ取得中… (初回は時間がかかります)');
       html = await fetchHtml(bk.chapterUrl);
-      // セッション内キャッシュに保存（次のタブ切替等で再利用）
-      try { sessionStorage.setItem(cacheKey, html); } catch(e) {}
+      safeSessionSet(cacheKey, html);
     }
     const page = extractPage(html, bk.chapterUrl);
     currentNovelId = novelId;
@@ -1966,10 +1866,10 @@ async function resumeFrom(novelId) {
     currentChapterNum = bk.chapterNum || chapNumFromUrl(bk.chapterUrl);
     if (!queue.find(q=>q.url===bk.chapterUrl)) { queue.push({url:bk.chapterUrl,title:page.title,done:false}); qi=queue.length-1; }
     else qi = queue.findIndex(q=>q.url===bk.chapterUrl);
-        displayPage(page, bk.chapterUrl, bk.segIdx||0);
+    // [FIX1] 履歴からの再開はフレッシュロードなのでprevUrlHint=null
+    displayPage(page, bk.chapterUrl, bk.segIdx||0, null);
     startSilentAudio();
     hideFetch();
-    // 自動再生しない（ユーザーが▶を押したら開始）
     document.getElementById('bgTip').classList.add('show');
   } catch(e) { showFetch('err', e.message); }
   disable(false);
@@ -1981,10 +1881,38 @@ function delHist(novelId) {
   toast('削除しました');
 }
 
-
+// ─── [FIX10] sessionStorage 安全書き込みラッパー ───
+// 問題: 複数作品を開くとページHTMLが際限なく蓄積しQuotaExceededErrorが発生する
+// 対策:
+//   1. 1エントリあたり上限600KB（それ以上のHTMLはキャッシュしない）
+//   2. yogatari_pc_ プレフィックスのエントリを最大3件に制限（超えたら古いものを削除）
+//   3. QuotaExceededError時はyogatari_pc_を全消去して再試行
+const SS_PAGE_CACHE_PREFIX = 'yogatari_pc_';
+const SS_PAGE_CACHE_MAX_ENTRIES = 3;
+const SS_PAGE_CACHE_MAX_BYTES = 600000; // 600KB
+function safeSessionSet(key, data) {
+  if (!data || data.length > SS_PAGE_CACHE_MAX_BYTES) return; // 大きすぎるHTMLは保存しない
+  try {
+    // 上限エントリ数を超える場合は最も古いものを削除
+    const existing = Object.keys(sessionStorage).filter(k => k.startsWith(SS_PAGE_CACHE_PREFIX));
+    if (existing.length >= SS_PAGE_CACHE_MAX_ENTRIES) {
+      // 追加順で最初のものを削除（古い順）
+      sessionStorage.removeItem(existing[0]);
+    }
+    sessionStorage.setItem(key, data);
+  } catch(e) {
+    // QuotaExceededError: yogatari_pc_ を全消去してから再試行
+    try {
+      Object.keys(sessionStorage)
+        .filter(k => k.startsWith(SS_PAGE_CACHE_PREFIX))
+        .forEach(k => sessionStorage.removeItem(k));
+      sessionStorage.setItem(key, data);
+    } catch(e2) { /* キャッシュ不可として続行 */ }
+  }
+}
 
 // ═══════════════════════════════════════════
-//  CONFIRM DIALOG
+//  CONFIRM MODAL
 // ═══════════════════════════════════════════
 let _cfmCallback = null;
 function openConfirm(title, msg, onOk) {
@@ -1999,9 +1927,6 @@ function closeConfirm() {
   _cfmCallback = null;
 }
 
-// ═══════════════════════════════════════════
-//  CONFIRM DIALOG
-// ═══════════════════════════════════════════
 let _confirmCallback = null;
 function showConfirm(icon, title, msg, okLabel, callback) {
   document.getElementById('confirmIcon').textContent = icon;
@@ -2029,7 +1954,6 @@ function closeReadme() { document.getElementById('rdmOverlay').classList.remove(
 // ═══════════════════════════════════════════
 //  USAGE TRACKING (Google TTS)
 // ═══════════════════════════════════════════
-// 音声種別ごとの無料枠
 const VOICE_LIMITS = {
   'Wavenet':  { free: 4000000, warn: 3600000 },
   'Standard': { free: 4000000, warn: 3600000 },
@@ -2094,14 +2018,14 @@ function updUsageDisplay() {
 //  TABS
 // ═══════════════════════════════════════════
 function switchTab(name) {
-  _tabSw = true; // タブ切替開始
+  _tabSw = true;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('tab-'+name).classList.add('active');
   document.getElementById('panel-'+name).classList.add('active');
   if (name==='hist') renderHistList();
   if (name==='sett') { initSettings(); updUsageDisplay(); }
-  setTimeout(() => { _tabSw = false; }, 600); // 600ms後に解除
+  setTimeout(() => { _tabSw = false; }, 600);
 }
 
 // ═══════════════════════════════════════════
@@ -2111,7 +2035,8 @@ document.addEventListener('visibilitychange', ()=>{
   if (document.visibilityState==='visible') {
     if(playing && !_busy) {
       if(hasGoogleKey()) {
-        if(!_gAudio || _gAudio.paused || _gAudio.ended) {
+        const _ael = getAudioEl();
+        if(!_ael || _ael.paused || _ael.ended) {
           stopGoogleAudio(); _busy=false; setTimeout(()=>speakIdx(idx),400);
         }
       } else if(!SS.speaking && !SS.pending) {
@@ -2122,10 +2047,8 @@ document.addEventListener('visibilitychange', ()=>{
   }
 });
 document.addEventListener('touchstart', (e)=>{
-  // AudioContextの再開（常に実行）
   if(_actx && _actx.state==='suspended') _actx.resume().catch(()=>{});
 
-  // ── ボタン・入力・コントロール類へのタッチは無視 ──
   const tag = e.target?.tagName || '';
   const cl  = e.target?.className || '';
   const skip = ['BUTTON','INPUT','SELECT','A','LABEL'].includes(tag)
@@ -2134,16 +2057,12 @@ document.addEventListener('touchstart', (e)=>{
     || e.target?.closest?.('button, input, select, a, .cb, .tab, .stepper, .q-chip');
   if (skip) return;
 
-  // ── 再生中のみ復帰処理 ──
   if (!playing) return;
 
   if (hasGoogleKey()) {
-    // Google TTS: 音声オブジェクトが正常再生中なら何もしない
     const _ael = getAudioEl(); if (_ael && _ael.src && !_ael.paused && !_ael.ended) return;
-    // 止まっていたら再起動（_busyでなければ）
     if (!_busy) { stopGoogleAudio(); setTimeout(()=>speakIdx(idx), 300); }
   } else {
-    // Kyoko: SpeechSynthesisが止まっていたら再起動
     if (!SS.speaking && !SS.pending) {
       SS.cancel(); setTimeout(()=>speakIdx(idx), 200);
     }
@@ -2156,7 +2075,6 @@ document.addEventListener('touchstart', (e)=>{
 let _userScrolling = false;
 let _scrollTimer   = null;
 
-// ユーザーが手動スクロール中は自動追従をオフ
 document.addEventListener('scroll', ()=>{
   _userScrolling = true;
   if(_scrollTimer) clearTimeout(_scrollTimer);
@@ -2169,7 +2087,6 @@ function updHighlight(autoScroll=true) {
     if(i===idx) el.classList.add('active');
     else if(i<idx) el.classList.add('past');
   });
-  // ユーザーがスクロール中 or autoScroll=false なら追従しない
   if(autoScroll && !_userScrolling) {
     const el=document.getElementById('s'+idx);
     if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
@@ -2179,12 +2096,18 @@ function updProg() {
   const total=segs.length, cur=Math.min(idx+1,total);
   document.getElementById('progNum').textContent=cur+' / '+total;
   document.getElementById('progFill').style.width=(total?cur/total*100:0)+'%';
-  // 残り時間: 残り文字数 / (250文字/分 × 速度)
+  // [FIX7] 残り時間の精度改善
+  // 問題: 250文字/分の固定値ではGoogle TTSとKyokoの速度差を無視していた
+  // 対策: 音声エンジンごとにベースレートを設定し、速度設定を乗算して推定精度を改善
+  //   Kyoko(Web Speech API): 基準250文字/分（日本語TTS標準的な読み上げ速度）
+  //   Google TTS WaveNet/Standard/Neural2: 基準360文字/分（Googleの方が素早い傾向）
+  // 補正係数0.85: speedRateは体感より実時間が長い傾向があるため若干スケールダウン
   const remEl = document.getElementById('vRemain');
   if (remEl && total > 0) {
     const remSegs = segs.slice(idx);
     const remChars = remSegs.reduce((a,s)=>a+s.length, 0);
-    const cpm = 250 * getRate(); // 文字/分
+    const baseRate = hasGoogleKey() ? 360 : 250; // 文字/分 @ rate=1.0
+    const cpm = baseRate * getRate() * 0.85;
     const remMin = remChars / cpm;
     if (remMin < 1) remEl.textContent = '1分未満';
     else remEl.textContent = '約' + Math.ceil(remMin) + '分';
@@ -2200,9 +2123,7 @@ function setBadge(on) {
   const tz = document.getElementById('tapZones');
   if (tz) {
     tz.style.display = on ? 'block' : 'none';
-    // 親のpointer-eventsも切り替え（子要素のタップを確実に通す）
-    tz.style.pointerEvents = on ? 'none' : 'none'; // 親はnoneのまま
-    // 子要素を直接有効化
+    tz.style.pointerEvents = 'none';
     const tl = document.getElementById('tapL');
     const tr = document.getElementById('tapR');
     if (tl) tl.style.pointerEvents = on ? 'auto' : 'none';
@@ -2232,7 +2153,7 @@ function resetAll() {
   document.getElementById('progWrap').classList.remove('show');
   document.getElementById('novelText').classList.remove('show');
   document.getElementById('bgTip').classList.remove('show');
-  queue=[]; qi=0; nextUrl=null;
+  queue=[]; qi=0; nextUrl=null; prevUrl=null;
   renderQueue(); ctrlEnable(false);
 }
 function toast(msg) {
@@ -2240,7 +2161,7 @@ function toast(msg) {
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2600);
 }
-// ステッパー状態
+
 let _rate  = parseFloat(localStorage.getItem('yogatari_rate'))  || 1.1;
 let _pitch = parseFloat(localStorage.getItem('yogatari_pitch')) || 1.0;
 const RATE_MIN=0.5, RATE_MAX=2.5, RATE_STEP=0.1;
@@ -2261,12 +2182,10 @@ function getPitch() { return _pitch; }
 function onGVoiceChange() {
   const sel = document.getElementById('googleVoiceSel');
   if (sel && sel.value) {
-    _gVoice = sel.value; // 常に更新（条件なし）
+    _gVoice = sel.value;
     localStorage.setItem('yogatari_gvoice', _gVoice);
   }
-  // 音声変更時はプリフェッチキャッシュをクリア（古い声のキャッシュを破棄）
   clearPrefetchCache();
-  // 上限ノートを更新
   const note = document.getElementById('voiceLimitNote');
   if (note) {
     const isWave = _gVoice.includes('Wavenet') || _gVoice.includes('Standard');
@@ -2278,12 +2197,10 @@ function onGVoiceChange() {
   updUsageDisplay();
 }
 
-// 試聴ボタン
 async function testVoice() {
   if (!hasGoogleKey()) { toast('APIキーを先に保存してください'); return; }
   const btn = document.getElementById('testVoiceBtn');
   if (btn) btn.classList.add('testing');
-  // 現在選択中の音声を _gVoice に確定
   const sel = document.getElementById('googleVoiceSel');
   if (sel && sel.value) { _gVoice = sel.value; localStorage.setItem('yogatari_gvoice', _gVoice); }
   try {
@@ -2298,15 +2215,18 @@ async function testVoice() {
   }
 }
 
-
+function onVoice() { const i=+document.getElementById('voiceSel').value; if(!isNaN(i)) selVoice=voices[i]; }
 
 // ═══════════════════════════════════════════
-//  BACKGROUND EFFECT ENGINE  (v48: 夜固定・月齢・オーロラ)
+//  BACKGROUND EFFECT ENGINE  (v48+: 夜固定・月齢・オーロラ)
 // ═══════════════════════════════════════════
 let _bgOn  = localStorage.getItem('yogatari_bg') === '1';
 let _bgRaf = null;
-let _bgCond= 'clear'; // 現在の天気（ランダム）
-let _bgCondTimer = 0; // 天気切替カウンター
+let _bgCond= 'clear';
+let _bgCondTimer = 0;
+// [FIX9] 30fps上限制御用タイムスタンプ（60fps端末でもCPU/バッテリー消費を半減）
+const BG_FRAME_INTERVAL = 1000 / 30; // 約33ms
+let _bgLastFrame = 0;
 
 const bgCv  = document.getElementById('bgCanvas');
 const bgCtx = bgCv ? bgCv.getContext('2d') : null;
@@ -2352,26 +2272,23 @@ function initAuroras(n) {
   _auroras = Array.from({length:n}, () => ({
     x: Math.random()*bgCv.width, y: bgCv.height*0.05 + Math.random()*bgCv.height*0.25,
     w: Math.random()*180+120, h: Math.random()*140+80,
-    hue: Math.random()*60+140, // 緑〜シアン
+    hue: Math.random()*60+140,
     a: Math.random()*0.18+0.05, da: (Math.random()-0.5)*0.003,
     drift: (Math.random()-0.5)*0.15,
   }));
 }
 
-// ランダム天気（30〜90秒でゆっくり変化）
 const WEATHER_LIST = ['clear','clear','clear','cloudy','rain','snow','aurora'];
 function pickRandomCond() {
   return WEATHER_LIST[Math.floor(Math.random()*WEATHER_LIST.length)];
 }
 
-// ── 月齢計算 ──
 function getMoonPhase() {
   const knownNew = new Date(2000,0,6,18,14,0);
   const lunarCycle = 29.53058867;
   const diff = (Date.now() - knownNew) / 86400000;
   return ((diff % lunarCycle) + lunarCycle) % lunarCycle / lunarCycle;
 }
-// ── 月の位置（夜の時刻で弧を描く）──
 function getMoonPosition() {
   const h = new Date().getHours() + new Date().getMinutes()/60;
   const t = h < 6 ? h+24 : h;
@@ -2379,7 +2296,6 @@ function getMoonPosition() {
   const angle = Math.PI * progress;
   return { x: 0.85 - Math.sin(angle)*0.65, y: 0.36 - Math.sin(angle)*0.22 };
 }
-// ── 月相描画 ──
 function drawMoonPhase(ctx, cx, cy, r, phase) {
   ctx.save();
   ctx.fillStyle = '#f0e8c0';
@@ -2402,7 +2318,6 @@ function drawMoonPhase(ctx, cx, cy, r, phase) {
   ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
   ctx.restore();
 }
-// ── リアル雲描画 ──
 function drawRealCloud(ctx, cx, cy, w, h, cond) {
   const isDark = cond==='rain';
   const baseL = isDark ? 'rgba(55,60,75,' : 'rgba(75,85,115,';
@@ -2417,27 +2332,23 @@ function drawRealCloud(ctx, cx, cy, w, h, cond) {
   bumps.forEach(b=>{ ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy+h*0.12,b.rx*0.95,b.ry*0.7,0,0,Math.PI*2); ctx.fill(); });
   bumps.forEach((b,i)=>{ ctx.fillStyle=baseL+(i===0?'0.88)':'0.80)'); ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy,b.rx,b.ry,0,0,Math.PI*2); ctx.fill(); });
 }
-// ── 流れ星発生 ──
 function maybeShoot() {
   if (Math.random()<0.004 && _shootings.length<3)
     _shootings.push({x:Math.random()*bgCv.width, y:Math.random()*bgCv.height*0.4,
       vx:(Math.random()*4+3)*(Math.random()<0.5?1:-1), vy:Math.random()*3+2, life:1.0});
 }
 
-// ── メイン描画 ──
 function drawBg() {
   if (!bgCtx || !bgCv.width) return;
   const W=bgCv.width, H=bgCv.height;
   const cond = _bgCond;
 
-  // 天気切替（フレーム毎）
   _bgCondTimer++;
   if (_bgCondTimer > 60 * (30 + Math.random()*60)) {
     _bgCond = pickRandomCond();
     _bgCondTimer = 0;
   }
 
-  // 夜空グラデーション
   const grad = bgCtx.createLinearGradient(0,0,0,H);
   if (cond==='rain') {
     grad.addColorStop(0,'#080d18'); grad.addColorStop(1,'#131e28');
@@ -2452,7 +2363,6 @@ function drawBg() {
   }
   bgCtx.fillStyle=grad; bgCtx.fillRect(0,0,W,H);
 
-  // オーロラ
   if (cond==='aurora') {
     _auroras.forEach(au => {
       au.a += au.da; if(au.a>0.22||au.a<0.04) au.da*=-1;
@@ -2466,7 +2376,6 @@ function drawBg() {
       bgCtx.ellipse(au.x, au.y, au.w, au.h, 0, 0, Math.PI*2);
       bgCtx.fill();
     });
-    // オーロラの縦縞
     _auroras.forEach(au => {
       for(let i=-3;i<=3;i++){
         const sx=au.x+i*au.w*0.15;
@@ -2481,7 +2390,6 @@ function drawBg() {
     });
   }
 
-  // 月
   if (cond!=='rain') {
     const phase=getMoonPhase(), mpos=getMoonPosition(), mr=24;
     const mx=W*mpos.x, my=H*mpos.y;
@@ -2498,7 +2406,6 @@ function drawBg() {
     }
   }
 
-  // 星
   if (cond!=='rain') {
     maybeShoot();
     const starAlpha = cond==='cloudy'?0.25:cond==='aurora'?0.4:0.9;
@@ -2508,7 +2415,6 @@ function drawBg() {
       bgCtx.fillStyle='#fff';
       bgCtx.beginPath(); bgCtx.arc(s.x,s.y,s.r,0,Math.PI*2); bgCtx.fill();
     });
-    // 流れ星
     _shootings=_shootings.filter(s=>{
       s.x+=s.vx*3; s.y+=s.vy*3; s.life-=0.025;
       if(s.life<=0) return false;
@@ -2521,7 +2427,6 @@ function drawBg() {
     bgCtx.globalAlpha=1;
   }
 
-  // 雲
   if (cond==='cloudy'||cond==='rain'||cond==='snow') {
     const ca=cond==='cloudy'?1.8:cond==='rain'?1.4:0.9;
     _clouds.forEach(c=>{
@@ -2531,7 +2436,6 @@ function drawBg() {
     }); bgCtx.globalAlpha=1;
   }
 
-  // 雨
   if (cond==='rain') {
     _drops.forEach(d=>{
       d.y+=d.spd; d.x+=1.5; if(d.y>H){d.y=0;d.x=Math.random()*W;}
@@ -2540,7 +2444,6 @@ function drawBg() {
     }); bgCtx.globalAlpha=1;
   }
 
-  // 雪
   if (cond==='snow') {
     _flakes.forEach(f=>{
       f.y+=f.spd; f.x+=f.drift; if(f.y>H){f.y=0;f.x=Math.random()*W;}
@@ -2551,9 +2454,15 @@ function drawBg() {
   }
 }
 
-function bgLoop() {
+// [FIX9] requestAnimationFrameのコールバックにtimestampを受け取り、
+// 前回描画から BG_FRAME_INTERVAL(≈33ms) 未満なら描画をスキップして30fps上限を実現。
+// 60fps端末では描画回数が半減しCPU・バッテリー消費を抑制する。
+function bgLoop(timestamp) {
   if (!_bgOn) return;
-  drawBg();
+  if (timestamp - _bgLastFrame >= BG_FRAME_INTERVAL) {
+    _bgLastFrame = timestamp;
+    drawBg();
+  }
   _bgRaf = requestAnimationFrame(bgLoop);
 }
 
@@ -2564,7 +2473,9 @@ function startBgEffect() {
   initStars(200); initClouds(7); initRain(130); initSnow(90); initAuroras(5);
   bgCv.style.opacity = '0.93';
   document.body.style.background = 'transparent';
-  bgLoop();
+  // [FIX9] requestAnimationFrame経由で呼び出すことでtimestampが正しく渡される
+  _bgLastFrame = 0;
+  _bgRaf = requestAnimationFrame(bgLoop);
 }
 function stopBgEffect() {
   if (_bgRaf) { cancelAnimationFrame(_bgRaf); _bgRaf=null; }
@@ -2583,7 +2494,6 @@ function toggleBgEffect() {
 
 window.addEventListener('resize', ()=>{ if(_bgOn){bgResize();initStars(200);initClouds(7);initAuroras(5);} });
 
-// 起動時に状態復元
 setTimeout(()=>{
   const btn=document.getElementById('bgToggleBtn');
   if(btn){ btn.textContent=_bgOn?'ON':'OFF'; btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn'; }
@@ -2591,9 +2501,6 @@ setTimeout(()=>{
   if(st && _bgOn) st.textContent='月齢・星・流れ星・オーロラ・ランダム天気';
   if(_bgOn) startBgEffect();
 }, 500);
-
-
-function onVoice()  { const i=+document.getElementById('voiceSel').value; if(!isNaN(i)) selVoice=voices[i]; }
 </script>
 
 </body>
