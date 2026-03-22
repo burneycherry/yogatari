@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v61</span></div>
+  <div class="app-name">夜語り <span class="ver">v62</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v61';
+const APP_VER = 'v62';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1903,6 +1903,9 @@ function updModeDisplay() {
 function saveBookmarkCurrent(segIdx) {
   if (!currentNovelId) return;
   const url = document.getElementById('chapLink').href;
+  // URLから話数が取れる場合は常にURLを正とする（旧バグ保存値の上書き防止）
+  const urlNum = chapNumFromUrl(url);
+  if (urlNum > 0) currentChapterNum = urlNum;
   bkSet(currentNovelId, currentNovelTitle, url, currentChapterTitle, currentChapterNum, segIdx);
   renderHistList();
 }
@@ -1937,7 +1940,8 @@ async function goPrev() {
     const page = extractPage(html, url);
     if (queue[qi]) queue[qi].title = page.title;
     currentChapterTitle = page.title;
-    currentChapterNum = chapNumFromUrl(url);
+    // URLから話数が取れない場合（カクヨム等）は現在話数 -1 で推定
+    currentChapterNum = chapNumFromUrl(url) || (currentChapterNum > 1 ? currentChapterNum - 1 : 1);
     // [FIX1] goPrevではさらに前の話は不明なのでprevUrlHint=null
     displayPage(page, url, 0, null);
     hideFetch();
@@ -2043,7 +2047,8 @@ async function jumpQ(i) {
     const page=extractPage(html,url);
     queue[i].title=page.title;
     currentChapterTitle=page.title;
-    currentChapterNum=chapNumFromUrl(url);
+    // URLから話数が取れない場合（カクヨム等）はキュー内インデックス+1で代替
+    currentChapterNum = chapNumFromUrl(url) || (i + 1);
     // [FIX1] jumpQはフレッシュジャンプなのでprevUrlHint=null
     displayPage(page, url, 0, null);
     startPlay();
@@ -2146,7 +2151,14 @@ async function resumeFrom(novelId) {
     currentNovelId = novelId;
     currentNovelTitle = bk.novelTitle || page.title;
     currentChapterTitle = page.title;
-    currentChapterNum = bk.chapterNum || chapNumFromUrl(bk.chapterUrl);
+    // [FIX] chapNum優先順位:
+    //   1. URLから取得（なろう等、URLに話数が含まれるサイトは常に正確）
+    //   2. bk.chapterNum（カクヨム等URLから取れないサイト用）
+    //   3. フォールバック 1
+    // bk.chapterNum を優先すると旧バグで誤保存された値が使われ続ける問題が起きるため
+    // URLから取れる場合はURLを信頼する
+    const resumeUrlNum = chapNumFromUrl(bk.chapterUrl);
+    currentChapterNum = resumeUrlNum || bk.chapterNum || 1;
     if (!queue.find(q=>q.url===bk.chapterUrl)) { queue.push({url:bk.chapterUrl,title:page.title,done:false}); qi=queue.length-1; }
     else qi = queue.findIndex(q=>q.url===bk.chapterUrl);
     // [FIX1] 履歴からの再開はフレッシュロードなのでprevUrlHint=null
