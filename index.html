@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v58</span></div>
+  <div class="app-name">夜語り <span class="ver">v59</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -617,7 +617,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v58';
+const APP_VER = 'v59';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -792,7 +792,7 @@ async function tryProxy(p, url) {
     if (!html || html.length < 200) throw new Error('コンテンツ空');
     return html;
   }
-  if (/Access denied|403 Forbidden|Blocked|bot detection|Enable JavaScript|just a moment/i.test(raw.slice(0,2000))) {
+  if (/Access denied|403 Forbidden|Blocked|bot detection|Enable JavaScript|just a moment|Cloudflare|DDoS protection|checking your browser|please wait|challenge/i.test(raw.slice(0,3000))) {
     throw new Error('ブロック検出');
   }
   return raw;
@@ -966,6 +966,7 @@ function findInObj(obj, key, depth = 0) {
 
 // ── ハーメルン目次パーサー ──
 // 話URLは /novel/XXXXX/N.html 形式（末尾スラッシュなし・.html付き）
+// プロキシ経由では絶対パス・相対パス・ルートパスが混在するため全パターン対応
 function parseHamelnToc(html, baseUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const items = [];
@@ -974,25 +975,55 @@ function parseHamelnToc(html, baseUrl) {
 
   const wm = new URL(baseUrl).pathname.match(/\/novel\/([^/]+)/);
   if (!wm) return items;
-  const novelPath = '/novel/' + wm[1] + '/';
+  const novelId = wm[1];
+  const novelPath = '/novel/' + novelId + '/';
 
   doc.querySelectorAll('a[href]').forEach(a => {
     const href = a.getAttribute('href');
     if (!href) return;
-    // /novel/XXXXX/N.html パターンに一致するものだけ（.html付き）
-    if (!href.includes(novelPath)) return;
-    const m = href.match(/\/novel\/[^/]+\/(\d+)\.html$/);
+
+    // パターン①: 絶対/ルートパス → /novel/XXXXX/N.html
+    // パターン②: 相対パス → N.html or ./N.html（プロキシが相対パスのまま返す場合）
+    const isAbsolute = href.includes(novelPath);
+    const isRelative = /^\.?\/?(\d+)\.html$/.test(href);
+    if (!isAbsolute && !isRelative) return;
+
+    // 数字+.html の部分を抽出
+    const m = href.match(/(\d+)\.html$/);
     if (!m) return;
+
     const url = resolveUrl(href, baseUrl);
     if (!url || seen.has(url)) return;
     const txt = a.textContent.trim();
     if (!txt || txt.length > 100) return;
-    // ナビゲーションリンクを除外
-    if (/^(前|次|目次|back|next|トップ)/i.test(txt)) return;
+    if (/^(前|次|目次|back|next|トップ|\d+話へ)/i.test(txt)) return;
     seen.add(url);
     num++;
     items.push({ title: txt, url, num });
   });
+
+  // フォールバック: 絶対パスマッチが0件の場合、resolveUrl後のURLで再スキャン
+  // （プロキシが base href を書き換えている場合の対策）
+  if (items.length === 0) {
+    const seen2 = new Set();
+    doc.querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute('href');
+      if (!href) return;
+      const resolved = resolveUrl(href, baseUrl);
+      if (!resolved) return;
+      // resolveUrl後のURLが /novel/XXXXX/N.html パターンに一致するか確認
+      const m = resolved.match(/\/novel\/[^/]+\/(\d+)\.html$/);
+      if (!m) return;
+      if (seen2.has(resolved)) return;
+      const txt = a.textContent.trim();
+      if (!txt || txt.length > 100) return;
+      if (/^(前|次|目次|back|next|トップ)/i.test(txt)) return;
+      seen2.add(resolved);
+      items.push({ title: txt, url: resolved, num: items.length + 1 });
+    });
+    // num を再採番
+    items.forEach((it, i) => { it.num = i + 1; });
+  }
   return items;
 }
 
@@ -1064,30 +1095,9 @@ function extractPage(html, pageUrl) {
     const m = pageUrl.match(/^(https?:\/\/[^/]+\/[^/]+\/)(\d+)\/?$/);
     if (m) nextPageUrl = m[1] + (parseInt(m[2])+1) + '/';
   }
-
-  // [FIX1] カクヨム: 他の方法で次話URLが取れなかった場合の最終フォールバック
-  // 同一作品の全エピソードリンクを収集し、現在のエピソードの次を特定する
-  if (!nextPageUrl && phost.includes('kakuyomu.jp') && pageUrl.includes('/episodes/')) {
-    try {
-      const workMatch = pageUrl.match(/(\/works\/[^/]+)\/episodes\/([^/?#]+)/);
-      if (workMatch) {
-        const workPath = workMatch[1];
-        const currentEpId = workMatch[2];
-        const epLinks = [];
-        const seen = new Set();
-        doc.querySelectorAll('a[href]').forEach(a => {
-          const h = a.getAttribute('href');
-          if (!h || !h.includes(workPath + '/episodes/')) return;
-          const epMatch = h.match(/\/episodes\/([^/?#]+)/);
-          if (!epMatch || epMatch[1] === currentEpId) return;
-          const resolved = resolveUrl(h, pageUrl);
-          if (resolved && !seen.has(resolved)) { seen.add(resolved); epLinks.push(resolved); }
-        });
-        // ページ末尾に近い方が「次のエピソード」ナビゲーションリンクなので最後の要素を採用
-        if (epLinks.length > 0) nextPageUrl = epLinks[epLinks.length - 1];
-      }
-    } catch(e) {}
-  }
+  // カクヨムは SITE_RULES と NEXT_TEXTS スキャンで次話URLを取得する。
+  // フォールバックは削除: 最終話では前話リンクのみ存在するため
+  // epLinks[last]=前話URL を nextUrl と誤設定して30話に戻る問題が発生していた。
 
   ['script','style','iframe','nav','header','footer',
    '.ad','.advertisement','.banner','.sns','.share',
@@ -1202,11 +1212,17 @@ async function go() {
     showFetch('load', '目次を取得中…');
     try {
       const html = await fetchHtml(url);
-      const items = parseToc(url, html); // サイト別ディスパッチ
-      if (!items.length) throw new Error('目次が見つかりませんでした');
+      const items = parseToc(url, html);
+      if (!items.length) {
+        // ハーメルンはプロキシブロックで空HTMLが返ることがある→専用メッセージ
+        const isHameln = url.includes('syosetu.org');
+        throw new Error(isHameln
+          ? '目次が見つかりませんでした。ハーメルンはプロキシ制限により取得できない場合があります。時間をおいて再試行してください。'
+          : '目次が見つかりませんでした');
+      }
       hideFetch();
       const doc = new DOMParser().parseFromString(html, 'text/html');
-      const nTitle = parseTocTitle(url, doc); // サイト別タイトル取得
+      const nTitle = parseTocTitle(url, doc);
       bkSetToc(novelId, url, items.length);
       openChapPicker(nTitle, items, novelId, bk);
     } catch(e) {
