@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v59</span></div>
+  <div class="app-name">夜語り <span class="ver">v61</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -588,9 +588,12 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <ul>
     <li>小説家になろう（ncode.syosetu.com）</li>
     <li>カクヨム（kakuyomu.jp）</li>
-    <li>アルファポリス（alphapolis.co.jp）</li>
-    <li>ハーメルン（hameln.jp）</li>
-    <li>エブリスタ（estar.jp）</li>
+  </ul>
+  <h3>// 未対応サイト</h3>
+  <ul>
+    <li>アルファポリス — サイト側がクローラーアクセスをブロック</li>
+    <li>ハーメルン — Cloudflare保護により本文取得不可</li>
+    <li>エブリスタ — 1話が複数ページに分割される構造のため非対応</li>
   </ul>
 
 </div>
@@ -617,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v59';
+const APP_VER = 'v61';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -792,7 +795,9 @@ async function tryProxy(p, url) {
     if (!html || html.length < 200) throw new Error('コンテンツ空');
     return html;
   }
-  if (/Access denied|403 Forbidden|Blocked|bot detection|Enable JavaScript|just a moment|Cloudflare|DDoS protection|checking your browser|please wait|challenge/i.test(raw.slice(0,3000))) {
+  // Cloudflare/ボット検出ページを検出（先頭5000文字 + 本文中も確認）
+  const checkRange = raw.slice(0, 5000);
+  if (/Access denied|403 Forbidden|Blocked|bot detection|Enable JavaScript and cookies|just a moment|Cloudflare Ray ID|DDoS protection|checking your browser|please wait\.\.\.|Attention Required/i.test(checkRange)) {
     throw new Error('ブロック検出');
   }
   return raw;
@@ -1140,6 +1145,10 @@ function extractPage(html, pageUrl) {
   if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) {
     throw new Error('本文を取得できませんでした（最終話の可能性があります）');
   }
+  // Cloudflare/ボット検出ページが本文として取得された場合
+  if (/Enable JavaScript and cookies to continue|Just a moment|Cloudflare Ray ID/i.test(rawText)) {
+    throw new Error('このページはCloudflare保護により取得できませんでした。ハーメルン等は直接アクセスが必要な場合があります。');
+  }
   if (!rawText || rawText.length < 30)
     throw new Error('本文を取得できませんでした。URLを確認してください。');
 
@@ -1314,8 +1323,11 @@ async function pickChapter(i) {
   const novelId = _pickerNovelId;
   const bk = bkGet(novelId);
   const startSeg = (bk && bk.chapterUrl === item.url) ? (bk.segIdx || 0) : 0;
-  // item.num を chapNumOverride、_pickerNovelTitle を作品タイトルとして渡す
-  await loadChapterUrl(item.url, startSeg, novelId, item.num, _pickerNovelTitle);
+  // chapNumFromUrlが0を返すサイト（カクヨム）のみitem.numで話数を上書き。
+  // なろう等はURLから正確な話数(例:1244)が取れるのでitem.numで上書きしない。
+  const urlChapNum = chapNumFromUrl(item.url);
+  const chapNum = urlChapNum || item.num;
+  await loadChapterUrl(item.url, startSeg, novelId, chapNum, _pickerNovelTitle);
 }
 
 function closeModal(e) {
