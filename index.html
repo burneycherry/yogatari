@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v63</span></div>
+  <div class="app-name">夜語り <span class="ver">v64</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v63';
+const APP_VER = 'v64';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -736,11 +736,6 @@ function inferTocUrl(chapterUrl) {
       const m = u.pathname.match(/^(\/works\/[^\/]+)/);
       if (m) return u.origin + m[1];
     }
-    // ハーメルン: /novel/XXXXX/N.html → /novel/XXXXX/
-    if (u.hostname.includes('syosetu.org')) {
-      const m = u.pathname.match(/^(\/novel\/[^\/]+)\/\d+\.html$/);
-      if (m) return u.origin + m[1] + '/';
-    }
   } catch(e) {}
   return null;
 }
@@ -751,7 +746,6 @@ function bkAll() { return Object.values(bkLoad()).sort((a,b)=>b.ts-a.ts); }
 // novelIdはしおり・履歴のキー。章URLを作品単位のURLに正規化する。
 // なろう: /n1234ab/3/ → /n1234ab/
 // カクヨム: /works/XXXX/episodes/YYYY → /works/XXXX
-// ハーメルン: /novel/XXXX/1/ → /novel/XXXX/
 // 未対応サイト: URLそのまま（章ごとに別作品扱い）
 function toNovelId(url) {
   try {
@@ -763,10 +757,6 @@ function toNovelId(url) {
     if (u.hostname.includes('kakuyomu.jp')) {
       const m = u.pathname.match(/^(\/works\/[^/]+)/);
       return m ? u.origin + m[1] : url;
-    }
-    if (u.hostname.includes('syosetu.org')) { // ハーメルン
-      const m = u.pathname.match(/^(\/novel\/[^/]+)/);
-      return m ? u.origin + m[1] + '/' : url;
     }
     return url;
   } catch(e) { return url; }
@@ -841,13 +831,10 @@ const SITE_RULES = [
   { host:'kakuyomu.jp',         body:'.p-novel__body,.widget-episodeBody,.js-episode-body',
     next:'a.widget-episodeNavigation-button-next,a[rel="next"],a[href*="/episodes/"][class*="next"]' },
   { host:'alphapolis.co.jp',    body:'.content-text,.novel_text',             next:'a.next,a[href*="next"]' },
-  // ハーメルン: body は #honbun、next は nextpageリンク
-  { host:'syosetu.org',         body:'#honbun',                               next:'a#nextpage,.ss_rightbutton a,td.no_right a:last-child' },
-  { host:'hameln.jp',           body:'#honbun',                               next:'a#nextpage,td.no_right a:last-child' },
   { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0',       next:'' },
   { host:'estar.jp',            body:'#novel-content,.novel-content',         next:'.pager-next a' },
 ];
-// 「次のエピソード」(カクヨム)、「次のページへ」(ハーメルン等)を追加
+// 「次のエピソード」(カクヨム)等を含む次話テキスト一覧
 const NEXT_TEXTS = ['次の話','次話','次章','次のページ','次へ','次話へ','次のエピソード','次のページへ','>>','→','next','次回'];
 
 function getRule(url) {
@@ -861,7 +848,6 @@ function getRule(url) {
 // 目次URLかどうかを判定する（章URLではなく作品トップURL）
 // なろう:   /nXXXXXX/        (数字なし)
 // カクヨム: /works/XXXXXX    (episodes/を含まない)
-// ハーメルン: /novel/XXXXXX/ (数字サフィックスなし)
 function isIndexUrl(url) {
   try {
     const u = new URL(url);
@@ -871,10 +857,6 @@ function isIndexUrl(url) {
     if (u.hostname.includes('kakuyomu.jp')) {
       // /works/XXXX はOK、/works/XXXX/episodes/YYYY はNG
       return /^\/works\/[^/]+\/?$/.test(u.pathname);
-    }
-    if (u.hostname.includes('syosetu.org')) { // ハーメルン
-      // /novel/XXXX/ はOK、/novel/XXXX/1/ はNG
-      return /^\/novel\/[^/]+\/?$/.test(u.pathname);
     }
   } catch(e) {}
   return false;
@@ -979,75 +961,11 @@ function findInObj(obj, key, depth = 0) {
   return null;
 }
 
-// ── ハーメルン目次パーサー ──
-// 話URLは /novel/XXXXX/N.html 形式（末尾スラッシュなし・.html付き）
-// プロキシ経由では絶対パス・相対パス・ルートパスが混在するため全パターン対応
-function parseHamelnToc(html, baseUrl) {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const items = [];
-  const seen = new Set();
-  let num = 0;
-
-  const wm = new URL(baseUrl).pathname.match(/\/novel\/([^/]+)/);
-  if (!wm) return items;
-  const novelId = wm[1];
-  const novelPath = '/novel/' + novelId + '/';
-
-  doc.querySelectorAll('a[href]').forEach(a => {
-    const href = a.getAttribute('href');
-    if (!href) return;
-
-    // パターン①: 絶対/ルートパス → /novel/XXXXX/N.html
-    // パターン②: 相対パス → N.html or ./N.html（プロキシが相対パスのまま返す場合）
-    const isAbsolute = href.includes(novelPath);
-    const isRelative = /^\.?\/?(\d+)\.html$/.test(href);
-    if (!isAbsolute && !isRelative) return;
-
-    // 数字+.html の部分を抽出
-    const m = href.match(/(\d+)\.html$/);
-    if (!m) return;
-
-    const url = resolveUrl(href, baseUrl);
-    if (!url || seen.has(url)) return;
-    const txt = a.textContent.trim();
-    if (!txt || txt.length > 100) return;
-    if (/^(前|次|目次|back|next|トップ|\d+話へ)/i.test(txt)) return;
-    seen.add(url);
-    num++;
-    items.push({ title: txt, url, num });
-  });
-
-  // フォールバック: 絶対パスマッチが0件の場合、resolveUrl後のURLで再スキャン
-  // （プロキシが base href を書き換えている場合の対策）
-  if (items.length === 0) {
-    const seen2 = new Set();
-    doc.querySelectorAll('a[href]').forEach(a => {
-      const href = a.getAttribute('href');
-      if (!href) return;
-      const resolved = resolveUrl(href, baseUrl);
-      if (!resolved) return;
-      // resolveUrl後のURLが /novel/XXXXX/N.html パターンに一致するか確認
-      const m = resolved.match(/\/novel\/[^/]+\/(\d+)\.html$/);
-      if (!m) return;
-      if (seen2.has(resolved)) return;
-      const txt = a.textContent.trim();
-      if (!txt || txt.length > 100) return;
-      if (/^(前|次|目次|back|next|トップ)/i.test(txt)) return;
-      seen2.add(resolved);
-      items.push({ title: txt, url: resolved, num: items.length + 1 });
-    });
-    // num を再採番
-    items.forEach((it, i) => { it.num = i + 1; });
-  }
-  return items;
-}
-
 // ── 統合目次パーサー ── サイトに応じてパーサーを選択
 function parseToc(url, html) {
   try {
     const u = new URL(url);
-    if (u.hostname.includes('kakuyomu.jp'))  return parseKakuyomuToc(html, url);
-    if (u.hostname.includes('syosetu.org'))  return parseHamelnToc(html, url);
+    if (u.hostname.includes('kakuyomu.jp')) return parseKakuyomuToc(html, url);
   } catch(e) {}
   return parseSyosetuToc(html, url); // なろう系はデフォルト
 }
@@ -1060,10 +978,6 @@ function parseTocTitle(url, doc) {
       // カクヨム: h1 が作品タイトル
       return doc.querySelector('h1')?.textContent?.trim() ||
              doc.querySelector('.WorkTitle')?.textContent?.trim() || '小説';
-    }
-    if (u.hostname.includes('syosetu.org')) {
-      // ハーメルン: .ss_title or h1
-      return doc.querySelector('.ss_title,.novel_title,h1')?.textContent?.trim() || '小説';
     }
   } catch(e) {}
   return doc.querySelector('.novel_title,.title,h1')?.textContent?.trim() || '小説';
@@ -1119,9 +1033,7 @@ function extractPage(html, pageUrl) {
    '#global-header','#global-footer','.novel_bn','.index_box',
    // カクヨム: ナビ・ギフト・登録促進・コメントエリアを除去
    '.widget-episodeNavigation','.widget-share','.widget-episodeFooterBanner',
-   '#GiftBox','.widget-episodeActions','.js-giftToast',
-   // ハーメルン: フッターナビ・SS共通UI
-   '.ss_read_tools','.ss_footerbanner','.ss_related'].forEach(s => {
+   '#GiftBox','.widget-episodeActions','.js-giftToast'].forEach(s => {
     try { doc.querySelectorAll(s).forEach(el=>el.remove()); } catch(e) {}
   });
 
@@ -1166,23 +1078,13 @@ function extractPage(html, pageUrl) {
 }
 
 // ── サイト別タイトル取得 ──
-// 問題: カクヨムでは h1 = 作品タイトル、h2 = エピソードタイトル
-//       なろうでは .novel_title = 作品タイトル（章タイトルは別要素）
-// 対策: サイト別に優先セレクタを変える。カクヨムは <title> タグが最も信頼できる。
 function extractTitle(doc, pageUrl) {
   try {
     const u = new URL(pageUrl);
     if (u.hostname.includes('kakuyomu.jp') && u.pathname.includes('/episodes/')) {
       // カクヨムエピソード: <title> = 「第N話 タイトル - 作品名 - カクヨム」→ 最初の区切り前を取得
       const t = doc.querySelector('title')?.textContent?.trim() || '';
-      // 「第1話 祝福の儀 - ハズレスキル...」→ 「第1話 祝福の儀」
       return t.split(/\s*[-－]\s*/)[0].trim() || pageUrl;
-    }
-    if (u.hostname.includes('syosetu.org')) { // ハーメルン
-      return (
-        doc.querySelector('.novel_title,.ss_title,h1')?.textContent?.trim() ||
-        doc.querySelector('title')?.textContent?.trim() || pageUrl
-      ).replace(/\s*[-|｜–—]\s*.+$/, '').trim();
     }
   } catch(e) {}
   // デフォルト（なろう等）
@@ -1197,17 +1099,11 @@ function resolveUrl(href, base) {
   try { return new URL(href, base).href; } catch(e) { return null; }
 }
 
-// カクヨムのepisode IDは18桁の数字で話数として使えないため除外する
-// ハーメルンは /novel/XXXXX/N.html 形式なので .html を除去してから数字を取得
+// カクヨムのepisode IDは18桁の数字で話数として使えないため0を返す（ピッカー経由でitem.numを使用）
 function chapNumFromUrl(url) {
   try {
     const u = new URL(url);
-    if (u.hostname.includes('kakuyomu.jp')) return 0; // ピッカー経由でitem.numを使用
-    if (u.hostname.includes('syosetu.org')) {
-      // /novel/405615/7.html → 7
-      const m = u.pathname.match(/\/(\d+)\.html$/);
-      return m ? parseInt(m[1]) : 1;
-    }
+    if (u.hostname.includes('kakuyomu.jp')) return 0;
   } catch(e) {}
   const m = url.match(/\/(\d+)\/?$/);
   return m ? parseInt(m[1]) : 1;
@@ -1233,11 +1129,7 @@ async function go() {
       const html = await fetchHtml(url);
       const items = parseToc(url, html);
       if (!items.length) {
-        // ハーメルンはプロキシブロックで空HTMLが返ることがある→専用メッセージ
-        const isHameln = url.includes('syosetu.org');
-        throw new Error(isHameln
-          ? '目次が見つかりませんでした。ハーメルンはプロキシ制限により取得できない場合があります。時間をおいて再試行してください。'
-          : '目次が見つかりませんでした');
+        throw new Error('目次が見つかりませんでした');
       }
       hideFetch();
       const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -1407,13 +1299,11 @@ function splitText(t) {
   return t.replace(/\r\n/g,'\n').split(/\n+/).map(s=>s.trim()).filter(s=>{
     if (!s.length) return false;
     if (s.length > 20) return true;
-    // ナビゲーション系UI文言を除外（なろう・カクヨム・ハーメルン共通）
+    // ナビゲーション系UI文言を除外
     if (/^(前へ|次へ|目次|<<|>>|＜＜|＞＞|PREV|NEXT|前の話|次の話|前のエピソード|次のエピソード)/.test(s)) return false;
     if (/^[←→◀▶]/.test(s) && s.length < 10) return false;
     // カクヨム: 登録促進・応援UI
     if (/^(新規登録で充実|作者を応援|応援する|応援コメント|ハートをクリック|ギフトを贈る)/.test(s)) return false;
-    // ハーメルン: フッターUI
-    if (/^(前のページへ|次のページへ|目次へ|ブックマーク|感想を書く)/.test(s)) return false;
     return true;
   });
 }
