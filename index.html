@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v71</span></div>
+  <div class="app-name">夜語り <span class="ver">v72</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v71';
+const APP_VER = 'v72';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -840,6 +840,35 @@ function toNovelId(url) {
 let segs=[], idx=0, playing=false;
 let nextUrl=null, prevUrl=null, nextTimer=null, nextCount=0;
 let queue=[], qi=0;
+
+// [FIX] キュー上限管理: 無限に増え続けるとiOSのメモリ圧迫を引き起こす
+// 上限10件。超えた場合は完了済み(done=true)の古いエントリを優先的に削除。
+const QUEUE_MAX = 10;
+function trimQueue() {
+  if (queue.length <= QUEUE_MAX) return;
+  // 完了済みエントリを古い順に削除してqiを維持
+  let removed = 0;
+  const target = queue.length - QUEUE_MAX;
+  const newQueue = [];
+  let newQi = qi;
+  for (let i = 0; i < queue.length; i++) {
+    if (removed < target && queue[i].done && i !== qi) {
+      removed++;
+      if (i < qi) newQi--;
+    } else {
+      newQueue.push(queue[i]);
+    }
+  }
+  // 完了済みだけでは足りない場合は先頭から削除（qi以外）
+  while (newQueue.length > QUEUE_MAX) {
+    const delIdx = newQueue.findIndex((q, i) => i !== newQi);
+    if (delIdx < 0) break;
+    newQueue.splice(delIdx, 1);
+    if (delIdx < newQi) newQi--;
+  }
+  queue = newQueue;
+  qi = Math.max(0, Math.min(newQi, queue.length - 1));
+}
 let watchdog=null;
 let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentChapterNum=1, currentChapterUrl=null;
 
@@ -1285,7 +1314,7 @@ async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNum
     currentChapterTitle = page.title;
     currentChapterNum = chapNumOverride || chapNumFromUrl(url) || 1;
 
-    if (!queue.find(q=>q.url===url)) { queue.push({url, title:page.title, done:false}); qi=queue.length-1; }
+    if (!queue.find(q=>q.url===url)) { queue.push({url, title:page.title, done:false}); qi=queue.length-1; trimQueue(); }
     else qi = queue.findIndex(q=>q.url===url);
 
     // [FIX1] フレッシュロードなので prevUrlHint=null を明示。
@@ -1970,7 +1999,7 @@ async function goPrev() {
   const url = prevUrl;
   document.getElementById('urlIn').value = url;
   stop(); disable(true); showFetch('load','前の話を取得中…');
-  if (!queue.find(q=>q.url===url)) { queue.push({url,title:'読込中…',done:false}); qi=queue.length-1; }
+  if (!queue.find(q=>q.url===url)) { queue.push({url,title:'読込中…',done:false}); qi=queue.length-1; trimQueue(); }
   else qi = queue.findIndex(q=>q.url===url);
   try {
     const html = await fetchHtml(url);
@@ -2032,7 +2061,7 @@ async function goNext() {
   const url=nextUrl;
   document.getElementById('urlIn').value=url;
   stop(); disable(true); showFetch('load','次のページ取得中…');
-  if(!queue.find(q=>q.url===url)){queue.push({url,title:'読込中…',done:false});qi=queue.length-1;}
+  if(!queue.find(q=>q.url===url)){queue.push({url,title:'読込中…',done:false});qi=queue.length-1; trimQueue();}
   else qi=queue.findIndex(q=>q.url===url);
   try {
     let page = null;
@@ -2262,7 +2291,7 @@ async function resumeFrom(novelId) {
     const titleNumMatch = (bk.chapterTitle || '').match(/^第(\d+)話/);
     const titleNum = titleNumMatch ? parseInt(titleNumMatch[1]) : 0;
     currentChapterNum = resumeUrlNum || titleNum || bk.chapterNum || 1;
-    if (!queue.find(q=>q.url===bk.chapterUrl)) { queue.push({url:bk.chapterUrl,title:page.title,done:false}); qi=queue.length-1; }
+    if (!queue.find(q=>q.url===bk.chapterUrl)) { queue.push({url:bk.chapterUrl,title:page.title,done:false}); qi=queue.length-1; trimQueue(); }
     else qi = queue.findIndex(q=>q.url===bk.chapterUrl);
     // [FIX1] 履歴からの再開はフレッシュロードなのでprevUrlHint=null
     displayPage(page, bk.chapterUrl, bk.segIdx||0, null);
