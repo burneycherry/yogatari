@@ -257,7 +257,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v72</span></div>
+  <div class="app-name">夜語り <span class="ver">v73</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -620,7 +620,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v72';
+const APP_VER = 'v73';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1438,7 +1438,25 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
   if (nextUrl) {
     clearNextChapterCache();
     // [FIX] レート制限対策: 先読みを3秒後に遅らせて本文fetchと競合させない
-    setTimeout(() => prefetchNextChapter(nextUrl), 3000);
+    // ただしカクヨムはnextUrlが取れないケースがあるため即時prefetchを試みる
+    const prefetchDelay = (nextUrl && nextUrl.includes('kakuyomu.jp')) ? 500 : 3000;
+    setTimeout(() => prefetchNextChapter(nextUrl), prefetchDelay);
+  } else if (currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
+    // [FIX] カクヨムでnextUrlが取れなかった場合でも、エピソードの次話を先読みして
+    // nextUrlを確定させる。displayPage直後にカクヨム作品のnextUrlを積極的に取得。
+    setTimeout(async () => {
+      if (nextUrl) return; // その間に取れていれば不要
+      try {
+        const curHtml = await fetchHtml(currentChapterUrl);
+        const curPage = extractPage(curHtml, currentChapterUrl);
+        if (curPage.nextUrl && !nextUrl) {
+          nextUrl = curPage.nextUrl;
+          const bNextEl = document.getElementById('bNext');
+          if (bNextEl) bNextEl.disabled = false;
+          prefetchNextChapter(nextUrl);
+        }
+      } catch(e) {}
+    }, 1000);
   }
 }
 
@@ -1517,6 +1535,14 @@ function prefetchNextChapter(url) {
     promise: fetchHtml(url).then(html => {
       const page = extractPage(html, url);
       _nextPageCache = { url, page };
+      // [FIX] 先読みが成功した時点でnextUrlを確定する
+      // 問題: displayPage時にプロキシHTMLが不完全でnextUrl=nullになることがある
+      // 解決: prefetchが成功したURLは確実に存在するのでnextUrlに設定し直す
+      if (!nextUrl || nextUrl !== url) {
+        nextUrl = url;
+        const bNextEl = document.getElementById('bNext');
+        if (bNextEl) bNextEl.disabled = false;
+      }
       if (hasGoogleKey() && page.text) {
         const nextSegs = splitText(page.text);
         if (nextSegs.length > 0) {
