@@ -246,7 +246,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v77</span></div>
+  <div class="app-name">夜語り <span class="ver">v78</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -595,7 +595,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v77';
+const APP_VER = 'v78';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1522,19 +1522,27 @@ const _prefetchCache = new Map();
 // ── 次話HTML先読みキャッシュ ──
 let _nextHtmlCache = null;
 let _nextPageCache = null;
+// [FIX] prefetch世代ID: clearNextChapterCache後に古いpromise.then()が
+// nextUrlを別作品のURLで上書きする問題を防ぐ
+// 各prefetch起動時にインクリメントし、then()内で現在の世代と一致するか確認する
+let _prefetchGeneration = 0;
 
 function prefetchNextChapter(url) {
   if (!url) return;
   if (_nextHtmlCache && _nextHtmlCache.url === url) return;
+  const myGeneration = ++_prefetchGeneration;
   _nextHtmlCache = {
     url,
     promise: fetchHtml(url).then(html => {
+      // [FIX] 世代チェック: clearNextChapterCacheが呼ばれていたら世代が変わっている
+      // → 別の作品/話に切り替わっているので nextUrl を上書きしない
+      if (myGeneration !== _prefetchGeneration) return null;
       const page = extractPage(html, url);
       _nextPageCache = { url, page };
       // [FIX] 先読みが成功した時点でnextUrlを確定する
       // 問題: displayPage時にプロキシHTMLが不完全でnextUrl=nullになることがある
       // 解決: prefetchが成功したURLは確実に存在するのでnextUrlに設定し直す
-      if (!nextUrl || nextUrl !== url) {
+      if (myGeneration === _prefetchGeneration && (!nextUrl || nextUrl !== url)) {
         nextUrl = url;
         const bNextEl = document.getElementById('bNext');
         if (bNextEl) bNextEl.disabled = false;
@@ -1555,6 +1563,7 @@ function prefetchNextChapter(url) {
 let _nextAudioCache = [];
 
 function clearNextChapterCache() {
+  _prefetchGeneration++; // 古いprefetchのthen()を無効化
   _nextHtmlCache = null;
   _nextPageCache = null;
   _nextAudioCache = [];
