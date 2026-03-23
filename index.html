@@ -246,7 +246,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v75</span></div>
+  <div class="app-name">夜語り <span class="ver">v76</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -595,7 +595,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v75';
+const APP_VER = 'v76';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -814,6 +814,25 @@ function toNovelId(url) {
 // ═══════════════════════════════════════════
 let segs=[], idx=0, playing=false;
 let nextUrl=null, prevUrl=null, nextTimer=null, nextCount=0;
+let _goNextRunning = false; // goNext再入防止フラグ
+
+// [FIX] MediaSession対策: 段落間ギャップ中も audio要素を再生中に保つ
+// iOSはaudio要素が停止すると再生セッションを終了してしまうため
+// 次の音声をロード中は極短い無音MP3を再生してセッションを維持する
+// Base64エンコードした0.1秒の無音MP3（44バイト）
+const SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e////////////////////////////////////////////////////////////////AAAAAExhdmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//sQRAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE==';
+
+function keepAudioSessionAlive() {
+  // 段落間ギャップ中に無音を再生してiOSセッションを維持する
+  if (!playing) return;
+  try {
+    const el = getAudioEl();
+    if (el && el.paused) {
+      el.src = SILENT_MP3;
+      el.play().catch(() => {});
+    }
+  } catch(e) {}
+}
 let queue=[], qi=0;
 
 // [FIX] キュー上限管理: 無限に増え続けるとiOSのメモリ圧迫を引き起こす
@@ -1768,8 +1787,9 @@ function speakIdx(i) {
         clearWatchdog();
         if (playing && !_tabSw) {
           // [FIX] 次の音声をロード中の無音ギャップでiOSがセッション終了と誤判定するのを防ぐ
-          // onended直後にplaying状態を再通知してセッションを維持する
+          // onended直後にplaying状態を再通知 + 無音再生でセッションを維持する
           msSetState('playing');
+          keepAudioSessionAlive();
           speakIdx(idx + 1);
         }
       };
@@ -2030,6 +2050,17 @@ async function goPrev() {
 }
 
 async function goNext() {
+  // [FIX] 再入防止: 自動カウントダウンと手動ボタン押しの二重実行を防ぐ
+  if (_goNextRunning) return;
+  _goNextRunning = true;
+  try {
+    await _goNextImpl();
+  } finally {
+    _goNextRunning = false;
+  }
+}
+
+async function _goNextImpl() {
   // [FIX] カクヨムでnextUrlがnullの場合の多段フォールバック
   // カクヨムTOCは最初の7〜30話しか返さないため、TOC検索が失敗するケースがある。
   // そのため以下の順で試みる:
@@ -2148,7 +2179,7 @@ async function goNext() {
     }
   }
   disable(false);
-}
+} // end _goNextImpl
 
 // ═══════════════════════════════════════════
 //  QUEUE
