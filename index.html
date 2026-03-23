@@ -165,18 +165,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .cfm-btn-cancel:active{border-color:#9e8660;color:#ede0c6}
 
 /* ── CONFIRM DIALOG ── */
-.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:500;display:none;align-items:center;justify-content:center;padding:24px}
-.confirm-overlay.show{display:flex}
-.confirm-box{background:#1e1a15;border:1px solid #564838;border-radius:16px;width:100%;max-width:340px;padding:24px 20px}
-.confirm-icon{font-size:32px;text-align:center;margin-bottom:12px}
-.confirm-title{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:17px;color:#ede0c6;text-align:center;margin-bottom:8px}
-.confirm-msg{font-size:13px;color:#9e8660;line-height:1.8;text-align:center;margin-bottom:20px}
-.confirm-btns{display:flex;gap:10px}
-.confirm-btn{flex:1;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:14px;padding:12px;border-radius:10px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s;text-align:center}
-.confirm-btn-ok{background:#c8991e;border-color:#c8991e;color:#0a0908;font-weight:bold}
-.confirm-btn-ok:active{background:#e8be50}
-.confirm-btn-cancel{background:none;border-color:#302618;color:#9e8660}
-.confirm-btn-cancel:active{border-color:#9e8660}
+// README modal
 
 /* ── README BUTTON ── */
 .readme-btn{width:28px;height:28px;border-radius:50%;background:none;border:1px solid #302618;color:#564838;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0}
@@ -257,7 +246,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v73</span></div>
+  <div class="app-name">夜語り <span class="ver">v75</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -496,20 +485,6 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   </div>
 </div>
 
-<!-- CONFIRM DIALOG -->
-
-<div class="confirm-overlay" id="confirmOverlay">
-  <div class="confirm-box">
-    <div class="confirm-icon" id="confirmIcon">⚠️</div>
-    <div class="confirm-title" id="confirmTitle">確認</div>
-    <div class="confirm-msg" id="confirmMsg"></div>
-    <div class="confirm-btns">
-      <button class="confirm-btn confirm-btn-cancel" onclick="confirmCancel()">キャンセル</button>
-      <button class="confirm-btn confirm-btn-ok" id="confirmOkBtn" onclick="confirmOk()">実行</button>
-    </div>
-  </div>
-</div>
-
 <!-- README MODAL -->
 
 <div class="rdm-overlay" id="rdmOverlay" onclick="if(event.target===this)closeReadme()">
@@ -620,7 +595,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v73';
+const APP_VER = 'v75';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1398,7 +1373,9 @@ async function resumeBookmark() {
   const bk = bkGet(novelId);
   if (!bk) { toast('しおりが見つかりません'); return; }
   hideResumeBanner();
-  await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId);
+  const titleNum = (bk.chapterTitle || '').match(/^第(\d+)話/);
+  const chapNum = chapNumFromUrl(bk.chapterUrl) || (titleNum ? parseInt(titleNum[1]) : 0) || bk.chapterNum || 1;
+  await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId, chapNum, bk.novelTitle || '');
 }
 
 // ═══════════════════════════════════════════
@@ -1430,7 +1407,7 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
   // [FIX] カクヨムはプロキシHTML不完全でnextUrlがnullになる場合がある。
   // その場合も「次話→」ボタンを完全無効化せず、goNext側で取得を試みる。
   // なろうはURLフォールバックがあるので問題なし。
-  const isKakuyomu = currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp');
+  const isKakuyomu = url && url.includes('kakuyomu.jp');
   document.getElementById('bNext').disabled = !(nextUrl || isKakuyomu);
   document.getElementById('bPrev2').disabled = !prevUrl;
   renderQueue();
@@ -1646,7 +1623,7 @@ function skipSec(sec) {
   } else {
     if (sec > 0) nextSeg(); else prevSeg();
   }
-  showSkipLabel(sec > 0 ? '+5秒' : '-5秒');
+  showSkipLabel(sec > 0 ? '+' + Math.abs(sec) + '秒' : '-' + Math.abs(sec) + '秒');
 }
 
 function showSkipLabel(text) {
@@ -1759,6 +1736,13 @@ function speakIdx(i) {
     if (queue[qi]) queue[qi].done = true;
     renderQueue();
     clearPrefetchCache();
+    // [FIX] nextUrlがnullでも_nextHtmlCacheがあれば先読み済みのURLを使う
+    // prefetchNextChapterが成功してnextUrlをセットするまでの競合を防ぐ
+    if (!nextUrl && _nextHtmlCache && _nextHtmlCache.url) {
+      nextUrl = _nextHtmlCache.url;
+      const bNextEl = document.getElementById('bNext');
+      if (bNextEl) bNextEl.disabled = false;
+    }
     if (nextUrl) startNextCd(); else toast('📖 この話の読み上げが完了しました');
     return;
   }
@@ -2049,38 +2033,48 @@ async function goNext() {
   // [FIX] カクヨムでnextUrlがnullの場合の多段フォールバック
   // カクヨムTOCは最初の7〜30話しか返さないため、TOC検索が失敗するケースがある。
   // そのため以下の順で試みる:
-  //   ① 現在のエピソードページを再fetchして nextUrl を直接取得
-  //   ② それも失敗した場合のみ TOC を使う
+  //   ① _nextHtmlCacheにURLがあればそれを使う（disable不要・即時）
+  //   ② 現在のエピソードページを再fetchして nextUrl を直接取得
+  //   ③ それも失敗した場合のみ TOC を使う
   if (!nextUrl && currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
-    showFetch('load', '次話URLを取得中…');
-    disable(true);
-    try {
-      // ① 現在のエピソードページを再fetchしてnextUrlを抽出
-      const curHtml = await fetchHtml(currentChapterUrl);
-      const curPage = extractPage(curHtml, currentChapterUrl);
-      if (curPage.nextUrl) {
-        nextUrl = curPage.nextUrl;
-        document.getElementById('bNext').disabled = false;
-      }
-    } catch(e) {}
+    // ① 先読みキャッシュからURLを即時取得（UIロック不要）
+    if (_nextHtmlCache && _nextHtmlCache.url) {
+      nextUrl = _nextHtmlCache.url;
+      document.getElementById('bNext').disabled = false;
+    }
 
-    // ② ①で取れなかった場合はTOCをfetch
+    // ②③ キャッシュにもなければfetchで取得（UIをロックして実行）
     if (!nextUrl) {
+      showFetch('load', '次話URLを取得中…');
+      disable(true);
       try {
-        const tocUrl = inferTocUrl(currentChapterUrl);
-        if (tocUrl) {
-          const html = await fetchHtml(tocUrl);
-          const items = parseKakuyomuToc(html, tocUrl);
-          const curIdx = items.findIndex(it => it.url === currentChapterUrl);
-          if (curIdx >= 0 && curIdx < items.length - 1) {
-            nextUrl = items[curIdx + 1].url;
-            document.getElementById('bNext').disabled = false;
-          }
+        // ② 現在のエピソードページを再fetchしてnextUrlを抽出
+        const curHtml = await fetchHtml(currentChapterUrl);
+        const curPage = extractPage(curHtml, currentChapterUrl);
+        if (curPage.nextUrl) {
+          nextUrl = curPage.nextUrl;
+          document.getElementById('bNext').disabled = false;
         }
       } catch(e) {}
+
+      // ③ ②で取れなかった場合はTOCをfetch
+      if (!nextUrl) {
+        try {
+          const tocUrl = inferTocUrl(currentChapterUrl);
+          if (tocUrl) {
+            const html = await fetchHtml(tocUrl);
+            const items = parseKakuyomuToc(html, tocUrl);
+            const curIdx = items.findIndex(it => it.url === currentChapterUrl);
+            if (curIdx >= 0 && curIdx < items.length - 1) {
+              nextUrl = items[curIdx + 1].url;
+              document.getElementById('bNext').disabled = false;
+            }
+          }
+        } catch(e) {}
+      }
+      disable(false);
+      if (!nextUrl) { toast('次のページが見つかりませんでした'); hideFetch(); return; }
     }
-    disable(false);
-    if (!nextUrl) { toast('次のページが見つかりませんでした'); hideFetch(); return; }
   }
 
   if(!nextUrl){toast('次のページなし');return;}
@@ -2398,24 +2392,6 @@ function openConfirm(title, msg, onOk) {
 function closeConfirm() {
   document.getElementById('cfmOverlay').classList.remove('show');
   _cfmCallback = null;
-}
-
-let _confirmCallback = null;
-function showConfirm(icon, title, msg, okLabel, callback) {
-  document.getElementById('confirmIcon').textContent = icon;
-  document.getElementById('confirmTitle').textContent = title;
-  document.getElementById('confirmMsg').textContent = msg;
-  document.getElementById('confirmOkBtn').textContent = okLabel;
-  _confirmCallback = callback;
-  document.getElementById('confirmOverlay').classList.add('show');
-}
-function confirmOk() {
-  document.getElementById('confirmOverlay').classList.remove('show');
-  if (_confirmCallback) { _confirmCallback(); _confirmCallback = null; }
-}
-function confirmCancel() {
-  document.getElementById('confirmOverlay').classList.remove('show');
-  _confirmCallback = null;
 }
 
 // ═══════════════════════════════════════════
