@@ -246,7 +246,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v76</span></div>
+  <div class="app-name">夜語り <span class="ver">v77</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -595,7 +595,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v76';
+const APP_VER = 'v77';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -1897,6 +1897,17 @@ function stop() {
   updBtn(); setBadge(false); cancelNext();
   msSetState('none');
 }
+
+// [FIX] 章移動専用のstop: MediaSessionの状態を変えない
+// goNext/goPrev の章移動では「再生中→fetch→再生中」という流れになるため
+// stop()のmsSetState('none')を呼ぶとロック画面が「再生停止中」になってしまう
+function stopForChapterTransition() {
+  playing = false; _busy = false;
+  SS.cancel(); stopGoogleAudio();
+  clearWatchdog(); clearPrefetchCache();
+  updBtn(); setBadge(false); cancelNext();
+  // msSetState は呼ばない（ロック画面の再生表示を維持する）
+}
 function prevSeg() {
   if (_busy) return;
   SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false; _sentIdx = -1;
@@ -2028,7 +2039,7 @@ async function goPrev() {
   if (!prevUrl) { toast('前の話はありません'); return; }
   const url = prevUrl;
   document.getElementById('urlIn').value = url;
-  stop(); disable(true); showFetch('load','前の話を取得中…');
+  stopForChapterTransition(); disable(true); showFetch('load','前の話を取得中…');
   if (!queue.find(q=>q.url===url)) { queue.push({url,title:'読込中…',done:false}); qi=queue.length-1; trimQueue(); }
   else qi = queue.findIndex(q=>q.url===url);
   try {
@@ -2111,7 +2122,7 @@ async function _goNextImpl() {
   if(!nextUrl){toast('次のページなし');return;}
   const url=nextUrl;
   document.getElementById('urlIn').value=url;
-  stop(); disable(true); showFetch('load','次のページ取得中…');
+  stopForChapterTransition(); disable(true); showFetch('load','次のページ取得中…');
   if(!queue.find(q=>q.url===url)){queue.push({url,title:'読込中…',done:false});qi=queue.length-1; trimQueue();}
   else qi=queue.findIndex(q=>q.url===url);
   try {
