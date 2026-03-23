@@ -246,7 +246,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <!-- TOP BAR -->
 
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v78</span></div>
+  <div class="app-name">夜語り <span class="ver">v80</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -595,7 +595,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 // ═══════════════════════════════════════════
 //  VERSION
 // ═══════════════════════════════════════════
-const APP_VER = 'v78';
+const APP_VER = 'v80';
 
 // ═══════════════════════════════════════════
 //  BACKGROUND AUDIO SESSION (iOS)
@@ -921,9 +921,13 @@ async function fetchHtml(url) {
           failCount++;
           if (failCount === PROXIES.length && !settled) {
             settled = true;
+            const isKakuyomu = url.includes('kakuyomu.jp');
             reject(new Error(
-              'ページ取得失敗。なろう等は直接取得できない場合があります。\n' +
-              '📋 ' + errors.slice(0,4).join(' ／ ')
+              'ページ取得失敗。' +
+              (isKakuyomu
+                ? 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。'
+                : 'なろう等は直接取得できない場合があります。') +
+              '\n📋 ' + errors.slice(0,4).join(' ／ ')
             ));
           }
         });
@@ -1258,6 +1262,10 @@ async function go() {
   disable(true); cancelNext(); stop();
 
   const novelId = toNovelId(url);
+  // [FIX] 別の作品に切り替わる場合はキューをリセット
+  if (currentNovelId && currentNovelId !== novelId) {
+    queue = []; qi = 0;
+  }
   const bk = bkGet(novelId);
 
   if (isIndexUrl(url)) {
@@ -1274,7 +1282,14 @@ async function go() {
       bkSetToc(novelId, url, items.length);
       openChapPicker(nTitle, items, novelId, bk);
     } catch(e) {
-      showFetch('err', e.message);
+      const errMsg = e.message || '';
+      const isKakuyomuUrl = url.includes('kakuyomu.jp');
+      const isNetFail = errMsg.includes('取得失敗') || errMsg.includes('Load failed') || errMsg.includes('HTTP 4');
+      if (isKakuyomuUrl && isNetFail) {
+        showFetch('err', 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。');
+      } else {
+        showFetch('err', errMsg);
+      }
     }
     disable(false);
     return;
@@ -1301,6 +1316,11 @@ async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNum
     const html = await fetchHtml(url);
     const page = extractPage(html, url);
     const novelId = novelIdOverride || toNovelId(url);
+    // [FIX] 別の作品に切り替わる場合はキューをリセット
+    // 前の作品の話がキューに残ると混在表示・誤ジャンプの原因になる
+    if (currentNovelId && currentNovelId !== novelId) {
+      queue = []; qi = 0;
+    }
     currentNovelId = novelId;
     // [FIX] 作品タイトルの優先順: ①ピッカーから渡されたタイトル ②既存しおりのタイトル ③ページタイトル（最終手段）
     const savedNovelTitle = bkGet(novelId)?.novelTitle || '';
