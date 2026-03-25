@@ -8,432 +8,329 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り</title>
-<!-- 外部フォント依存なし: iOS/macOS標準フォントのみ使用 -->
+<title>夜語り v81</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
 body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;}
-
-/* ── TOP BAR ── */
 .topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 18px 10px;border-bottom:1px solid #302618;background:rgba(10,9,8,0.88);position:relative;z-index:1}
-.app-name{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:22px;color:#c8991e;letter-spacing:0.12em;text-shadow:0 0 24px rgba(200,153,30,0.35);display:flex;align-items:baseline;gap:7px}
-.ver{font-size:11px;color:#564838;font-family:‘Courier New’,Consolas,monospace;letter-spacing:0.1em}
+.app-name{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:22px;color:#c8991e;letter-spacing:0.12em;text-shadow:0 0 24px rgba(200,153,30,0.35);display:flex;align-items:baseline;gap:7px}
+.ver{font-size:11px;color:#564838;font-family:'Courier New',Consolas,monospace;letter-spacing:0.1em}
 .topbar-right{display:flex;align-items:center;gap:12px}
-.badge{font-family:‘Courier New’,Consolas,monospace;font-size:12px;letter-spacing:0.04em;color:#564838;display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid #302618;background:#1e1a15;transition:all 0.3s}
+.badge{font-family:'Courier New',Consolas,monospace;font-size:12px;letter-spacing:0.04em;color:#564838;display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid #302618;background:#1e1a15;transition:all 0.3s}
 .badge.on{color:#e8be50;border-color:rgba(200,153,30,0.4);background:rgba(200,153,30,0.1);box-shadow:0 0 12px rgba(200,153,30,0.15)}
 .bdot{width:7px;height:7px;border-radius:50%;background:#564838;transition:all 0.3s;flex-shrink:0}
 .badge.on .bdot{background:#e8be50;box-shadow:0 0 8px #e8be50;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
-.hist-btn{font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#9e8660;background:none;border:1px solid #302618;border-radius:8px;padding:5px 10px;cursor:pointer;transition:all 0.15s}
+.hist-btn{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#9e8660;background:none;border:1px solid #302618;border-radius:8px;padding:5px 10px;cursor:pointer;transition:all 0.15s}
 .hist-btn:active{border-color:#c8991e;color:#c8991e}
-
-/* ── TAB BAR ── */
 .tab-bar{flex-shrink:0;display:flex;border-bottom:1px solid #302618;position:relative;z-index:20;background:rgba(10,9,8,0.88)}
-.tab{flex:1;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:12px;letter-spacing:0.02em;color:#564838;background:none;border:none;padding:10px 0;cursor:pointer;position:relative;transition:color 0.2s}
+.tab{flex:1;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:12px;letter-spacing:0.02em;color:#564838;background:none;border:none;padding:10px 0;cursor:pointer;position:relative;transition:color 0.2s}
 .tab.active{color:#c8991e}
-.tab.active::after{content:’’;position:absolute;bottom:0;left:20%;right:20%;height:1.5px;background:#c8991e}
-
-/* ── SCROLL AREA ── */
+.tab.active::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:1.5px;background:#c8991e}
 .scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 10px;position:relative;z-index:1}
 .panel{display:none}.panel.active{display:block;position:relative;z-index:1}
-
-/* ── URL ── */
 .url-row{display:flex;gap:8px;margin-bottom:10px}
-.url-in{flex:1;background:#1e1a15;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:‘Courier New’,Consolas,monospace;font-size:13px;padding:12px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;min-width:0}
+.url-in{flex:1;background:#1e1a15;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:'Courier New',Consolas,monospace;font-size:13px;padding:12px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;min-width:0}
 .url-in:focus{border-color:#c8991e}
 .url-in::placeholder{color:#564838}
-.btn{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:14px;padding:12px 16px;border-radius:10px;border:1px solid;cursor:pointer;transition:all 0.18s;white-space:nowrap;-webkit-appearance:none;user-select:none}
+.btn{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:14px;padding:12px 16px;border-radius:10px;border:1px solid;cursor:pointer;transition:all 0.18s;white-space:nowrap;-webkit-appearance:none;user-select:none}
 .btn-g{background:#c8991e;border-color:#c8991e;color:#0a0908;font-weight:700}
 .btn-g:active{background:#e8be50}
 .btn-g:disabled{opacity:0.4;pointer-events:none}
 .btn-o{background:none;border-color:#302618;color:#9e8660;padding:12px 12px}
 .btn-o:active{border-color:#9e8660}
-
-/* ── FETCH BOX ── */
-.fetch-box{display:none;align-items:center;gap:10px;padding:11px 14px;background:#1e1a15;border:1px solid #302618;border-radius:10px;margin-bottom:10px;font-family:‘Courier New’,Consolas,monospace;font-size:12px;color:#9e8660}
+.fetch-box{display:none;align-items:center;gap:10px;padding:11px 14px;background:#1e1a15;border:1px solid #302618;border-radius:10px;margin-bottom:10px;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#9e8660}
 .fetch-box.show{display:flex}
 .fetch-box.err{border-color:#8b2020;color:#e05050}
 .spin{width:16px;height:16px;flex-shrink:0;border:2px solid #302618;border-top-color:#c8991e;border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .fetch-box.err .spin{display:none}
-
-/* ── BOOKMARK RESUME BANNER ── */
 .resume-banner{display:none;align-items:center;gap:10px;padding:11px 14px;background:rgba(42,92,58,0.2);border:1px solid rgba(42,200,80,0.2);border-radius:10px;margin-bottom:10px;cursor:pointer;transition:all 0.15s}
 .resume-banner.show{display:flex}
 .resume-banner:active{background:rgba(42,200,80,0.12)}
 .resume-icon{font-size:18px;flex-shrink:0}
 .resume-text{flex:1}
 .resume-title{font-size:13px;color:#ede0c6;margin-bottom:2px}
-.resume-sub{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838}
+.resume-sub{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838}
 .resume-arrow{color:#564838;font-size:18px;flex-shrink:0}
-
-/* ── CHAP PICKER MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:flex-end}
 .modal-overlay.show{display:flex}
 .modal-sheet{background:#141210;border-radius:16px 16px 0 0;width:100%;max-height:75vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid #302618;flex-shrink:0}
-.modal-title{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:17px;color:#e8be50;letter-spacing:0.08em}
+.modal-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:17px;color:#e8be50;letter-spacing:0.08em}
 .modal-close{font-size:20px;color:#9e8660;cursor:pointer;padding:4px 8px;background:none;border:none}
 .chap-list-wrap{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:8px 0}
 .chap-row{display:flex;align-items:center;gap:12px;padding:13px 18px;cursor:pointer;border-bottom:1px solid #302618;transition:background 0.1s}
 .chap-row:active{background:rgba(200,153,30,0.12)}
 .chap-row.bookmarked{background:rgba(200,153,30,0.06)}
-.chap-num-badge{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;min-width:32px}
+.chap-num-badge{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;min-width:32px}
 .chap-row-title{flex:1;font-size:14px;line-height:1.4}
 .bookmark-dot{width:6px;height:6px;border-radius:50%;background:#c8991e;flex-shrink:0}
-
-/* ── READING AREA ── */
 .chap-info{display:none;margin-bottom:10px}
 .chap-info.show{display:block}
-.chap-title-disp{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:17px;color:#e8be50;letter-spacing:0.08em;line-height:1.5;margin-bottom:3px}
-.chap-link{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;word-break:break-all;text-decoration:none}
+.chap-title-disp{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:17px;color:#e8be50;letter-spacing:0.08em;line-height:1.5;margin-bottom:3px}
+.chap-link{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;word-break:break-all;text-decoration:none}
 .chap-link:active{color:#c8991e}
 .prog-wrap{display:none;margin-bottom:8px}
 .prog-wrap.show{display:flex;align-items:center;gap:10px}
 .prog-track{flex:1;height:2px;background:#302618;border-radius:1px;overflow:hidden}
 .prog-fill{height:100%;background:linear-gradient(90deg,#7a5c10,#c8991e);width:0%;transition:width 0.4s}
-.prog-num{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;white-space:nowrap;min-width:56px;text-align:right}
+.prog-num{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;white-space:nowrap;min-width:56px;text-align:right}
 .novel-text{background:rgba(20,18,16,0.82);border:1px solid #302618;border-radius:12px;padding:20px 18px;font-size:16px;line-height:2.1;letter-spacing:0.04em;min-height:100px;display:none}
 .novel-text.show{display:block}
 .seg{display:inline;border-radius:3px;padding:1px 1px;transition:background 0.15s,color 0.15s}
 .seg.active{background:rgba(200,153,30,0.22);color:#e8be50;border-bottom:1.5px solid rgba(200,153,30,0.45)}
 .seg.past{color:#564838}
-.next-notice{display:none;align-items:center;gap:8px;margin-top:10px;padding:10px 14px;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:10px;font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#9e8660}
+.next-notice{display:none;align-items:center;gap:8px;margin-top:10px;padding:10px 14px;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:10px;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#9e8660}
 .next-notice.show{display:flex}
 .next-cd{color:#e8be50;font-size:15px;font-weight:bold;min-width:18px}
 .next-cancel{margin-left:auto;color:#564838;cursor:pointer;text-decoration:underline;font-size:10px}
 .queue-row{display:none;flex-wrap:wrap;gap:6px;margin-top:10px}
 .queue-row.show{display:flex}
-.q-chip{font-family:‘Courier New’,Consolas,monospace;font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid #302618;color:#564838;background:#1e1a15;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:all 0.15s}
+.q-chip{font-family:'Courier New',Consolas,monospace;font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid #302618;color:#564838;background:#1e1a15;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:all 0.15s}
 .q-chip:active{border-color:#9e8660}
 .q-chip.cur{border-color:#c8991e;color:#c8991e;background:rgba(200,153,30,0.12)}
 .q-chip.done{opacity:0.4;text-decoration:line-through}
-
-/* ── HISTORY LIST ── */
-.hist-empty{text-align:center;padding:40px 0;color:#564838;font-size:13px;font-family:‘Courier New’,Consolas,monospace}
+.hist-empty{text-align:center;padding:40px 0;color:#564838;font-size:13px;font-family:'Courier New',Consolas,monospace}
 .hist-item{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid #302618;cursor:pointer}
 .hist-item:active .hist-main{color:#c8991e}
 .hist-thumb{width:36px;height:36px;border-radius:8px;background:#28221a;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
 .hist-main{flex:1;min-width:0}
 .hist-title{font-size:14px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hist-chap-title{font-size:11px;color:#9e8660;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif}
-.hist-meta{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;display:flex;gap:8px;flex-wrap:wrap}
+.hist-chap-title{font-size:11px;color:#9e8660;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Hiragino Mincho ProN','YuMincho',serif}
+.hist-meta{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;display:flex;gap:8px;flex-wrap:wrap}
 .hist-meta span{white-space:nowrap}
 .hist-del{font-size:16px;color:#564838;background:none;border:none;cursor:pointer;padding:4px 6px;flex-shrink:0}
-.hist-new{background:#c8340c;color:#fff;font-size:10px;font-weight:bold;font-family:‘Courier New’,Consolas,monospace;padding:2px 7px;border-radius:8px;margin-left:6px;vertical-align:middle;animation:newpulse 2s ease-in-out infinite}
+.hist-new{background:#c8340c;color:#fff;font-size:10px;font-weight:bold;font-family:'Courier New',Consolas,monospace;padding:2px 7px;border-radius:8px;margin-left:6px;vertical-align:middle;animation:newpulse 2s ease-in-out infinite}
 @keyframes newpulse{0%,100%{opacity:1}50%{opacity:0.55}}
 .hist-del:active{color:#e05050}
-
-/* ── iOS BG TIP ── */
-.bg-tip{display:none;margin-top:10px;padding:10px 14px;background:rgba(139,32,32,0.15);border:1px solid rgba(139,32,32,0.3);border-radius:10px;font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#d07070;line-height:1.7}
+.bg-tip{display:none;margin-top:10px;padding:10px 14px;background:rgba(139,32,32,0.15);border:1px solid rgba(139,32,32,0.3);border-radius:10px;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#d07070;line-height:1.7}
 .bg-tip.show{display:block}
-
-/* ── BOTTOM CONTROLS ── */
 .ctrl-bar{flex-shrink:0;background:rgba(20,18,16,0.90);border-top:1px solid #302618;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));position:relative;z-index:20}
 .stepper-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:8px}
 .stepper-row{display:flex;align-items:center;gap:6px}
-.st-label{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
-.st-val{font-family:‘Courier New’,Consolas,monospace;font-size:13px;color:#c8991e;width:34px;text-align:center;flex-shrink:0;font-weight:bold}
+.st-label{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
+.st-val{font-family:'Courier New',Consolas,monospace;font-size:13px;color:#c8991e;width:34px;text-align:center;flex-shrink:0;font-weight:bold}
 .st-btn{width:32px;height:32px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;user-select:none;-webkit-appearance:none;transition:all 0.12s}
 .st-btn:active{background:rgba(200,153,30,0.12);border-color:#c8991e;color:#c8991e}
 .voice-remain-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .voice-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .remain-box{display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
-.voice-lbl{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
-select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
+.voice-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
+select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
 .btn-row{display:flex;align-items:center;justify-content:center;gap:8px}
 .cb{width:44px;height:44px;border-radius:50%;background:none;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-appearance:none;appearance:none;transition:all 0.15s;user-select:none;-webkit-appearance:none}
 .cb:active:not(:disabled){border-color:#c8991e;color:#c8991e;background:rgba(200,153,30,0.12)}
 .cb:disabled{opacity:0.2;pointer-events:none}
 .cb-play{width:54px;height:54px;font-size:20px;border-color:#c8991e;color:#c8991e}
 .cb-play.on{background:rgba(200,153,30,0.12);box-shadow:0 0 18px rgba(200,153,30,0.2)}
-.cb-nxt{width:auto;padding:0 12px;border-radius:10px;font-family:‘Courier New’,Consolas,monospace;font-size:11px;letter-spacing:0.05em}
+.cb-nxt{width:auto;padding:0 12px;border-radius:10px;font-family:'Courier New',Consolas,monospace;font-size:11px;letter-spacing:0.05em}
 .cb-nxt:not(:disabled){border-color:#c8991e;color:#c8991e}
-
-/* ── CONFIRM MODAL ── */
 .cfm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:600;display:none;align-items:center;justify-content:center;padding:24px}
 .cfm-overlay.show{display:flex}
 .cfm-box{background:#141210;border:1px solid #564838;border-radius:16px;width:100%;max-width:320px;padding:24px 20px 16px;display:flex;flex-direction:column;gap:0}
-.cfm-title{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:17px;color:#e8be50;letter-spacing:0.08em;margin-bottom:12px;text-align:center}
+.cfm-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:17px;color:#e8be50;letter-spacing:0.08em;margin-bottom:12px;text-align:center}
 .cfm-msg{font-size:13px;color:#9e8660;line-height:1.85;text-align:center;white-space:pre-line;margin-bottom:20px}
 .cfm-btns{display:flex;gap:10px}
-.cfm-btn{flex:1;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:14px;padding:13px 0;border-radius:10px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s;text-align:center}
+.cfm-btn{flex:1;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:14px;padding:13px 0;border-radius:10px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s;text-align:center}
 .cfm-btn-ok{background:#c8991e;border-color:#c8991e;color:#0a0908;font-weight:700}
 .cfm-btn-ok:active{background:#e8be50}
 .cfm-btn-cancel{background:none;border-color:#302618;color:#9e8660}
 .cfm-btn-cancel:active{border-color:#9e8660;color:#ede0c6}
-
-/* ── CONFIRM DIALOG ── */
-// README modal
-
-/* ── README BUTTON ── */
-.readme-btn{width:28px;height:28px;border-radius:50%;background:none;border:1px solid #302618;color:#564838;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0}
+.readme-btn{width:28px;height:28px;border-radius:50%;background:none;border:1px solid #302618;color:#c8991e;font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;flex-shrink:0}
 .readme-btn:active{border-color:#c8991e;color:#c8991e}
-
-/* ── README MODAL ── */
 .rdm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;display:none;align-items:flex-end}
 .rdm-overlay.show{display:flex}
 .rdm-sheet{background:#141210;border-radius:16px 16px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
 .rdm-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid #302618;flex-shrink:0}
-.rdm-title{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:18px;color:#e8be50;letter-spacing:0.1em}
+.rdm-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:18px;color:#e8be50;letter-spacing:0.1em}
 .rdm-close{font-size:20px;color:#9e8660;cursor:pointer;padding:4px 8px;background:none;border:none}
 .rdm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px 24px}
-.rdm-body h3{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:11px;letter-spacing:0.04em;color:#c8991e;margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid #302618}
+.rdm-body h3{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;letter-spacing:0.04em;color:#c8991e;margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid #302618}
 .rdm-body h3:first-child{margin-top:0}
 .rdm-body p{font-size:13px;line-height:1.9;color:#9e8660;margin-bottom:8px}
 .rdm-body ul{padding-left:0;list-style:none}
 .rdm-body ul li{font-size:13px;line-height:1.9;color:#9e8660;padding:2px 0;padding-left:14px;position:relative}
-.rdm-body ul li::before{content:’›’;position:absolute;left:0;color:#c8991e}
+.rdm-body ul li::before{content:'›';position:absolute;left:0;color:#c8991e}
 .rdm-step{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start}
-.rdm-step-num{width:22px;height:22px;border-radius:50%;background:#c8991e;color:#0a0908;font-family:‘Courier New’,Consolas,monospace;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rdm-step-num{width:22px;height:22px;border-radius:50%;background:#c8991e;color:#0a0908;font-family:'Courier New',Consolas,monospace;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .rdm-step-txt{font-size:13px;line-height:1.8;color:#9e8660;flex:1}
-.rdm-note{background:#1e1a15;border:1px solid #302618;border-radius:8px;padding:10px 14px;font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#564838;line-height:1.7;margin-top:8px}
-
-/* ── USAGE METER ── */
+.rdm-note{background:#1e1a15;border:1px solid #302618;border-radius:8px;padding:10px 14px;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#564838;line-height:1.7;margin-top:8px}
 .usage-bar-wrap{background:#1e1a15;border:1px solid #302618;border-radius:10px;padding:12px 14px;margin-bottom:10px}
 .usage-bar-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
-.usage-bar-label{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.1em}
-.usage-bar-val{font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#c8991e}
+.usage-bar-label{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.1em}
+.usage-bar-val{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#c8991e}
 .usage-track{height:6px;background:#28221a;border-radius:3px;overflow:hidden}
 .usage-fill{height:100%;background:linear-gradient(90deg,#4a9,#c8991e);border-radius:3px;transition:width 0.5s}
 .usage-fill.warn{background:linear-gradient(90deg,#c8991e,#e07030)}
 .usage-fill.over{background:linear-gradient(90deg,#e05050,#c02020)}
-.usage-reset-btn{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;margin-top:6px;display:block}
+.usage-reset-btn{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;margin-top:6px;display:block}
 .usage-reset-btn:active{color:#9e8660}
-.test-voice-btn{width:100%;padding:10px;margin:6px 0 8px;background:rgba(200,153,30,0.15);border:1px solid rgba(200,153,30,0.4);color:#c8991e;border-radius:10px;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:13px;cursor:pointer;letter-spacing:.05em}
+.test-voice-btn{width:100%;padding:10px;margin:6px 0 8px;background:rgba(200,153,30,0.15);border:1px solid rgba(200,153,30,0.4);color:#c8991e;border-radius:10px;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:13px;cursor:pointer;letter-spacing:.05em}
 .test-voice-btn:active{background:rgba(200,153,30,0.3)}
 .test-voice-btn.testing{opacity:0.6;pointer-events:none}
 .ios-hint{font-size:11px;color:#564838;background:rgba(200,153,30,0.06);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:8px 12px;margin:8px 0 0;line-height:1.7;text-align:center;transition:opacity 0.5s}
 .ios-hint.hidden{opacity:0;pointer-events:none}
-
-/* ── SETTINGS PANEL ── */
 .sett-section{margin-bottom:20px}
-.sett-title{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:11px;letter-spacing:0.04em;color:#564838;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #302618}
+.sett-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;letter-spacing:0.04em;color:#564838;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #302618}
 .sett-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .sett-label{font-size:13px;color:#ede0c6;flex:1}
-.sett-sub{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:11px;color:#564838;margin-top:3px;line-height:1.7}
-.api-input{width:100%;background:#1e1a15;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:‘Courier New’,Consolas,monospace;font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
+.sett-sub{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;color:#564838;margin-top:3px;line-height:1.7}
+.api-input{width:100%;background:#1e1a15;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:'Courier New',Consolas,monospace;font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
 .api-input:focus{border-color:#c8991e}
 .api-input::placeholder{color:#564838}
 .api-btns{display:flex;gap:8px}
-.sett-btn{font-family:‘Courier New’,Consolas,monospace;font-size:12px;padding:9px 16px;border-radius:8px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s}
+.sett-btn{font-family:'Courier New',Consolas,monospace;font-size:12px;padding:9px 16px;border-radius:8px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s}
 .sett-btn-save{background:#c8991e;border-color:#c8991e;color:#0a0908;font-weight:bold}
 .sett-btn-save:active{background:#e8be50}
 .sett-btn-clear{background:none;border-color:#302618;color:#9e8660}
 .sett-btn-clear:active{border-color:#8b2020;color:#e05050}
-.api-status{display:none;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;font-family:‘Courier New’,Consolas,monospace;font-size:11px;margin-bottom:8px}
+.api-status{display:none;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;font-family:'Courier New',Consolas,monospace;font-size:11px;margin-bottom:8px}
 .api-status.show{display:flex}
 .api-status.ok{background:rgba(42,92,58,0.2);border:1px solid rgba(42,200,80,0.2);color:#7abf8a}
 .api-status.ng{background:rgba(139,32,32,0.15);border:1px solid rgba(139,32,32,0.3);color:#e07070}
-.gv-select{width:100%;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:13px;padding:9px 12px;border-radius:10px;outline:none;-webkit-appearance:none;margin-bottom:8px}
-.howto-link{display:block;font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#9e8660;text-decoration:none;padding:8px 0}
+.gv-select{width:100%;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:13px;padding:9px 12px;border-radius:10px;outline:none;-webkit-appearance:none;margin-bottom:8px}
+.howto-link{display:block;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#9e8660;text-decoration:none;padding:8px 0}
 .howto-link:active{color:#c8991e}
-.mode-badge{display:inline-flex;align-items:center;gap:5px;font-family:‘Courier New’,Consolas,monospace;font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid #302618;color:#564838;background:#1e1a15}
+.mode-badge{display:inline-flex;align-items:center;gap:5px;font-family:'Courier New',Consolas,monospace;font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid #302618;color:#564838;background:#1e1a15}
 .mode-badge.google{border-color:rgba(66,133,244,0.4);color:#74a8f8;background:rgba(66,133,244,0.08)}
-
-/* ── TOAST ── */
-.toast{position:fixed;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(10px);background:#28221a;border:1px solid #564838;font-family:‘Courier New’,Consolas,monospace;font-size:12px;color:#ede0c6;padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
+.toast{position:fixed;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(10px);background:#28221a;border:1px solid #564838;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#ede0c6;padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
-
 </head>
 <body>
-
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
-
-<!-- TOP BAR -->
-
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v80</span></div>
+  <div class="app-name">夜語り <span class="ver">v81</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
   </div>
 </div>
-
-<!-- TAB BAR -->
-
 <div class="tab-bar">
   <button class="tab active" id="tab-read" onclick="switchTab('read')">読む</button>
   <button class="tab"        id="tab-hist" onclick="switchTab('hist')">履歴</button>
   <button class="tab"        id="tab-sett" onclick="switchTab('sett')">設定</button>
 </div>
-
-<!-- SCROLL AREA -->
-
 <div class="scroll-area">
-
-  <!-- ═══ READ PANEL ═══ -->
-
   <div class="panel active" id="panel-read">
-
-```
-<div class="url-row">
-  <input class="url-in" id="urlIn" type="url" inputmode="url" autocomplete="url"
-    placeholder="https://ncode.syosetu.com/nXXXXXX/"
-    onkeydown="if(event.key==='Enter'){this.blur();go()}">
-  <button class="btn btn-g" id="btnGo" onclick="go()">読込</button>
-  <button class="btn btn-o" onclick="resetAll()">✕</button>
-</div>
-
-<div class="fetch-box" id="fetchBox">
-  <div class="spin" id="spin"></div>
-  <span id="fetchMsg">取得中…</span>
-</div>
-
-<div class="ios-hint" id="iosHint">
-  🍎 iPhoneは最初に <b>▶を1回タップ</b> すると次の話への自動進行が有効になります
-</div>
-
-<div class="resume-banner" id="resumeBanner" onclick="resumeBookmark()">
-  <div class="resume-icon">🔖</div>
-  <div class="resume-text">
-    <div class="resume-title" id="resumeTitle">読みかけ</div>
-    <div class="resume-sub" id="resumeSub">タップで再開</div>
+    <div class="url-row">
+      <input class="url-in" id="urlIn" type="url" inputmode="url" autocomplete="url"
+        placeholder="https://ncode.syosetu.com/nXXXXXX/"
+        onkeydown="if(event.key==='Enter'){this.blur();go()}">
+      <button class="btn btn-g" id="btnGo" onclick="go()">読込</button>
+      <button class="btn btn-o" onclick="resetAll()">✕</button>
+    </div>
+    <div class="fetch-box" id="fetchBox">
+      <div class="spin" id="spin"></div>
+      <span id="fetchMsg">取得中…</span>
+    </div>
+    <div class="ios-hint" id="iosHint">
+      🍎 iPhoneは最初に <b>▶を1回タップ</b> すると次の話への自動進行が有効になります
+    </div>
+    <div class="resume-banner" id="resumeBanner" onclick="resumeBookmark()">
+      <div class="resume-icon">🔖</div>
+      <div class="resume-text">
+        <div class="resume-title" id="resumeTitle">読みかけ</div>
+        <div class="resume-sub" id="resumeSub">タップで再開</div>
+      </div>
+      <div class="resume-arrow">›</div>
+    </div>
+    <div class="chap-info" id="chapInfo">
+      <div class="chap-title-disp" id="chapTitle">—</div>
+      <a class="chap-link" id="chapLink" href="#" target="_blank"></a>
+    </div>
+    <div class="prog-wrap" id="progWrap">
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <div class="prog-num" id="progNum">0 / 0</div>
+    </div>
+    <div id="tapZones" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10">
+      <div id="tapL" onclick="skipSec(-5)" style="position:absolute;top:10%;left:0;width:30%;height:55%;pointer-events:none;opacity:0;"></div>
+      <div id="tapR" onclick="skipSec(5)" style="position:absolute;top:10%;right:0;width:30%;height:55%;pointer-events:none;opacity:0;"></div>
+    </div>
+    <div class="novel-text" id="novelText">
+      <span style="color:#564838;font-family:'Courier New',Consolas,monospace;font-size:12px;">URLを入力して「読込」を押してください</span>
+    </div>
+    <div class="next-notice" id="nextNotice">
+      <span>次のページへ…</span>
+      <span class="next-cd" id="nextCd">3</span>
+      <span class="next-cancel" onclick="cancelNext()">キャンセル</span>
+    </div>
+    <div class="queue-row" id="queueRow"></div>
+    <div class="bg-tip" id="bgTip">
+      ⚠ 画面ロック中も再生を続けるには「画面ロックしない」設定をONにしてください。<br>
+      止まった場合は画面をタップすると再開します。
+    </div>
   </div>
-  <div class="resume-arrow">›</div>
-</div>
-
-<div class="chap-info" id="chapInfo">
-  <div class="chap-title-disp" id="chapTitle">—</div>
-  <a class="chap-link" id="chapLink" href="#" target="_blank"></a>
-</div>
-
-<div class="prog-wrap" id="progWrap">
-  <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
-  <div class="prog-num" id="progNum">0 / 0</div>
-</div>
-
-<div id="tapZones" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10">
-  <div id="tapL" onclick="skipSec(-5)" style="position:absolute;top:10%;left:0;width:30%;height:55%;pointer-events:none;opacity:0;"></div>
-  <div id="tapR" onclick="skipSec(5)" style="position:absolute;top:10%;right:0;width:30%;height:55%;pointer-events:none;opacity:0;"></div>
-</div>
-
-<div class="novel-text" id="novelText">
-  <span style="color:#564838;font-family:'Courier New',Consolas,monospace;font-size:12px;">URLを入力して「読込」を押してください</span>
-</div>
-
-<div class="next-notice" id="nextNotice">
-  <span>次のページへ…</span>
-  <span class="next-cd" id="nextCd">3</span>
-  <span class="next-cancel" onclick="cancelNext()">キャンセル</span>
-</div>
-
-<div class="queue-row" id="queueRow"></div>
-
-<div class="bg-tip" id="bgTip">
-  ⚠ 画面ロック中も再生を続けるには「画面ロックしない」設定をONにしてください。<br>
-  止まった場合は画面をタップすると再開します。
-</div>
-```
-
-  </div><!-- /panel-read -->
-
-  <!-- ═══ HISTORY PANEL ═══ -->
-
   <div class="panel" id="panel-hist">
     <div id="histList"></div>
   </div>
-
-  <!-- ═══ SETTINGS PANEL ═══ -->
-
   <div class="panel" id="panel-sett">
-
-```
-<div class="sett-section">
-  <div class="sett-title">// 背景エフェクト</div>
-  <div class="sett-row">
-    <span class="sett-label">夜空アニメーション</span>
-    <button class="sett-btn" id="bgToggleBtn" onclick="toggleBgEffect()">OFF</button>
-  </div>
-  <div class="sett-sub" id="bgStatusTxt" style="margin-bottom:4px;color:#564838">
-    月齢・星・流れ星・オーロラ・ランダム天気
-  </div>
-</div>
-
-<div class="sett-section">
-  <div class="sett-title">// 音声エンジン</div>
-  <div id="modeDisplay" style="margin-bottom:12px"></div>
-
-  <div class="sett-title">// 今月の使用量（アプリ内カウント）</div>
-  <div class="usage-bar-wrap" id="usageWrap">
-    <div class="usage-bar-header">
-      <span class="usage-bar-label">文字数</span>
-      <span class="usage-bar-val" id="usageVal">0 / 900,000文字</span>
+    <div class="sett-section">
+      <div class="sett-title">// 背景エフェクト</div>
+      <div class="sett-row">
+        <span class="sett-label">夜空アニメーション</span>
+        <button class="sett-btn" id="bgToggleBtn" onclick="toggleBgEffect()">OFF</button>
+      </div>
+      <div class="sett-sub" id="bgStatusTxt" style="margin-bottom:4px;color:#564838">月齢・星・流れ星・オーロラ・ランダム天気</div>
     </div>
-    <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
-    <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
-  </div>
-  <div class="sett-sub" style="margin-bottom:10px">
-    WaveNetは360万文字で警告 → 400万文字でKyokoに自動切替。<br>Neural2は90万文字で警告 → 100万文字で切替。<br>カウントは毎月1日に自動リセットされます。
-  </div>
-
-  <div class="sett-title">// Google側での使用量・請求確認</div>
-  <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">
-    実際の使用量や請求額はGoogle Cloud Consoleで確認できます。
-  </div>
-  <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
-  <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">💳 請求・料金を確認する</a>
-  <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">🔔 予算アラートを設定する（課金防止）</a>
-  <div class="sett-sub" style="margin-bottom:14px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">
-    ⭐ 予算アラートを <b>¥1</b> で設定しておくと<br>
-    万が一の課金時にメールで通知が届いて安心です。
-  </div>
-
-  <div class="sett-title">// Google Cloud TTS（高品質）</div>
-  <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">
-    GoogleアカウントのAPIキーを入力すると<br>
-    Kyokoより自然な日本語音声になります。<br>
-    WaveNet・Standard：月400万文字まで無料
-  </div>
-  <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
-
-  <div class="api-status" id="apiStatus"></div>
-
-  <input class="api-input" id="apiKeyInput" type="password"
-    placeholder="AIzaSy…（APIキーを貼り付け）"
-    autocomplete="off" autocorrect="off" spellcheck="false">
-
-  <div class="api-btns">
-    <button class="sett-btn sett-btn-save" onclick="saveApiKey()">保存して使う</button>
-    <button class="sett-btn sett-btn-clear" onclick="clearApiKey()">クリア</button>
+    <div class="sett-section">
+      <div class="sett-title">// 音声エンジン</div>
+      <div id="modeDisplay" style="margin-bottom:12px"></div>
+      <div class="sett-title">// 今月の使用量（アプリ内カウント）</div>
+      <div class="usage-bar-wrap" id="usageWrap">
+        <div class="usage-bar-header">
+          <span class="usage-bar-label">文字数</span>
+          <span class="usage-bar-val" id="usageVal">0 / 900,000文字</span>
+        </div>
+        <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
+        <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
+      </div>
+      <div class="sett-sub" style="margin-bottom:10px">WaveNetは360万文字で警告 → 400万文字でKyokoに自動切替。<br>Neural2は90万文字で警告 → 100万文字で切替。<br>カウントは毎月1日に自動リセットされます。</div>
+      <div class="sett-title">// Google側での使用量・請求確認</div>
+      <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">実際の使用量や請求額はGoogle Cloud Consoleで確認できます。</div>
+      <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
+      <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">💳 請求・料金を確認する</a>
+      <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">🔔 予算アラートを設定する（課金防止）</a>
+      <div class="sett-sub" style="margin-bottom:14px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">⭐ 予算アラートを <b>¥1</b> で設定しておくと<br>万が一の課金時にメールで通知が届いて安心です。</div>
+      <div class="sett-title">// Google Cloud TTS（高品質）</div>
+      <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">GoogleアカウントのAPIキーを入力すると<br>Kyokoより自然な日本語音声になります。<br>WaveNet・Standard：月400万文字まで無料</div>
+      <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
+      <div class="api-status" id="apiStatus"></div>
+      <input class="api-input" id="apiKeyInput" type="password" placeholder="AIzaSy…（APIキーを貼り付け）" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="api-btns">
+        <button class="sett-btn sett-btn-save" onclick="saveApiKey()">保存して使う</button>
+        <button class="sett-btn sett-btn-clear" onclick="clearApiKey()">クリア</button>
+      </div>
+    </div>
+    <div class="sett-section" id="googleVoiceSection" style="display:none">
+      <div class="sett-title">// Google音声を選ぶ</div>
+      <select class="gv-select" id="googleVoiceSel" onchange="onGVoiceChange()">
+        <optgroup label="── WaveNet  月400万文字無料 ──">
+          <option value="ja-JP-Wavenet-A">WaveNet-A ★おすすめ</option>
+          <option value="ja-JP-Wavenet-B">WaveNet-B</option>
+          <option value="ja-JP-Wavenet-C">WaveNet-C</option>
+          <option value="ja-JP-Wavenet-D">WaveNet-D</option>
+        </optgroup>
+        <optgroup label="── Standard  月400万文字無料 ──">
+          <option value="ja-JP-Standard-A">Standard-A</option>
+          <option value="ja-JP-Standard-B">Standard-B</option>
+          <option value="ja-JP-Standard-C">Standard-C</option>
+          <option value="ja-JP-Standard-D">Standard-D</option>
+        </optgroup>
+        <optgroup label="── Neural2  月100万文字無料（高品質）──">
+          <option value="ja-JP-Neural2-B">Neural2-B</option>
+          <option value="ja-JP-Neural2-C">Neural2-C</option>
+          <option value="ja-JP-Neural2-D">Neural2-D</option>
+        </optgroup>
+      </select>
+      <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
+      <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2：月100万文字まで無料</div>
+    </div>
   </div>
 </div>
-
-<div class="sett-section" id="googleVoiceSection" style="display:none">
-  <div class="sett-title">// Google音声を選ぶ</div>
-  <select class="gv-select" id="googleVoiceSel" onchange="onGVoiceChange()">
-    <optgroup label="── WaveNet  月400万文字無料 ──">
-      <option value="ja-JP-Wavenet-A">WaveNet-A ★おすすめ</option>
-      <option value="ja-JP-Wavenet-B">WaveNet-B</option>
-      <option value="ja-JP-Wavenet-C">WaveNet-C</option>
-      <option value="ja-JP-Wavenet-D">WaveNet-D</option>
-    </optgroup>
-    <optgroup label="── Standard  月400万文字無料 ──">
-      <option value="ja-JP-Standard-A">Standard-A</option>
-      <option value="ja-JP-Standard-B">Standard-B</option>
-      <option value="ja-JP-Standard-C">Standard-C</option>
-      <option value="ja-JP-Standard-D">Standard-D</option>
-    </optgroup>
-    <optgroup label="── Neural2  月100万文字無料（高品質）──">
-      <option value="ja-JP-Neural2-B">Neural2-B</option>
-      <option value="ja-JP-Neural2-C">Neural2-C</option>
-      <option value="ja-JP-Neural2-D">Neural2-D</option>
-    </optgroup>
-  </select>
-  <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
-  <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2：月100万文字まで無料</div>
-</div>
-```
-
-  </div><!-- /panel-sett -->
-
-</div><!-- /scroll-area -->
-
-<!-- BOTTOM CONTROLS -->
-
 <div class="ctrl-bar">
   <div class="stepper-grid">
     <div class="stepper-row">
@@ -471,9 +368,6 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     <button class="cb cb-nxt" id="bNext" onclick="goNext()" disabled>次話→</button>
   </div>
 </div>
-
-<!-- CONFIRM MODAL -->
-
 <div class="cfm-overlay" id="cfmOverlay">
   <div class="cfm-box">
     <div class="cfm-title" id="cfmTitle">確認</div>
@@ -484,9 +378,6 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     </div>
   </div>
 </div>
-
-<!-- README MODAL -->
-
 <div class="rdm-overlay" id="rdmOverlay" onclick="if(event.target===this)closeReadme()">
   <div class="rdm-sheet">
     <div class="rdm-head">
@@ -494,91 +385,77 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <button class="rdm-close" onclick="closeReadme()">✕</button>
     </div>
     <div class="rdm-body">
-
-```
-  <h3>// 基本の使い方</h3>
-  <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt">小説家になろうなどの<b>目次URL</b>をコピーして「読む」タブに貼り付ける<br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838">例: https://ncode.syosetu.com/n1234ab/</span></div></div>
-  <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt">「読込」を押すと<b>話一覧</b>が表示される。読みたい話をタップ</div></div>
-  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>▶ボタン</b>をタップして読み上げ開始。話の終わりに<b>3秒カウント後、次の話へ自動進行</b></div></div>
-
-  <div class="rdm-note" style="margin-bottom:10px;border-color:rgba(200,153,30,0.5);background:rgba(200,153,30,0.07)">
-    🍎 <b>iPhone / iPad をお使いの方へ（重要）</b><br><br>
-    iOSのSafariは<b>ユーザーが直接タップしたときだけ</b>音声の再生を許可する仕様のため、<br>
-    アプリを開いたら <b>必ず最初に▶ボタンを1回タップ</b> してください。<br><br>
-    この操作でiOSの音声制限が解除され、以降は<br>
-    <b>・次の話への自動進行</b><br>
-    <b>・バックグラウンドでの継続再生</b><br>
-    が正常に動作します。<br><br>
-    ⚠️ アプリを閉じて開き直した場合は、再度▶を1回タップする必要があります。
-  </div>
-
-  <h3>// しおり・履歴</h3>
-  <ul>
-    <li>読み上げ中は5段落ごとに<b>自動でしおり保存</b></li>
-    <li>次回同じURLを入力すると「🔖 読みかけ」バナーが出る</li>
-    <li>「履歴」タブから過去に読んだ小説を再開できる（<b>▶で再生開始</b>）</li>
-  </ul>
-  <h3>// 新着話の自動検出</h3>
-  <ul>
-    <li>アプリ起動3秒後に履歴の作品をバックグラウンドで自動チェック</li>
-    <li>新しい話が追加されていると履歴に <span style="background:#c8340c;color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;">NEW +3話</span> のように表示</li>
-    <li>その作品を開くとNEWは自動で消える</li>
-    <li>1時間ごとに再チェック（通信節約のため）</li>
-  </ul>
-
-  <h3>// 再生コントロール</h3>
-  <ul>
-    <li>⏮ <b>1段落戻る</b> ／ ⏭ <b>1段落進む</b></li>
-    <li>←前話 ／ 次話→ で話をまたいで移動</li>
-    <li>速度・ピッチは − ＋ で0.1ずつ調整</li>
-  </ul>
-  <h3>// 画面タップで5秒スキップ（再生中のみ）</h3>
-  <ul>
-    <li><b>画面左1/3タップ</b> → 5秒戻る</li>
-    <li><b>画面右1/3タップ</b> → 5秒進む</li>
-    <li><b>画面中央</b> → 通常スクロール</li>
-  </ul>
-
-  <h3>// バックグラウンド再生（iPhone）</h3>
-  <ul>
-    <li>設定 → 画面表示と明るさ → <b>自動ロックをオフ</b></li>
-    <li>止まったら<b>▶ボタン</b>をタップすると再開</li>
-    <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
-  </ul>
-  <div class="rdm-note" style="margin-top:4px">
-    📌 再生が止まった・次の話に進まない場合は<br>
-    まず <b>▶ボタンを1回タップ</b> してみてください。
-  </div>
-
-  <h3>// Google TTS 高品質音声（任意）</h3>
-  <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt"><b>Google Cloud Consoleを開く</b><br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#c8991e">console.cloud.google.com</span></div></div>
-  <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt"><b>プロジェクトを作成</b> → 名前は何でもOK</div></div>
-  <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>Text-to-Speech APIを有効化</b> → APIとサービス → ライブラリ → text to speech</div></div>
-  <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt"><b>請求先を設定</b>（月100万文字まで無料）</div></div>
-  <div class="rdm-step"><div class="rdm-step-num">5</div><div class="rdm-step-txt"><b>APIキーを発行</b> → 認証情報 → APIキー作成 → <b>AIzaSy…</b> をコピー</div></div>
-  <div class="rdm-step"><div class="rdm-step-num">6</div><div class="rdm-step-txt"><b>設定タブに貼り付け</b> → 保存して使う → 完了！</div></div>
-  <div class="rdm-note">🔒 キーはこの端末にのみ保存。外部サーバーには送信しません。</div>
-
-  <h3>// 対応サイト</h3>
-  <ul>
-    <li>小説家になろう（ncode.syosetu.com）</li>
-    <li>カクヨム（kakuyomu.jp）</li>
-  </ul>
-  <h3>// 未対応サイト</h3>
-  <ul>
-    <li>アルファポリス — サイト側がクローラーアクセスをブロック</li>
-    <li>ハーメルン — Cloudflare保護により本文取得不可</li>
-    <li>エブリスタ — 1話が複数ページに分割される構造のため非対応</li>
-  </ul>
-
-</div>
-```
-
+      <h3>// 基本の使い方</h3>
+      <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt">小説家になろうなどの<b>目次URL</b>をコピーして「読む」タブに貼り付ける<br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838">例: https://ncode.syosetu.com/n1234ab/</span></div></div>
+      <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt">「読込」を押すと<b>話一覧</b>が表示される。読みたい話をタップ</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>▶ボタン</b>をタップして読み上げ開始。話の終わりに<b>3秒カウント後、次の話へ自動進行</b></div></div>
+      <div class="rdm-note" style="margin-bottom:10px;border-color:rgba(200,153,30,0.5);background:rgba(200,153,30,0.07)">
+        🍎 <b>iPhone / iPad をお使いの方へ（重要）</b><br><br>
+        iOSのSafariは<b>ユーザーが直接タップしたときだけ</b>音声の再生を許可する仕様のため、<br>
+        アプリを開いたら <b>必ず最初に▶ボタンを1回タップ</b> してください。<br><br>
+        この操作でiOSの音声制限が解除され、以降は<br>
+        <b>・次の話への自動進行</b><br>
+        <b>・バックグラウンドでの継続再生</b><br>
+        が正常に動作します。<br><br>
+        ⚠️ アプリを閉じて開き直した場合は、再度▶を1回タップする必要があります。
+      </div>
+      <h3>// しおり・履歴</h3>
+      <ul>
+        <li>読み上げ中は5段落ごとに<b>自動でしおり保存</b></li>
+        <li>次回同じURLを入力すると「🔖 読みかけ」バナーが出る</li>
+        <li>「履歴」タブから過去に読んだ小説を再開できる（<b>▶で再生開始</b>）</li>
+      </ul>
+      <h3>// 新着話の自動検出</h3>
+      <ul>
+        <li>アプリ起動3秒後に履歴の作品をバックグラウンドで自動チェック</li>
+        <li>新しい話が追加されていると履歴に <span style="background:#c8340c;color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;">NEW +3話</span> のように表示</li>
+        <li>その作品を開くとNEWは自動で消える</li>
+        <li>1時間ごとに再チェック（通信節約のため）</li>
+      </ul>
+      <h3>// 再生コントロール</h3>
+      <ul>
+        <li>⏮ <b>1段落戻る</b> ／ ⏭ <b>1段落進む</b></li>
+        <li>←前話 ／ 次話→ で話をまたいで移動</li>
+        <li>速度・ピッチは − ＋ で0.1ずつ調整</li>
+      </ul>
+      <h3>// 画面タップで5秒スキップ（再生中のみ）</h3>
+      <ul>
+        <li><b>画面左1/3タップ</b> → 5秒戻る</li>
+        <li><b>画面右1/3タップ</b> → 5秒進む</li>
+        <li><b>画面中央</b> → 通常スクロール</li>
+      </ul>
+      <h3>// バックグラウンド再生（iPhone）</h3>
+      <ul>
+        <li>設定 → 画面表示と明るさ → <b>自動ロックをオフ</b></li>
+        <li>止まったら<b>▶ボタン</b>をタップすると再開</li>
+        <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
+      </ul>
+      <div class="rdm-note" style="margin-top:4px">
+        📌 再生が止まった・次の話に進まない場合は<br>
+        まず <b>▶ボタンを1回タップ</b> してみてください。
+      </div>
+      <h3>// Google TTS 高品質音声（任意）</h3>
+      <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt"><b>Google Cloud Consoleを開く</b><br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#c8991e">console.cloud.google.com</span></div></div>
+      <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt"><b>プロジェクトを作成</b> → 名前は何でもOK</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>Text-to-Speech APIを有効化</b> → APIとサービス → ライブラリ → text to speech</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt"><b>請求先を設定</b>（月100万文字まで無料）</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">5</div><div class="rdm-step-txt"><b>APIキーを発行</b> → 認証情報 → APIキー作成 → <b>AIzaSy…</b> をコピー</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">6</div><div class="rdm-step-txt"><b>設定タブに貼り付け</b> → 保存して使う → 完了！</div></div>
+      <div class="rdm-note">🔒 キーはこの端末にのみ保存。外部サーバーには送信しません。</div>
+      <h3>// 対応サイト</h3>
+      <ul>
+        <li>小説家になろう（ncode.syosetu.com）</li>
+        <li>カクヨム（kakuyomu.jp）</li>
+      </ul>
+      <h3>// 未対応サイト</h3>
+      <ul>
+        <li>アルファポリス — サイト側がクローラーアクセスをブロック</li>
+        <li>ハーメルン — Cloudflare保護により本文取得不可</li>
+        <li>エブリスタ — 1話が複数ページに分割される構造のため非対応</li>
+      </ul>
+    </div>
   </div>
 </div>
-
-<!-- CHAPTER PICKER MODAL -->
-
 <div class="modal-overlay" id="chapModal" onclick="closeModal(event)">
   <div class="modal-sheet">
     <div class="modal-head">
@@ -588,18 +465,9 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     <div class="chap-list-wrap" id="chapListWrap"></div>
   </div>
 </div>
-
 <div class="toast" id="toast"></div>
-
 <script>
-// ═══════════════════════════════════════════
-//  VERSION
-// ═══════════════════════════════════════════
-const APP_VER = 'v80';
-
-// ═══════════════════════════════════════════
-//  BACKGROUND AUDIO SESSION (iOS)
-// ═══════════════════════════════════════════
+const APP_VER = 'v81';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -619,18 +487,7 @@ function stopSilentAudio() {
   _silentOn = false;
   if (_actx) { _actx.close().catch(()=>{}); _actx = null; }
 }
-
-// ═══════════════════════════════════════════
-//  MEDIA SESSION API (iOS ロック画面コントロール)
-// ═══════════════════════════════════════════
-// iOSはMediaSessionを正しく受け取るには:
-//   ① <audio>要素が実際に再生中であること（Google TTS使用時は満たされる）
-//   ② Kyoko(Web Speech API)使用時はiOS制限でロック画面ボタンが効かない場合がある
-//
-// 注意: setPositionState() は1段落分のaudio時間を渡すと
-//       段落終了時に position≒duration となりiOSがセッション終了と誤判定するため使用しない
 const _msSupported = ('mediaSession' in navigator);
-
 function msSetMetadata() {
   if (!_msSupported) return;
   try {
@@ -651,50 +508,27 @@ function msSetMetadata() {
     });
   } catch(e) {}
 }
-
 function msSetState(state) {
-  // state: 'playing' | 'paused' | 'none'
   if (!_msSupported) return;
   try { navigator.mediaSession.playbackState = state; } catch(e) {}
 }
-
 function msRegisterHandlers() {
   if (!_msSupported) return;
   try {
-    navigator.mediaSession.setActionHandler('play', () => {
-      if (!playing && segs.length) startPlay();
-    });
-    navigator.mediaSession.setActionHandler('pause', () => {
-      if (playing) togglePlay();
-    });
-    // ⏮/⏭ = 前話/次話（なければ段落移動）
-    navigator.mediaSession.setActionHandler('previoustrack', () => {
-      if (prevUrl) goPrev(); else prevSeg();
-    });
-    navigator.mediaSession.setActionHandler('nexttrack', () => {
-      if (nextUrl) goNext(); else nextSeg();
-    });
-    // ±10秒スキップ（iOSデフォルトは10秒）
-    navigator.mediaSession.setActionHandler('seekbackward', (d) => {
-      skipSec(-(d?.seekOffset || 10));
-    });
-    navigator.mediaSession.setActionHandler('seekforward', (d) => {
-      skipSec(d?.seekOffset || 10);
-    });
+    navigator.mediaSession.setActionHandler('play', () => { if (!playing && segs.length) startPlay(); });
+    navigator.mediaSession.setActionHandler('pause', () => { if (playing) togglePlay(); });
+    navigator.mediaSession.setActionHandler('previoustrack', () => { if (prevUrl) goPrev(); else prevSeg(); });
+    navigator.mediaSession.setActionHandler('nexttrack', () => { if (nextUrl) goNext(); else nextSeg(); });
+    navigator.mediaSession.setActionHandler('seekbackward', (d) => { skipSec(-(d?.seekOffset || 10)); });
+    navigator.mediaSession.setActionHandler('seekforward', (d) => { skipSec(d?.seekOffset || 10); });
   } catch(e) {}
 }
-
 let _msHandlersRegistered = false;
 function msInit() {
   if (!_msSupported || _msHandlersRegistered) return;
   msRegisterHandlers();
   _msHandlersRegistered = true;
 }
-
-
-// ═══════════════════════════════════════════
-//  SPEECH SYNTHESIS
-// ═══════════════════════════════════════════
 const SS = window.speechSynthesis;
 let voices = [], selVoice = null;
 function loadVoices() {
@@ -715,18 +549,13 @@ function loadVoices() {
 }
 SS.addEventListener ? SS.addEventListener('voiceschanged', loadVoices) : (SS.onvoiceschanged = loadVoices);
 loadVoices();
-
 setTimeout(() => {
   syncVoiceSelect();
   updModeDisplay();
   document.getElementById('vRate').textContent  = _rate.toFixed(1)  + '×';
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
 }, 300);
-
 setTimeout(() => { startupNewCheck(); }, 3000);
-
-// [FIX] 起動時に旧バグキャッシュを全削除
-// v62以前の btoa先頭40文字キャッシュは全作品で衝突するため起動時に一括削除する
 (function cleanLegacyCache() {
   try {
     Object.keys(sessionStorage)
@@ -734,7 +563,6 @@ setTimeout(() => { startupNewCheck(); }, 3000);
       .forEach(k => sessionStorage.removeItem(k));
   } catch(e) {}
 })();
-
 async function startupNewCheck() {
   const items = bkAll();
   for (const bk of items) {
@@ -744,10 +572,6 @@ async function startupNewCheck() {
     await new Promise(r => setTimeout(r, 1500));
   }
 }
-
-// ═══════════════════════════════════════════
-//  BOOKMARKS (localStorage)
-// ═══════════════════════════════════════════
 function bkLoad() {
   try { return JSON.parse(localStorage.getItem('yogatari_bk') || '{}'); } catch(e) { return {}; }
 }
@@ -789,11 +613,6 @@ function inferTocUrl(chapterUrl) {
 function bkGet(novelId) { return bkLoad()[novelId] || null; }
 function bkDel(novelId) { const a = bkLoad(); delete a[novelId]; bkSave(a); }
 function bkAll() { return Object.values(bkLoad()).sort((a,b)=>b.ts-a.ts); }
-
-// novelIdはしおり・履歴のキー。章URLを作品単位のURLに正規化する。
-// なろう: /n1234ab/3/ → /n1234ab/
-// カクヨム: /works/XXXX/episodes/YYYY → /works/XXXX
-// 未対応サイト: URLそのまま（章ごとに別作品扱い）
 function toNovelId(url) {
   try {
     const u = new URL(url);
@@ -808,22 +627,11 @@ function toNovelId(url) {
     return url;
   } catch(e) { return url; }
 }
-
-// ═══════════════════════════════════════════
-//  STATE
-// ═══════════════════════════════════════════
 let segs=[], idx=0, playing=false;
 let nextUrl=null, prevUrl=null, nextTimer=null, nextCount=0;
-let _goNextRunning = false; // goNext再入防止フラグ
-
-// [FIX] MediaSession対策: 段落間ギャップ中も audio要素を再生中に保つ
-// iOSはaudio要素が停止すると再生セッションを終了してしまうため
-// 次の音声をロード中は極短い無音MP3を再生してセッションを維持する
-// Base64エンコードした0.1秒の無音MP3（44バイト）
+let _goNextRunning = false;
 const SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e////////////////////////////////////////////////////////////////AAAAAExhdmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//sQRAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE==';
-
 function keepAudioSessionAlive() {
-  // 段落間ギャップ中に無音を再生してiOSセッションを維持する
   if (!playing) return;
   try {
     const el = getAudioEl();
@@ -834,13 +642,9 @@ function keepAudioSessionAlive() {
   } catch(e) {}
 }
 let queue=[], qi=0;
-
-// [FIX] キュー上限管理: 無限に増え続けるとiOSのメモリ圧迫を引き起こす
-// 上限10件。超えた場合は完了済み(done=true)の古いエントリを優先的に削除。
 const QUEUE_MAX = 10;
 function trimQueue() {
   if (queue.length <= QUEUE_MAX) return;
-  // 完了済みエントリを古い順に削除してqiを維持
   let removed = 0;
   const target = queue.length - QUEUE_MAX;
   const newQueue = [];
@@ -853,7 +657,6 @@ function trimQueue() {
       newQueue.push(queue[i]);
     }
   }
-  // 完了済みだけでは足りない場合は先頭から削除（qi以外）
   while (newQueue.length > QUEUE_MAX) {
     const delIdx = newQueue.findIndex((q, i) => i !== newQi);
     if (delIdx < 0) break;
@@ -865,10 +668,6 @@ function trimQueue() {
 }
 let watchdog=null;
 let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentChapterNum=1, currentChapterUrl=null;
-
-// ═══════════════════════════════════════════
-//  CORS PROXIES
-// ═══════════════════════════════════════════
 const PROXIES = [
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
@@ -878,7 +677,6 @@ const PROXIES = [
   { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u), isJson:false, ms:7000 },
   { build: u=>'https://thingproxy.freeboard.io/fetch/'+u, isJson:false, ms:7000 },
 ];
-
 async function tryProxy(p, url) {
   const r = await fetch(p.build(url), { signal: AbortSignal.timeout(p.ms || 8000) });
   if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -890,25 +688,18 @@ async function tryProxy(p, url) {
     if (!html || html.length < 200) throw new Error('コンテンツ空');
     return html;
   }
-  // Cloudflare/ボット検出ページを検出（先頭5000文字 + 本文中も確認）
   const checkRange = raw.slice(0, 5000);
   if (/Access denied|403 Forbidden|Blocked|bot detection|Enable JavaScript and cookies|just a moment|Cloudflare Ray ID|DDoS protection|checking your browser|please wait\.\.\.|Attention Required/i.test(checkRange)) {
     throw new Error('ブロック検出');
   }
   return raw;
 }
-
-// [FIX] 波状並列fetch: 2つずつ間隔をあけて起動し最初に成功したものを使う
-// 完全並列（7同時）はalloriginsのレート制限を引き起こすため
-// 2+2+2+1の波状（0ms/400ms/800ms/1200ms）に変更
 async function fetchHtml(url) {
   return new Promise((resolve, reject) => {
     let settled = false;
     let failCount = 0;
     const errors = [];
-
     PROXIES.forEach((p, i) => {
-      // 2つずつ波状に起動: 0,1番→即時、2,3番→400ms後、4,5番→800ms後、6番→1200ms後
       const wave = Math.floor(i / 2);
       const delay = wave * 400;
       setTimeout(() => {
@@ -935,35 +726,21 @@ async function fetchHtml(url) {
     });
   });
 }
-
-// ═══════════════════════════════════════════
-//  SITE RULES
-// ═══════════════════════════════════════════
 const SITE_RULES = [
-  { host:'ncode.syosetu.com',   body:'#novel_honbun',                        next:'.novel_bn a:last-of-type',
+  { host:'ncode.syosetu.com',   body:'#novel_honbun', next:'.novel_bn a:last-of-type',
     toc:'#novel_color', tocItem:'.novel_sublist2 a, dd a' },
-  { host:'novel18.syosetu.com', body:'#novel_honbun',                        next:'.novel_bn a:last-of-type' },
-  // カクヨム: body は旧クラス→新クラス順にフォールバック。next は次エピソードリンク
+  { host:'novel18.syosetu.com', body:'#novel_honbun', next:'.novel_bn a:last-of-type' },
   { host:'kakuyomu.jp',         body:'.p-novel__body,.widget-episodeBody,.js-episode-body',
-    next:'a.widget-episodeNavigation-button-next,a[rel="next"],a[href*="/episodes/"][class*="next"]' },
-  { host:'alphapolis.co.jp',    body:'.content-text,.novel_text',             next:'a.next,a[href*="next"]' },
-  { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0',       next:'' },
-  { host:'estar.jp',            body:'#novel-content,.novel-content',         next:'.pager-next a' },
+    next:'a.widget-episodeNavigation-button-next,a[rel="next"]' },
+  { host:'alphapolis.co.jp',    body:'.content-text,.novel_text', next:'a.next,a[href*="next"]' },
+  { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0', next:'' },
+  { host:'estar.jp',            body:'#novel-content,.novel-content', next:'.pager-next a' },
 ];
-// 「次のエピソード」(カクヨム)等を含む次話テキスト一覧
 const NEXT_TEXTS = ['次の話','次話','次章','次のページ','次へ','次話へ','次のエピソード','次のページへ','>>','→','next','次回'];
-
 function getRule(url) {
   const host = new URL(url).hostname.replace('www.','');
   return SITE_RULES.find(r => host.includes(r.host.replace('www.',''))) || null;
 }
-
-// ═══════════════════════════════════════════
-//  INDEX / TOC DETECTION
-// ═══════════════════════════════════════════
-// 目次URLかどうかを判定する（章URLではなく作品トップURL）
-// なろう:   /nXXXXXX/        (数字なし)
-// カクヨム: /works/XXXXXX    (episodes/を含まない)
 function isIndexUrl(url) {
   try {
     const u = new URL(url);
@@ -971,13 +748,11 @@ function isIndexUrl(url) {
       return /^\/[^/]+\/?$/.test(u.pathname);
     }
     if (u.hostname.includes('kakuyomu.jp')) {
-      // /works/XXXX はOK、/works/XXXX/episodes/YYYY はNG
       return /^\/works\/[^/]+\/?$/.test(u.pathname);
     }
   } catch(e) {}
   return false;
 }
-
 function parseSyosetuToc(html, baseUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const items = [];
@@ -1004,30 +779,21 @@ function parseSyosetuToc(html, baseUrl) {
   }
   return items;
 }
-
-// ── カクヨム目次パーサー ──
-// 作品ページ内の /works/XXXX/episodes/YYYY 形式リンクを全抽出。
-// Next.jsの __NEXT_DATA__ JSONが取れる場合はそちらを優先（タイトルが正確）。
 function parseKakuyomuToc(html, baseUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const items = [];
   const seen = new Set();
   let num = 0;
-
-  // ① __NEXT_DATA__ JSON からエピソード一覧を取得（信頼度が高い）
   try {
     const nd = doc.querySelector('script#__NEXT_DATA__');
     if (nd) {
       const json = JSON.parse(nd.textContent);
-      // カクヨムのJSON構造を再帰的に探索してepisodes配列を見つける
       const eps = findInObj(json, 'episodes') || findInObj(json, 'episodeUnions');
       if (eps && Array.isArray(eps) && eps.length > 0) {
         eps.forEach((ep, i) => {
-          // ep.id or ep.node.id でエピソードIDを取得
           const epId = ep.id || ep.node?.id || ep.__id;
           const epTitle = ep.title || ep.node?.title || ('第' + (i+1) + '話');
           if (!epId) return;
-          // workIdを baseURL から抽出
           const wm = new URL(baseUrl).pathname.match(/\/works\/([^/]+)/);
           if (!wm) return;
           const epUrl = new URL('/works/' + wm[1] + '/episodes/' + epId, baseUrl).href;
@@ -1039,27 +805,22 @@ function parseKakuyomuToc(html, baseUrl) {
         if (items.length > 0) return items;
       }
     }
-  } catch(e) { /* JSONパース失敗は無視してDOMフォールバック */ }
-
-  // ② DOMから /works/XXXX/episodes/YYYY 形式リンクを抽出（フォールバック）
+  } catch(e) {}
   doc.querySelectorAll('a[href]').forEach(a => {
     const href = a.getAttribute('href');
     if (!href || !href.includes('/episodes/')) return;
-    // 作品IDが一致するエピソードURLのみ（他作品のリンクを除外）
     const wm = new URL(baseUrl).pathname.match(/\/works\/([^/]+)/);
     if (wm && !href.includes('/works/' + wm[1] + '/episodes/')) return;
     const url = resolveUrl(href, baseUrl);
     if (!url || seen.has(url)) return;
     const txt = a.textContent.trim();
-    if (!txt || txt.length > 80) return; // 空・長すぎるリンクテキストを除外
+    if (!txt || txt.length > 80) return;
     seen.add(url);
     num++;
     items.push({ title: txt, url, num });
   });
   return items;
 }
-
-// JSON オブジェクトを再帰的に探索してキーに対応する値を返す（深さ制限あり）
 function findInObj(obj, key, depth = 0) {
   if (depth > 8 || !obj || typeof obj !== 'object') return null;
   if (Array.isArray(obj)) {
@@ -1076,37 +837,27 @@ function findInObj(obj, key, depth = 0) {
   }
   return null;
 }
-
-// ── 統合目次パーサー ── サイトに応じてパーサーを選択
 function parseToc(url, html) {
   try {
     const u = new URL(url);
     if (u.hostname.includes('kakuyomu.jp')) return parseKakuyomuToc(html, url);
   } catch(e) {}
-  return parseSyosetuToc(html, url); // なろう系はデフォルト
+  return parseSyosetuToc(html, url);
 }
-
-// ── 統合目次タイトル取得 ── サイトに応じてタイトル要素を選択
 function parseTocTitle(url, doc) {
   try {
     const u = new URL(url);
     if (u.hostname.includes('kakuyomu.jp')) {
-      // カクヨム: h1 が作品タイトル
       return doc.querySelector('h1')?.textContent?.trim() ||
              doc.querySelector('.WorkTitle')?.textContent?.trim() || '小説';
     }
   } catch(e) {}
   return doc.querySelector('.novel_title,.title,h1')?.textContent?.trim() || '小説';
 }
-
-// ═══════════════════════════════════════════
-//  EXTRACT PAGE
-// ═══════════════════════════════════════════
 function extractPage(html, pageUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const phost = new URL(pageUrl).hostname.replace('www.','');
   const rule = SITE_RULES.find(r => phost.includes(r.host.replace('www.','')));
-
   let nextPageUrl = null;
   if (rule && rule.next) {
     const a = doc.querySelector(rule.next);
@@ -1120,8 +871,6 @@ function extractPage(html, pageUrl) {
         if (href && !href.startsWith('javascript') && !href.startsWith('#')) {
           const r = resolveUrl(href, pageUrl);
           if (r && r !== pageUrl) {
-            // [FIX1] カクヨムは同じ作品のエピソードリンクのみ次話と認識
-            // 別作品の「次のエピソード」リンクを誤取得するのを防ぐ
             if (phost.includes('kakuyomu.jp')) {
               const workMatch = pageUrl.match(/\/works\/([^/]+)\//);
               if (workMatch && !r.includes('/works/' + workMatch[1] + '/')) continue;
@@ -1140,22 +889,14 @@ function extractPage(html, pageUrl) {
     const m = pageUrl.match(/^(https?:\/\/[^/]+\/[^/]+\/)(\d+)\/?$/);
     if (m) nextPageUrl = m[1] + (parseInt(m[2])+1) + '/';
   }
-  // カクヨムは SITE_RULES と NEXT_TEXTS スキャンで次話URLを取得する。
-  // フォールバックは削除: 最終話では前話リンクのみ存在するため
-  // epLinks[last]=前話URL を nextUrl と誤設定して30話に戻る問題が発生していた。
-
-  // [FIX] カクヨム: 上記で取れなかった場合に __NEXT_DATA__ JSON からnextEpisodeIdを取得
-  // プロキシ経由のHTMLが不完全でナビリンクが欠落するケースへの対策
   if (!nextPageUrl && phost.includes('kakuyomu.jp') && pageUrl.includes('/episodes/')) {
     try {
       const nd = doc.querySelector('script#__NEXT_DATA__');
       if (nd) {
         const json = JSON.parse(nd.textContent);
-        // 'nextEpisode', 'nextEpisodeId', 'next' など複数キーを試みる
         const nextEp = findInObj(json, 'nextEpisode')
                     || findInObj(json, 'nextEpisodeId')
-                    || findInObj(json, 'nextWork')
-                    || findInObj(json, 'next');
+                    || findInObj(json, 'nextWork');
         if (nextEp) {
           const wm = pageUrl.match(/\/works\/([^/]+)\//);
           const epId = (typeof nextEp === 'object')
@@ -1168,16 +909,13 @@ function extractPage(html, pageUrl) {
       }
     } catch(e) {}
   }
-
   ['script','style','iframe','nav','header','footer',
    '.ad','.advertisement','.banner','.sns','.share',
    '#global-header','#global-footer','.novel_bn','.index_box',
-   // カクヨム: ナビ・ギフト・登録促進・コメントエリアを除去
    '.widget-episodeNavigation','.widget-share','.widget-episodeFooterBanner',
    '#GiftBox','.widget-episodeActions','.js-giftToast'].forEach(s => {
     try { doc.querySelectorAll(s).forEach(el=>el.remove()); } catch(e) {}
   });
-
   let bodyEl = null;
   if (rule) bodyEl = doc.querySelector(rule.body);
   if (!bodyEl) {
@@ -1194,7 +932,6 @@ function extractPage(html, pageUrl) {
       if (l > max && l < 80000) { max = l; bodyEl = el; }
     });
   }
-
   function domToText(el) {
     if (!el) return '';
     el.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
@@ -1202,45 +939,43 @@ function extractPage(html, pageUrl) {
     return el.textContent || '';
   }
   const rawText = domToText(bodyEl || doc.body).trim();
-
   const title = extractTitle(doc, pageUrl);
-
   if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) {
     throw new Error('本文を取得できませんでした（最終話の可能性があります）');
   }
-  // Cloudflare/ボット検出ページが本文として取得された場合
   if (/Enable JavaScript and cookies to continue|Just a moment|Cloudflare Ray ID/i.test(rawText)) {
     throw new Error('このページはCloudflare保護により取得できませんでした。ハーメルン等は直接アクセスが必要な場合があります。');
   }
   if (!rawText || rawText.length < 30)
     throw new Error('本文を取得できませんでした。URLを確認してください。');
-
-  return { title, text: rawText, nextUrl: nextPageUrl };
+  let novelTitle = null;
+  try {
+    const phost2 = new URL(pageUrl).hostname.replace('www.','');
+    if (phost2.includes('syosetu.com')) {
+      const titleTag = doc.querySelector('title')?.textContent?.trim() || '';
+      const parts = titleTag.split(/\s*[-－]\s*/);
+      if (parts.length >= 2) novelTitle = parts[1].trim();
+    }
+  } catch(e) {}
+  return { title, novelTitle, text: rawText, nextUrl: nextPageUrl };
 }
-
-// ── サイト別タイトル取得 ──
 function extractTitle(doc, pageUrl) {
   try {
     const u = new URL(pageUrl);
     if (u.hostname.includes('kakuyomu.jp') && u.pathname.includes('/episodes/')) {
-      // カクヨムエピソード: <title> = 「第N話 タイトル - 作品名 - カクヨム」→ 最初の区切り前を取得
       const t = doc.querySelector('title')?.textContent?.trim() || '';
       return t.split(/\s*[-－]\s*/)[0].trim() || pageUrl;
     }
   } catch(e) {}
-  // デフォルト（なろう等）
   return (
     doc.querySelector('.novel-title,.episode-title,.chapter-title,.novel_title,h1')?.textContent?.trim() ||
     doc.querySelector('title')?.textContent?.trim() || pageUrl
   ).replace(/\s*[-|｜–—]\s*.+$/, '').trim();
 }
-
 function resolveUrl(href, base) {
   if (!href) return null;
   try { return new URL(href, base).href; } catch(e) { return null; }
 }
-
-// カクヨムのepisode IDは18桁の数字で話数として使えないため0を返す（ピッカー経由でitem.numを使用）
 function chapNumFromUrl(url) {
   try {
     const u = new URL(url);
@@ -1249,33 +984,22 @@ function chapNumFromUrl(url) {
   const m = url.match(/\/(\d+)\/?$/);
   return m ? parseInt(m[1]) : 1;
 }
-
-// ═══════════════════════════════════════════
-//  MAIN: GO
-// ═══════════════════════════════════════════
 let _pendingTocItems = null;
-
 async function go() {
   let url = document.getElementById('urlIn').value.trim();
   if (!url || !url.startsWith('http')) { toast('正しいURLを入力してください'); return; }
-
   disable(true); cancelNext(); stop();
-
   const novelId = toNovelId(url);
-  // [FIX] 別の作品に切り替わる場合はキューをリセット
   if (currentNovelId && currentNovelId !== novelId) {
     queue = []; qi = 0;
   }
   const bk = bkGet(novelId);
-
   if (isIndexUrl(url)) {
     showFetch('load', '目次を取得中…');
     try {
       const html = await fetchHtml(url);
       const items = parseToc(url, html);
-      if (!items.length) {
-        throw new Error('目次が見つかりませんでした');
-      }
+      if (!items.length) { throw new Error('目次が見つかりませんでした'); }
       hideFetch();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nTitle = parseTocTitle(url, doc);
@@ -1294,21 +1018,13 @@ async function go() {
     disable(false);
     return;
   }
-
   if (bk && bk.chapterUrl !== url) {
-    // 別の章に直接URLが入っている場合はそのまま進む
   } else if (bk) {
     showResumeBanner(bk);
   }
-
   await loadChapterUrl(url);
   disable(false);
 }
-
-// ─── 章URLを直接ロード ───
-// [FIX1] prevUrlHint=null で呼ぶことで、フレッシュロード時に無関係なprevUrlが残らないようにする
-// chapNumOverride: 章ピッカー経由の場合に item.num を渡すことでカクヨム等の話数を正確に表示
-// novelTitleOverride: ピッカー経由の場合に作品タイトルを渡す（extractPageはタイトルを返さないため）
 async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNumOverride = null, novelTitleOverride = '') {
   disable(true);
   showFetch('load', '取得中… ' + url);
@@ -1316,23 +1032,16 @@ async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNum
     const html = await fetchHtml(url);
     const page = extractPage(html, url);
     const novelId = novelIdOverride || toNovelId(url);
-    // [FIX] 別の作品に切り替わる場合はキューをリセット
-    // 前の作品の話がキューに残ると混在表示・誤ジャンプの原因になる
     if (currentNovelId && currentNovelId !== novelId) {
       queue = []; qi = 0;
     }
     currentNovelId = novelId;
-    // [FIX] 作品タイトルの優先順: ①ピッカーから渡されたタイトル ②既存しおりのタイトル ③ページタイトル（最終手段）
     const savedNovelTitle = bkGet(novelId)?.novelTitle || '';
-    currentNovelTitle = novelTitleOverride || savedNovelTitle || page.title;
+    currentNovelTitle = novelTitleOverride || savedNovelTitle || page.novelTitle || page.title;
     currentChapterTitle = page.title;
     currentChapterNum = chapNumOverride || chapNumFromUrl(url) || 1;
-
     if (!queue.find(q=>q.url===url)) { queue.push({url, title:page.title, done:false}); qi=queue.length-1; trimQueue(); }
     else qi = queue.findIndex(q=>q.url===url);
-
-    // [FIX1] フレッシュロードなので prevUrlHint=null を明示。
-    // 別の小説・別セッションの currentChapterUrl が prevUrl に混入するのを防ぐ。
     displayPage(page, url, startSeg, null);
     startSilentAudio();
     startPlay();
@@ -1344,26 +1053,21 @@ async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNum
   }
   disable(false);
 }
-
-// ═══════════════════════════════════════════
-//  CHAPTER PICKER MODAL
-// ═══════════════════════════════════════════
 let _pickerNovelId = null;
-let _pickerNovelTitle = ''; // [FIX] 作品タイトルをピッカー選択時に保持
-
+let _pickerNovelTitle = '';
 function openChapPicker(novelTitle, items, novelId, bk) {
   _pendingTocItems = items;
   _pickerNovelId = novelId;
-  _pickerNovelTitle = novelTitle; // [FIX] 作品タイトルを保存
+  _pickerNovelTitle = novelTitle;
   document.getElementById('modalTitle').textContent = novelTitle;
   const wrap = document.getElementById('chapListWrap');
   wrap.innerHTML = items.map((item, i) => {
     const isBk = bk && bk.chapterUrl === item.url;
-    return `<div class="chap-row ${isBk?'bookmarked':''}" onclick="pickChapter(${i})">
-      <span class="chap-num-badge">${item.num}</span>
-      <span class="chap-row-title">${esc(item.title)}${isBk ? ' 🔖' : ''}</span>
-      ${isBk ? '<div class="bookmark-dot"></div>' : ''}
-    </div>`;
+    return '<div class="chap-row ' + (isBk?'bookmarked':'') + '" onclick="pickChapter(' + i + ')">' +
+      '<span class="chap-num-badge">' + item.num + '</span>' +
+      '<span class="chap-row-title">' + esc(item.title) + (isBk ? ' 🔖' : '') + '</span>' +
+      (isBk ? '<div class="bookmark-dot"></div>' : '') +
+      '</div>';
   }).join('');
   if (bk) {
     const bkIdx = items.findIndex(it => it.url === bk.chapterUrl);
@@ -1374,7 +1078,6 @@ function openChapPicker(novelTitle, items, novelId, bk) {
   }
   document.getElementById('chapModal').classList.add('show');
 }
-
 async function pickChapter(i) {
   const item = _pendingTocItems[i];
   if (!item) return;
@@ -1382,25 +1085,17 @@ async function pickChapter(i) {
   const novelId = _pickerNovelId;
   const bk = bkGet(novelId);
   const startSeg = (bk && bk.chapterUrl === item.url) ? (bk.segIdx || 0) : 0;
-  // chapNumFromUrlが0を返すサイト（カクヨム）のみitem.numで話数を上書き。
-  // なろう等はURLから正確な話数(例:1244)が取れるのでitem.numで上書きしない。
   const urlChapNum = chapNumFromUrl(item.url);
   const chapNum = urlChapNum || item.num;
   await loadChapterUrl(item.url, startSeg, novelId, chapNum, _pickerNovelTitle);
 }
-
 function closeModal(e) {
   if (e && e.target !== document.getElementById('chapModal')) return;
   document.getElementById('chapModal').classList.remove('show');
 }
-
-// ═══════════════════════════════════════════
-//  RESUME BANNER
-// ═══════════════════════════════════════════
 function showResumeBanner(bk) {
   document.getElementById('resumeTitle').textContent = bk.chapterTitle || 'しおりから再開';
-  document.getElementById('resumeSub').textContent =
-    '第' + (bk.chapterNum||'?') + '話 · 段落 ' + (bk.segIdx+1);
+  document.getElementById('resumeSub').textContent = '第' + (bk.chapterNum||'?') + '話 · 段落 ' + (bk.segIdx+1);
   document.getElementById('resumeBanner').classList.add('show');
 }
 function hideResumeBanner() {
@@ -1416,14 +1111,6 @@ async function resumeBookmark() {
   const chapNum = chapNumFromUrl(bk.chapterUrl) || (titleNum ? parseInt(titleNum[1]) : 0) || bk.chapterNum || 1;
   await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId, chapNum, bk.novelTitle || '');
 }
-
-// ═══════════════════════════════════════════
-//  DISPLAY PAGE
-// ═══════════════════════════════════════════
-// [FIX1] prevUrlHint 引数を追加。
-//   undefined  → 従来通り currentChapterUrl を使う（goNext等の内部ナビ）
-//   null       → prevUrl をリセット（フレッシュロード・goPrev・jumpQ）
-//   <string>   → その値を prevUrl に使う（将来の拡張用）
 function displayPage(page, url, startSeg = 0, prevUrlHint) {
   if (prevUrlHint !== undefined) {
     prevUrl = prevUrlHint;
@@ -1435,33 +1122,23 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
   document.getElementById('chapTitle').textContent = page.title || url;
   const lnk = document.getElementById('chapLink'); lnk.textContent = url; lnk.href = url;
   document.getElementById('chapInfo').classList.add('show');
-  // MediaSession: 話が切り替わったのでメタデータを更新
   msSetMetadata();
-
   segs = splitText(page.text);
   idx = Math.min(startSeg, segs.length - 1);
   renderText();
   updProg();
   ctrlEnable(true);
-  // [FIX] カクヨムはプロキシHTML不完全でnextUrlがnullになる場合がある。
-  // その場合も「次話→」ボタンを完全無効化せず、goNext側で取得を試みる。
-  // なろうはURLフォールバックがあるので問題なし。
   const isKakuyomu = url && url.includes('kakuyomu.jp');
   document.getElementById('bNext').disabled = !(nextUrl || isKakuyomu);
   document.getElementById('bPrev2').disabled = !prevUrl;
   renderQueue();
-
   if (nextUrl) {
     clearNextChapterCache();
-    // [FIX] レート制限対策: 先読みを3秒後に遅らせて本文fetchと競合させない
-    // ただしカクヨムはnextUrlが取れないケースがあるため即時prefetchを試みる
     const prefetchDelay = (nextUrl && nextUrl.includes('kakuyomu.jp')) ? 500 : 3000;
     setTimeout(() => prefetchNextChapter(nextUrl), prefetchDelay);
   } else if (currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
-    // [FIX] カクヨムでnextUrlが取れなかった場合でも、エピソードの次話を先読みして
-    // nextUrlを確定させる。displayPage直後にカクヨム作品のnextUrlを積極的に取得。
     setTimeout(async () => {
-      if (nextUrl) return; // その間に取れていれば不要
+      if (nextUrl) return;
       try {
         const curHtml = await fetchHtml(currentChapterUrl);
         const curPage = extractPage(curHtml, currentChapterUrl);
@@ -1475,18 +1152,12 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
     }, 1000);
   }
 }
-
-// ═══════════════════════════════════════════
-//  TEXT
-// ═══════════════════════════════════════════
 function splitText(t) {
   return t.replace(/\r\n/g,'\n').split(/\n+/).map(s=>s.trim()).filter(s=>{
     if (!s.length) return false;
     if (s.length > 20) return true;
-    // ナビゲーション系UI文言を除外
     if (/^(前へ|次へ|目次|<<|>>|＜＜|＞＞|PREV|NEXT|前の話|次の話|前のエピソード|次のエピソード)/.test(s)) return false;
     if (/^[←→◀▶]/.test(s) && s.length < 10) return false;
-    // カクヨム: 登録促進・応援UI
     if (/^(新規登録で充実|作者を応援|応援する|応援コメント|ハートをクリック|ギフトを贈る)/.test(s)) return false;
     return true;
   });
@@ -1502,29 +1173,21 @@ function renderText() {
   }, 100);
 }
 function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// ═══════════════════════════════════════════
-//  GOOGLE TTS ENGINE
-// ═══════════════════════════════════════════
 let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
 let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Wavenet-A';
 let _gAudio  = null;
 let _busy    = false;
 let _tabSw   = false;
 let _audioUnlocked = false;
-
 function getAudioEl() {
   if (!_gAudio) _gAudio = document.getElementById('gAudioEl');
   return _gAudio;
 }
-
 function unlockAudio() {
   if (_audioUnlocked) return;
   const el = getAudioEl();
   if (!el) return;
-  el.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSjAT' +
-            'HQAAAA6AAAALMef+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA' +
-            'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  el.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSjATHQAAAN6AAAALMef+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
   el.volume = 0;
   el.play().then(() => {
     _audioUnlocked = true;
@@ -1535,18 +1198,10 @@ function unlockAudio() {
     if (hint) hint.classList.add('hidden');
   }).catch(() => {});
 }
-
-// ── プリフェッチキャッシュ ──
 const _prefetchCache = new Map();
-
-// ── 次話HTML先読みキャッシュ ──
 let _nextHtmlCache = null;
 let _nextPageCache = null;
-// [FIX] prefetch世代ID: clearNextChapterCache後に古いpromise.then()が
-// nextUrlを別作品のURLで上書きする問題を防ぐ
-// 各prefetch起動時にインクリメントし、then()内で現在の世代と一致するか確認する
 let _prefetchGeneration = 0;
-
 function prefetchNextChapter(url) {
   if (!url) return;
   if (_nextHtmlCache && _nextHtmlCache.url === url) return;
@@ -1554,14 +1209,9 @@ function prefetchNextChapter(url) {
   _nextHtmlCache = {
     url,
     promise: fetchHtml(url).then(html => {
-      // [FIX] 世代チェック: clearNextChapterCacheが呼ばれていたら世代が変わっている
-      // → 別の作品/話に切り替わっているので nextUrl を上書きしない
       if (myGeneration !== _prefetchGeneration) return null;
       const page = extractPage(html, url);
       _nextPageCache = { url, page };
-      // [FIX] 先読みが成功した時点でnextUrlを確定する
-      // 問題: displayPage時にプロキシHTMLが不完全でnextUrl=nullになることがある
-      // 解決: prefetchが成功したURLは確実に存在するのでnextUrlに設定し直す
       if (myGeneration === _prefetchGeneration && (!nextUrl || nextUrl !== url)) {
         nextUrl = url;
         const bNextEl = document.getElementById('bNext');
@@ -1581,17 +1231,14 @@ function prefetchNextChapter(url) {
   };
 }
 let _nextAudioCache = [];
-
 function clearNextChapterCache() {
-  _prefetchGeneration++; // 古いprefetchのthen()を無効化
+  _prefetchGeneration++;
   _nextHtmlCache = null;
   _nextPageCache = null;
   _nextAudioCache = [];
 }
-
 function hasGoogleKey() { return _gApiKey.trim().length > 10; }
 function currentGVoice() { return _gVoice; }
-
 async function fetchGoogleAudio(text) {
   if (isOverLimit()) throw new Error('月間無料枠(' + (USAGE_LIMIT()/10000).toFixed(0) + '万文字)に達しました。設定タブでリセットを。');
   const body = {
@@ -1617,71 +1264,45 @@ async function fetchGoogleAudio(text) {
   addUsage(text.length);
   return 'data:audio/mp3;base64,' + data.audioContent;
 }
-
 function getAudioCached(i) {
   if (!_prefetchCache.has(i)) {
-    if (i < segs.length) {
-      _prefetchCache.set(i, fetchGoogleAudio(segs[i]));
-    }
+    if (i < segs.length) { _prefetchCache.set(i, fetchGoogleAudio(segs[i])); }
   }
   return _prefetchCache.get(i);
 }
-
 function evictCache(currentIdx) {
   for (const key of _prefetchCache.keys()) {
-    if (key < currentIdx - 1 || key > currentIdx + 2) {
-      _prefetchCache.delete(key);
-    }
+    if (key < currentIdx - 1 || key > currentIdx + 2) { _prefetchCache.delete(key); }
   }
 }
-
 function prefetchNext(i) {
   if (!hasGoogleKey()) return;
-  if (i + 1 < segs.length && !_prefetchCache.has(i + 1)) {
-    getAudioCached(i + 1);
-  }
+  if (i + 1 < segs.length && !_prefetchCache.has(i + 1)) { getAudioCached(i + 1); }
 }
-
-function clearPrefetchCache() {
-  _prefetchCache.clear();
-}
-
+function clearPrefetchCache() { _prefetchCache.clear(); }
 function stopGoogleAudio() {
   const el = getAudioEl();
-  if (el) {
-    el.onended = null;
-    el.onerror = null;
-    el.pause();
-    el.src = '';
-  }
+  if (el) { el.onended = null; el.onerror = null; el.pause(); el.src = ''; }
 }
-
-// ── 5秒スキップ ──
 let _skipLabel = null;
 function skipSec(sec) {
   if (!playing || !segs.length) return;
   const el = getAudioEl();
   if (hasGoogleKey() && el && el.src && !el.paused) {
     const newTime = Math.max(0, el.currentTime + sec);
-    if (newTime < el.duration) {
-      el.currentTime = newTime;
-    } else {
-      if (sec > 0) nextSeg(); else prevSeg();
-    }
+    if (newTime < el.duration) { el.currentTime = newTime; }
+    else { if (sec > 0) nextSeg(); else prevSeg(); }
   } else {
     if (sec > 0) nextSeg(); else prevSeg();
   }
   showSkipLabel(sec > 0 ? '+' + Math.abs(sec) + '秒' : '-' + Math.abs(sec) + '秒');
 }
-
 function showSkipLabel(text) {
   let lbl = document.getElementById('skipLbl');
   if (!lbl) {
     lbl = document.createElement('div');
     lbl.id = 'skipLbl';
-    lbl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);' +
-      'background:rgba(0,0,0,0.7);color:#c8991e;font-size:22px;font-weight:bold;' +
-      'padding:12px 24px;border-radius:12px;z-index:999;pointer-events:none;transition:opacity 0.4s';
+    lbl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);color:#c8991e;font-size:22px;font-weight:bold;padding:12px 24px;border-radius:12px;z-index:999;pointer-events:none;transition:opacity 0.4s';
     document.body.appendChild(lbl);
   }
   lbl.textContent = text;
@@ -1689,11 +1310,7 @@ function showSkipLabel(text) {
   if (_skipLabel) clearTimeout(_skipLabel);
   _skipLabel = setTimeout(() => { lbl.style.opacity = '0'; }, 800);
 }
-
-// ── 文分割（1文移動用）──
-// [FIX3] 連続する「…」を1つに正規化してから分割し、空文字をフィルタする
 function splitSentences(text) {
-  // 連続する「…」を単一に正規化（例: 「…………」→「…」）
   const normalized = text.replace(/…+/g, '…');
   const result = [];
   let buf = '';
@@ -1705,25 +1322,17 @@ function splitSentences(text) {
     }
   }
   if (buf.trim().length > 0) result.push(buf);
-  // 空文字・空白のみの要素を除去
   const filtered = result.filter(s => s.trim().length > 0);
   return filtered.length > 0 ? filtered : [text];
 }
-
 let _sentIdx = -1;
-
 function prevSent() {
   if (!segs.length || !playing) return;
   const sents = splitSentences(segs[idx]);
   if (sents.length <= 1) { prevSeg(); return; }
-  if (_sentIdx <= 0) {
-    prevSegFull();
-  } else {
-    _sentIdx = Math.max(0, _sentIdx - 1);
-    playSentence(_sentIdx);
-  }
+  if (_sentIdx <= 0) { prevSegFull(); }
+  else { _sentIdx = Math.max(0, _sentIdx - 1); playSentence(_sentIdx); }
 }
-
 function nextSent() {
   if (!segs.length || !playing) return;
   const sents = splitSentences(segs[idx]);
@@ -1732,14 +1341,12 @@ function nextSent() {
   if (_sentIdx >= sents.length - 1) { nextSeg(); return; }
   playSentence(_sentIdx);
 }
-
 function playSentence(si) {
   const sents = splitSentences(segs[idx]);
   if (!sents[si]) return;
   _busy = false;
   clearWatchdog();
   SS.cancel(); stopGoogleAudio();
-
   if (hasGoogleKey()) {
     _busy = true;
     const el = getAudioEl();
@@ -1769,23 +1376,16 @@ function playSentence(si) {
     SS.speak(utt);
   }
 }
-
-// ═══════════════════════════════════════════
-//  UNIFIED SPEAK
-// ═══════════════════════════════════════════
 function speakIdx(i) {
   if (_busy) return;
   _sentIdx = -1;
   clearWatchdog();
-
   if (i >= segs.length) {
     playing = false; updBtn(); setBadge(false);
     saveBookmarkCurrent(i);
     if (queue[qi]) queue[qi].done = true;
     renderQueue();
     clearPrefetchCache();
-    // [FIX] nextUrlがnullでも_nextHtmlCacheがあれば先読み済みのURLを使う
-    // prefetchNextChapterが成功してnextUrlをセットするまでの競合を防ぐ
     if (!nextUrl && _nextHtmlCache && _nextHtmlCache.url) {
       nextUrl = _nextHtmlCache.url;
       const bNextEl = document.getElementById('bNext');
@@ -1794,19 +1394,14 @@ function speakIdx(i) {
     if (nextUrl) startNextCd(); else toast('📖 この話の読み上げが完了しました');
     return;
   }
-
   idx = i;
   updHighlight(); updProg();
   if (i % 5 === 0) saveBookmarkCurrent(i);
-  // MediaSession: 段落開始ごとに playing 状態を再通知
-  // (段落間ギャップでiOSがセッション終了と誤判定するのを防ぐ)
   msSetState('playing');
-
   if (hasGoogleKey()) {
     SS.cancel();
     _busy = true;
     evictCache(i);
-
     getAudioCached(i).then(audioSrc => {
       _busy = false;
       if (!playing) return;
@@ -1815,8 +1410,6 @@ function speakIdx(i) {
       el.onended = () => {
         clearWatchdog();
         if (playing && !_tabSw) {
-          // [FIX] 次の音声をロード中の無音ギャップでiOSがセッション終了と誤判定するのを防ぐ
-          // onended直後にplaying状態を再通知 + 無音再生でセッションを維持する
           msSetState('playing');
           keepAudioSessionAlive();
           speakIdx(idx + 1);
@@ -1834,7 +1427,6 @@ function speakIdx(i) {
         _prefetchCache.delete(i);
         if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 600);
       });
-      // play()成功後にMediaSession状態を再確認（iOSがリセットした場合に備える）
       el.onplay = () => { msSetState('playing'); };
       startWatchdog(getRate(), true);
       prefetchNext(i);
@@ -1850,7 +1442,6 @@ function speakIdx(i) {
         setTimeout(() => { if (playing) speakIdx(idx); }, 2000);
       }
     });
-
   } else {
     stopGoogleAudio();
     const utt = new SpeechSynthesisUtterance(segs[i]);
@@ -1869,19 +1460,10 @@ function speakIdx(i) {
     SS.speak(utt);
   }
 }
-
-// ─── Watchdog ───
-// [FIX4] タイムアウト計算を改善:
-//   - 最低保証値を設定（Google:5秒 / Kyoko:2秒）でヘアトリガーを防ぐ
-//   - バッファをGoogleは12秒に増やし、ネットワーク遅延の余裕を確保
-//   - 上限を45秒から60秒に緩和（長い段落でwatchdogが早まるケースに対処）
 function startWatchdog(rate, isGoogle = false) {
   const segLen = segs[idx]?.length || 20;
-  // 読み上げ所要時間の見積もり（文字数 / (速度 × 読み上げ速度係数)）
   const estimatedSpeechMs = segLen / (rate * 4) * 1000;
-  // バッファ: Googleはネットワーク取得時間を考慮して多め
   const bufferMs = isGoogle ? 12000 : 5000;
-  // 最低保証: 短い段落でwatchdogが誤発火しないように下限を設ける
   const minMs = isGoogle ? 5000 : 2000;
   const ms = Math.min(Math.max(estimatedSpeechMs + bufferMs, minMs), 60000);
   watchdog = setTimeout(() => {
@@ -1892,7 +1474,6 @@ function startWatchdog(rate, isGoogle = false) {
   }, ms);
 }
 function clearWatchdog() { if (watchdog) { clearTimeout(watchdog); watchdog = null; } }
-
 function startPlay() {
   if (playing) return;
   unlockAudio();
@@ -1902,7 +1483,6 @@ function startPlay() {
   stopGoogleAudio();
   clearPrefetchCache();
   if (hasGoogleKey()) getAudioCached(idx);
-  // MediaSession: 初期化・メタデータ設定・状態更新
   msInit();
   msSetMetadata();
   msSetState('playing');
@@ -1926,16 +1506,11 @@ function stop() {
   updBtn(); setBadge(false); cancelNext();
   msSetState('none');
 }
-
-// [FIX] 章移動専用のstop: MediaSessionの状態を変えない
-// goNext/goPrev の章移動では「再生中→fetch→再生中」という流れになるため
-// stop()のmsSetState('none')を呼ぶとロック画面が「再生停止中」になってしまう
 function stopForChapterTransition() {
   playing = false; _busy = false;
   SS.cancel(); stopGoogleAudio();
   clearWatchdog(); clearPrefetchCache();
   updBtn(); setBadge(false); cancelNext();
-  // msSetState は呼ばない（ロック画面の再生表示を維持する）
 }
 function prevSeg() {
   if (_busy) return;
@@ -1951,10 +1526,6 @@ function nextSeg() {
 }
 function prevSegFull() { prevSeg(); }
 function nextSegFull() { nextSeg(); }
-
-// ═══════════════════════════════════════════
-//  SETTINGS
-// ═══════════════════════════════════════════
 function initSettings() {
   if (_gApiKey) {
     document.getElementById('apiKeyInput').value = _gApiKey;
@@ -1964,7 +1535,6 @@ function initSettings() {
   updModeDisplay();
   updUsageDisplay();
 }
-
 function syncVoiceSelect() {
   const sel = document.getElementById('googleVoiceSel');
   if (!sel) return;
@@ -1972,7 +1542,6 @@ function syncVoiceSelect() {
   if (exists) sel.value = _gVoice;
   else { sel.value = 'ja-JP-Wavenet-A'; _gVoice = 'ja-JP-Wavenet-A'; }
 }
-
 function saveApiKey() {
   const key = document.getElementById('apiKeyInput').value.trim();
   if (!key) { showApiStatus('ng', 'キーを入力してください'); return; }
@@ -1987,7 +1556,6 @@ function saveApiKey() {
   updModeDisplay();
   toast('Google TTSを設定しました');
 }
-
 function clearApiKey() {
   _gApiKey = '';
   localStorage.removeItem('yogatari_gkey');
@@ -1997,13 +1565,11 @@ function clearApiKey() {
   updModeDisplay();
   toast('Kyokoに戻しました');
 }
-
 function showApiStatus(type, msg) {
   const el = document.getElementById('apiStatus');
   el.textContent = msg;
   el.className = 'api-status show ' + type;
 }
-
 function friendlyVoiceName(v) {
   const m = v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);
   if (m) {
@@ -2012,7 +1578,6 @@ function friendlyVoiceName(v) {
   }
   return v;
 }
-
 function updModeDisplay() {
   const el = document.getElementById('modeDisplay');
   if (!el) return;
@@ -2032,23 +1597,14 @@ function updModeDisplay() {
     if (rowG) rowG.style.display = 'none';
   }
 }
-
-// ═══════════════════════════════════════════
-//  BOOKMARK SAVE
-// ═══════════════════════════════════════════
 function saveBookmarkCurrent(segIdx) {
   if (!currentNovelId) return;
   const url = document.getElementById('chapLink').href;
-  // URLから話数が取れる場合は常にURLを正とする（旧バグ保存値の上書き防止）
   const urlNum = chapNumFromUrl(url);
   if (urlNum > 0) currentChapterNum = urlNum;
   bkSet(currentNovelId, currentNovelTitle, url, currentChapterTitle, currentChapterNum, segIdx);
   renderHistList();
 }
-
-// ═══════════════════════════════════════════
-//  AUTO NEXT PAGE
-// ═══════════════════════════════════════════
 function startNextCd() {
   nextCount=3;
   document.getElementById('nextNotice').classList.add('show');
@@ -2063,7 +1619,6 @@ function cancelNext() {
   if(nextTimer){clearInterval(nextTimer);nextTimer=null;}
   document.getElementById('nextNotice').classList.remove('show');
 }
-
 async function goPrev() {
   if (!prevUrl) { toast('前の話はありません'); return; }
   const url = prevUrl;
@@ -2076,9 +1631,7 @@ async function goPrev() {
     const page = extractPage(html, url);
     if (queue[qi]) queue[qi].title = page.title;
     currentChapterTitle = page.title;
-    // URLから話数が取れない場合（カクヨム等）は現在話数 -1 で推定
     currentChapterNum = chapNumFromUrl(url) || (currentChapterNum > 1 ? currentChapterNum - 1 : 1);
-    // [FIX1] goPrevではさらに前の話は不明なのでprevUrlHint=null
     displayPage(page, url, 0, null);
     hideFetch();
     if (_actx && _actx.state === 'suspended') await _actx.resume().catch(()=>{});
@@ -2088,9 +1641,7 @@ async function goPrev() {
   } catch(e) { showFetch('err', e.message); }
   disable(false);
 }
-
 async function goNext() {
-  // [FIX] 再入防止: 自動カウントダウンと手動ボタン押しの二重実行を防ぐ
   if (_goNextRunning) return;
   _goNextRunning = true;
   try {
@@ -2099,27 +1650,16 @@ async function goNext() {
     _goNextRunning = false;
   }
 }
-
 async function _goNextImpl() {
-  // [FIX] カクヨムでnextUrlがnullの場合の多段フォールバック
-  // カクヨムTOCは最初の7〜30話しか返さないため、TOC検索が失敗するケースがある。
-  // そのため以下の順で試みる:
-  //   ① _nextHtmlCacheにURLがあればそれを使う（disable不要・即時）
-  //   ② 現在のエピソードページを再fetchして nextUrl を直接取得
-  //   ③ それも失敗した場合のみ TOC を使う
   if (!nextUrl && currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
-    // ① 先読みキャッシュからURLを即時取得（UIロック不要）
     if (_nextHtmlCache && _nextHtmlCache.url) {
       nextUrl = _nextHtmlCache.url;
       document.getElementById('bNext').disabled = false;
     }
-
-    // ②③ キャッシュにもなければfetchで取得（UIをロックして実行）
     if (!nextUrl) {
       showFetch('load', '次話URLを取得中…');
       disable(true);
       try {
-        // ② 現在のエピソードページを再fetchしてnextUrlを抽出
         const curHtml = await fetchHtml(currentChapterUrl);
         const curPage = extractPage(curHtml, currentChapterUrl);
         if (curPage.nextUrl) {
@@ -2127,8 +1667,6 @@ async function _goNextImpl() {
           document.getElementById('bNext').disabled = false;
         }
       } catch(e) {}
-
-      // ③ ②で取れなかった場合はTOCをfetch
       if (!nextUrl) {
         try {
           const tocUrl = inferTocUrl(currentChapterUrl);
@@ -2147,7 +1685,6 @@ async function _goNextImpl() {
       if (!nextUrl) { toast('次のページが見つかりませんでした'); hideFetch(); return; }
     }
   }
-
   if(!nextUrl){toast('次のページなし');return;}
   const url=nextUrl;
   document.getElementById('urlIn').value=url;
@@ -2156,7 +1693,6 @@ async function _goNextImpl() {
   else qi=queue.findIndex(q=>q.url===url);
   try {
     let page = null;
-
     if (_nextPageCache && _nextPageCache.url === url) {
       page = _nextPageCache.page;
       showFetch('load', '✓ 先読み済み — 即開始');
@@ -2170,25 +1706,18 @@ async function _goNextImpl() {
         page = await fetchHtml(url).then(html => extractPage(html, url));
       }
     }
-
     if (!page) throw new Error('ページ取得失敗');
-
     if(queue[qi]) queue[qi].title = page.title;
     currentChapterTitle = page.title;
-    // [FIX] カクヨム: タイトルに「第N話」が含まれていれば抽出して正確な話数を維持
-    // URLからは取れない(0を返す)ためタイトル→インクリメントの順で優先
     const nextTitleNum = (page.title || '').match(/^第(\d+)話/);
     currentChapterNum = chapNumFromUrl(url)
       || (nextTitleNum ? parseInt(nextTitleNum[1]) : 0)
       || (currentChapterNum > 0 ? currentChapterNum + 1 : 1);
-
     if (_nextAudioCache.length > 0 && hasGoogleKey()) {
       clearPrefetchCache();
       _nextAudioCache.forEach(({idx: k, promise}) => _prefetchCache.set(k, promise));
       _nextAudioCache = [];
     }
-
-    // goNext: currentChapterUrl がまだ旧話URLなので prevUrlHint を明示
     const prevUrlForNext = currentChapterUrl;
     displayPage(page, url, 0, prevUrlForNext);
     hideFetch();
@@ -2201,7 +1730,6 @@ async function _goNextImpl() {
     const isTrulyFinal = msg.includes('最終話の可能性');
     const isNetErr = msg.includes('取得失敗') || msg.includes('HTTP') ||
                      msg.includes('Load failed') || msg.includes('全プロキシ');
-
     if (isTrulyFinal) {
       nextUrl = null;
       clearNextChapterCache();
@@ -2210,20 +1738,14 @@ async function _goNextImpl() {
     } else if (isNetErr) {
       clearNextChapterCache();
       showFetch('err', '⚠ ページ取得に失敗しました。「次話→」で再試行できます');
-      // nextUrlが残っていれば次話ボタンを有効に戻す
       document.getElementById('bNext').disabled = !nextUrl;
     } else {
       showFetch('err', msg.slice(0, 80));
-      // 不明なエラーでもnextUrlが残っていれば次話ボタンを有効に戻す
       document.getElementById('bNext').disabled = !nextUrl;
     }
   }
   disable(false);
-} // end _goNextImpl
-
-// ═══════════════════════════════════════════
-//  QUEUE
-// ═══════════════════════════════════════════
+}
 function renderQueue() {
   const row=document.getElementById('queueRow');
   if(!queue.length){row.classList.remove('show');return;}
@@ -2235,35 +1757,25 @@ function renderQueue() {
     return '<span class="'+c+'" onclick="jumpQ('+i+')" title="'+esc(q.url)+'">'+esc(t)+'</span>';
   }).join('');
 }
-
 async function jumpQ(i) {
   if(i===qi)return; qi=i;
   const url=queue[i].url;
   document.getElementById('urlIn').value=url;
   stop(); disable(true); showFetch('load','取得中…');
-  // [FIX2] jumpQ経由の章ジャンプ時に次話先読みキャッシュをクリア
-  // （古い次話キャッシュが残るとジャンプ後の nextUrl と不整合が起きる）
   clearNextChapterCache();
   try {
     const html=await fetchHtml(url);
     const page=extractPage(html,url);
     queue[i].title=page.title;
     currentChapterTitle=page.title;
-    // URLから話数が取れない場合（カクヨム等）はキュー内インデックス+1で代替
     currentChapterNum = chapNumFromUrl(url) || (i + 1);
-    // [FIX1] jumpQはフレッシュジャンプなのでprevUrlHint=null
     displayPage(page, url, 0, null);
     startPlay();
     hideFetch();
   } catch(e){showFetch('err',e.message);}
   disable(false);
 }
-
-// ═══════════════════════════════════════════
-//  HISTORY LIST
-// ═══════════════════════════════════════════
 const _newChapCache = {};
-
 function renderHistList() {
   const list = document.getElementById('histList');
   const items = bkAll();
@@ -2276,26 +1788,23 @@ function renderHistList() {
     const dateStr = d.getMonth()+1+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
     const newInfo = _newChapCache[bk.novelId];
     const diff = newInfo?.diff || (bk.hasNew ? bk.newDiff : 0) || 0;
-    const newBadge = diff > 0
-      ? `<span class="hist-new">NEW +${diff}話</span>`
-      : '';
-    return `<div class="hist-item" id="hi-${esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_')}" onclick="resumeFrom('${esc(bk.novelId)}')">
-      <div class="hist-thumb">📖</div>
-      <div class="hist-main">
-        <div class="hist-title">${esc(bk.novelTitle||bk.chapterTitle)}${newBadge}</div>
-        ${(bk.novelTitle && bk.novelTitle !== bk.chapterTitle)
-          ? `<div class="hist-chap-title">${esc(bk.chapterTitle||'')}</div>`
-          : ''}
-        <div class="hist-meta">
-          <span>第${bk.chapterNum||'?'}話</span>
-          <span>段落${bk.segIdx+1}</span>
-          <span>${dateStr}</span>
-        </div>
-      </div>
-      <button class="hist-del" onclick="event.stopPropagation();delHist('${esc(bk.novelId)}')">✕</button>
-    </div>`;
+    const newBadge = diff > 0 ? '<span class="hist-new">NEW +' + diff + '話</span>' : '';
+    return '<div class="hist-item" id="hi-' + esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_') + '" onclick="resumeFrom(\'' + esc(bk.novelId) + '\')">' +
+      '<div class="hist-thumb">📖</div>' +
+      '<div class="hist-main">' +
+        '<div class="hist-title">' + esc(bk.novelTitle||bk.chapterTitle) + newBadge + '</div>' +
+        (bk.chapterTitle
+          ? '<div class="hist-chap-title">' + esc(bk.chapterTitle) + '</div>'
+          : '') +
+        '<div class="hist-meta">' +
+          '<span>第' + (bk.chapterNum||'?') + '話</span>' +
+          '<span>段落' + (bk.segIdx+1) + '</span>' +
+          '<span>' + dateStr + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<button class="hist-del" onclick="event.stopPropagation();delHist(\'' + esc(bk.novelId) + '\')">✕</button>' +
+    '</div>';
   }).join('');
-
   items.forEach(bk => {
     if (!bk.tocUrl || !bk.totalChap) return;
     const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
@@ -2303,7 +1812,6 @@ function renderHistList() {
     checkNewChapter(bk);
   });
 }
-
 async function checkNewChapter(bk) {
   const tocUrl = bk.tocUrl || inferTocUrl(bk.chapterUrl);
   if (!tocUrl) return;
@@ -2327,7 +1835,6 @@ async function checkNewChapter(bk) {
     }
   } catch(e) {}
 }
-
 async function resumeFrom(novelId) {
   const bk = bkGet(novelId);
   if (!bk) { toast('しおりが見つかりません'); return; }
@@ -2338,12 +1845,8 @@ async function resumeFrom(novelId) {
   document.getElementById('urlIn').value = bk.novelId;
   stop(); disable(true); showFetch('load','履歴から読み込み中…');
   try {
-    // [FIX] makePageCacheKeyでURL全体ハッシュを使用
     const cacheKey = makePageCacheKey(bk.chapterUrl);
     const cached = sessionStorage.getItem(cacheKey);
-
-    // [FIX] カクヨムはエピソードURLへのプロキシアクセスが失敗しやすいため
-    // sessionStorageキャッシュがない場合は loadChapterUrl に委譲
     const isKakuyomu = bk.chapterUrl && bk.chapterUrl.includes('kakuyomu.jp');
     if (!cached && isKakuyomu) {
       hideFetch();
@@ -2355,7 +1858,6 @@ async function resumeFrom(novelId) {
         bk.novelTitle || '');
       return;
     }
-
     let html;
     if (cached) {
       html = cached;
@@ -2369,22 +1871,12 @@ async function resumeFrom(novelId) {
     currentNovelId = novelId;
     currentNovelTitle = bk.novelTitle || page.title;
     currentChapterTitle = page.title;
-    // [FIX] chapNum優先順位:
-    //   1. URLから取得（なろう等、URLに話数が含まれるサイトは常に正確）
-    //   2. bk.chapterNum（カクヨム等URLから取れないサイト用）
-    //   3. フォールバック 1
-    // bk.chapterNum を優先すると旧バグで誤保存された値が使われ続ける問題が起きるため
-    // URLから取れる場合はURLを信頼する
     const resumeUrlNum = chapNumFromUrl(bk.chapterUrl);
-    // [FIX] カクヨム等URLから話数が取れないサイト向け:
-    // chapterTitleに「第N話」形式が含まれていれば正確な話数を抽出する
-    // (旧バグで誤保存されたbk.chapterNumの参照を避ける)
     const titleNumMatch = (bk.chapterTitle || '').match(/^第(\d+)話/);
     const titleNum = titleNumMatch ? parseInt(titleNumMatch[1]) : 0;
     currentChapterNum = resumeUrlNum || titleNum || bk.chapterNum || 1;
     if (!queue.find(q=>q.url===bk.chapterUrl)) { queue.push({url:bk.chapterUrl,title:page.title,done:false}); qi=queue.length-1; trimQueue(); }
     else qi = queue.findIndex(q=>q.url===bk.chapterUrl);
-    // [FIX1] 履歴からの再開はフレッシュロードなのでprevUrlHint=null
     displayPage(page, bk.chapterUrl, bk.segIdx||0, null);
     startSilentAudio();
     hideFetch();
@@ -2392,66 +1884,42 @@ async function resumeFrom(novelId) {
   } catch(e) { showFetch('err', e.message); }
   disable(false);
 }
-
 function delHist(novelId) {
   bkDel(novelId);
   renderHistList();
   toast('削除しました');
 }
-
-// ─── [FIX] sessionStorageページキャッシュキー生成 ───
-// 問題: btoa(encodeURIComponent(url)).slice(0,40) は
-//       URLの先頭部分（ドメイン+パス共通部分）しかエンコードされないため
-//       カクヨムの全作品・なろうの全話が同一キーになる衝突バグがあった。
-// 修正: URL全体を使った簡易ハッシュ（djb2）でキーを生成する。
-//       Safari未対応のWebCrypto非同期APIを避け同期処理で実装。
 function urlHash(str) {
   let h = 5381;
   for (let i = 0; i < str.length; i++) {
     h = ((h << 5) + h) ^ str.charCodeAt(i);
-    h = h >>> 0; // 32bit符号なし整数に正規化
+    h = h >>> 0;
   }
   return h.toString(16).padStart(8, '0');
 }
 function makePageCacheKey(url) {
-  // URL全体をハッシュ化して衝突を防ぐ
-  // 例: kakuyomu.jp/works/A/episodes/B と kakuyomu.jp/works/C/episodes/D は別キー
   return SS_PAGE_CACHE_PREFIX + urlHash(url) + '_' + urlHash(url.split('').reverse().join(''));
 }
-
-// ─── [FIX10] sessionStorage 安全書き込みラッパー ───
-// 問題: 複数作品を開くとページHTMLが際限なく蓄積しQuotaExceededErrorが発生する
-// 対策:
-//   1. 1エントリあたり上限600KB（それ以上のHTMLはキャッシュしない）
-//   2. yogatari_pc_ プレフィックスのエントリを最大3件に制限（超えたら古いものを削除）
-//   3. QuotaExceededError時はyogatari_pc_を全消去して再試行
 const SS_PAGE_CACHE_PREFIX = 'yogatari_pc_';
 const SS_PAGE_CACHE_MAX_ENTRIES = 3;
-const SS_PAGE_CACHE_MAX_BYTES = 600000; // 600KB
+const SS_PAGE_CACHE_MAX_BYTES = 600000;
 function safeSessionSet(key, data) {
-  if (!data || data.length > SS_PAGE_CACHE_MAX_BYTES) return; // 大きすぎるHTMLは保存しない
+  if (!data || data.length > SS_PAGE_CACHE_MAX_BYTES) return;
   try {
-    // 上限エントリ数を超える場合は最も古いものを削除
     const existing = Object.keys(sessionStorage).filter(k => k.startsWith(SS_PAGE_CACHE_PREFIX));
     if (existing.length >= SS_PAGE_CACHE_MAX_ENTRIES) {
-      // 追加順で最初のものを削除（古い順）
       sessionStorage.removeItem(existing[0]);
     }
     sessionStorage.setItem(key, data);
   } catch(e) {
-    // QuotaExceededError: yogatari_pc_ を全消去してから再試行
     try {
       Object.keys(sessionStorage)
         .filter(k => k.startsWith(SS_PAGE_CACHE_PREFIX))
         .forEach(k => sessionStorage.removeItem(k));
       sessionStorage.setItem(key, data);
-    } catch(e2) { /* キャッシュ不可として続行 */ }
+    } catch(e2) {}
   }
 }
-
-// ═══════════════════════════════════════════
-//  CONFIRM MODAL
-// ═══════════════════════════════════════════
 let _cfmCallback = null;
 function openConfirm(title, msg, onOk) {
   _cfmCallback = onOk;
@@ -2464,16 +1932,8 @@ function closeConfirm() {
   document.getElementById('cfmOverlay').classList.remove('show');
   _cfmCallback = null;
 }
-
-// ═══════════════════════════════════════════
-//  README
-// ═══════════════════════════════════════════
 function openReadme()  { document.getElementById('rdmOverlay').classList.add('show'); }
 function closeReadme() { document.getElementById('rdmOverlay').classList.remove('show'); }
-
-// ═══════════════════════════════════════════
-//  USAGE TRACKING (Google TTS)
-// ═══════════════════════════════════════════
 const VOICE_LIMITS = {
   'Wavenet':  { free: 4000000, warn: 3600000 },
   'Standard': { free: 4000000, warn: 3600000 },
@@ -2489,7 +1949,6 @@ function getVoiceLimits() {
 }
 function USAGE_WARN()  { return getVoiceLimits().warn; }
 function USAGE_LIMIT() { return getVoiceLimits().free; }
-
 function usageKey() {
   const d = new Date();
   return 'yogatari_usage_' + d.getFullYear() + '_' + (d.getMonth()+1);
@@ -2522,7 +1981,6 @@ function checkUsageAlert(cur) {
   }
 }
 function isOverLimit() { return hasGoogleKey() && getUsage() >= USAGE_LIMIT(); }
-
 function updUsageDisplay() {
   const cur = getUsage();
   const pct = Math.min(cur / USAGE_LIMIT() * 100, 100);
@@ -2533,10 +1991,6 @@ function updUsageDisplay() {
   fill.style.width = pct + '%';
   fill.className = 'usage-fill' + (cur >= USAGE_LIMIT() ? ' over' : cur >= USAGE_WARN() ? ' warn' : '');
 }
-
-// ═══════════════════════════════════════════
-//  TABS
-// ═══════════════════════════════════════════
 function switchTab(name) {
   _tabSw = true;
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -2547,10 +2001,6 @@ function switchTab(name) {
   if (name==='sett') { initSettings(); updUsageDisplay(); }
   setTimeout(() => { _tabSw = false; }, 600);
 }
-
-// ═══════════════════════════════════════════
-//  VISIBILITY / TOUCH (iOS BG)
-// ═══════════════════════════════════════════
 document.addEventListener('visibilitychange', ()=>{
   if (document.visibilityState==='visible') {
     if(playing && !_busy) {
@@ -2568,7 +2018,6 @@ document.addEventListener('visibilitychange', ()=>{
 });
 document.addEventListener('touchstart', (e)=>{
   if(_actx && _actx.state==='suspended') _actx.resume().catch(()=>{});
-
   const tag = e.target?.tagName || '';
   const cl  = e.target?.className || '';
   const skip = ['BUTTON','INPUT','SELECT','A','LABEL'].includes(tag)
@@ -2576,31 +2025,21 @@ document.addEventListener('touchstart', (e)=>{
     || cl.includes('step') || cl.includes('chip') || cl.includes('howto')
     || e.target?.closest?.('button, input, select, a, .cb, .tab, .stepper, .q-chip');
   if (skip) return;
-
   if (!playing) return;
-
   if (hasGoogleKey()) {
     const _ael = getAudioEl(); if (_ael && _ael.src && !_ael.paused && !_ael.ended) return;
     if (!_busy) { stopGoogleAudio(); setTimeout(()=>speakIdx(idx), 300); }
   } else {
-    if (!SS.speaking && !SS.pending) {
-      SS.cancel(); setTimeout(()=>speakIdx(idx), 200);
-    }
+    if (!SS.speaking && !SS.pending) { SS.cancel(); setTimeout(()=>speakIdx(idx), 200); }
   }
 },{passive:true});
-
-// ═══════════════════════════════════════════
-//  UI HELPERS
-// ═══════════════════════════════════════════
 let _userScrolling = false;
 let _scrollTimer   = null;
-
 document.addEventListener('scroll', ()=>{
   _userScrolling = true;
   if(_scrollTimer) clearTimeout(_scrollTimer);
   _scrollTimer = setTimeout(()=>{ _userScrolling = false; }, 2000);
 }, {passive:true});
-
 function updHighlight(autoScroll=true) {
   document.querySelectorAll('.seg').forEach((el,i)=>{
     el.classList.remove('active','past');
@@ -2616,17 +2055,11 @@ function updProg() {
   const total=segs.length, cur=Math.min(idx+1,total);
   document.getElementById('progNum').textContent=cur+' / '+total;
   document.getElementById('progFill').style.width=(total?cur/total*100:0)+'%';
-  // [FIX7] 残り時間の精度改善
-  // 問題: 250文字/分の固定値ではGoogle TTSとKyokoの速度差を無視していた
-  // 対策: 音声エンジンごとにベースレートを設定し、速度設定を乗算して推定精度を改善
-  //   Kyoko(Web Speech API): 基準250文字/分（日本語TTS標準的な読み上げ速度）
-  //   Google TTS WaveNet/Standard/Neural2: 基準360文字/分（Googleの方が素早い傾向）
-  // 補正係数0.85: speedRateは体感より実時間が長い傾向があるため若干スケールダウン
   const remEl = document.getElementById('vRemain');
   if (remEl && total > 0) {
     const remSegs = segs.slice(idx);
     const remChars = remSegs.reduce((a,s)=>a+s.length, 0);
-    const baseRate = hasGoogleKey() ? 360 : 250; // 文字/分 @ rate=1.0
+    const baseRate = hasGoogleKey() ? 360 : 250;
     const cpm = baseRate * getRate() * 0.85;
     const remMin = remChars / cpm;
     if (remMin < 1) remEl.textContent = '1分未満';
@@ -2681,12 +2114,10 @@ function toast(msg) {
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2600);
 }
-
 let _rate  = parseFloat(localStorage.getItem('yogatari_rate'))  || 1.1;
 let _pitch = parseFloat(localStorage.getItem('yogatari_pitch')) || 1.0;
 const RATE_MIN=0.5, RATE_MAX=2.5, RATE_STEP=0.1;
 const PITCH_MIN=0.5, PITCH_MAX=2.0, PITCH_STEP=0.1;
-
 function stepRate(dir) {
   _rate = Math.round(Math.min(RATE_MAX, Math.max(RATE_MIN, _rate + dir*RATE_STEP)) * 10) / 10;
   document.getElementById('vRate').textContent = _rate.toFixed(1)+'×';
@@ -2709,14 +2140,11 @@ function onGVoiceChange() {
   const note = document.getElementById('voiceLimitNote');
   if (note) {
     const isWave = _gVoice.includes('Wavenet') || _gVoice.includes('Standard');
-    note.innerHTML = isWave
-      ? 'WaveNet / Standard：月<b>400万文字</b>まで無料'
-      : 'Neural2：月<b>100万文字</b>まで無料';
+    note.innerHTML = isWave ? 'WaveNet / Standard：月<b>400万文字</b>まで無料' : 'Neural2：月<b>100万文字</b>まで無料';
   }
   updModeDisplay();
   updUsageDisplay();
 }
-
 async function testVoice() {
   if (!hasGoogleKey()) { toast('APIキーを先に保存してください'); return; }
   const btn = document.getElementById('testVoiceBtn');
@@ -2734,31 +2162,21 @@ async function testVoice() {
     toast('⚠ ' + (e.message||'試聴エラー').slice(0,40));
   }
 }
-
 function onVoice() { const i=+document.getElementById('voiceSel').value; if(!isNaN(i)) selVoice=voices[i]; }
-
-// ═══════════════════════════════════════════
-//  BACKGROUND EFFECT ENGINE  (v48+: 夜固定・月齢・オーロラ)
-// ═══════════════════════════════════════════
 let _bgOn  = localStorage.getItem('yogatari_bg') === '1';
 let _bgRaf = null;
 let _bgCond= 'clear';
 let _bgCondTimer = 0;
-// [FIX9] 30fps上限制御用タイムスタンプ（60fps端末でもCPU/バッテリー消費を半減）
-const BG_FRAME_INTERVAL = 1000 / 30; // 約33ms
+const BG_FRAME_INTERVAL = 1000 / 30;
 let _bgLastFrame = 0;
-
 const bgCv  = document.getElementById('bgCanvas');
 const bgCtx = bgCv ? bgCv.getContext('2d') : null;
-
 let _stars=[], _clouds=[], _drops=[], _flakes=[], _shootings=[], _auroras=[];
-
 function bgResize() {
   if (!bgCv) return;
   bgCv.width = window.innerWidth;
   bgCv.height = window.innerHeight;
 }
-
 function initStars(n) {
   _stars = Array.from({length:n}, () => ({
     x: Math.random() * bgCv.width,
@@ -2797,12 +2215,8 @@ function initAuroras(n) {
     drift: (Math.random()-0.5)*0.15,
   }));
 }
-
 const WEATHER_LIST = ['clear','clear','clear','cloudy','rain','snow','aurora'];
-function pickRandomCond() {
-  return WEATHER_LIST[Math.floor(Math.random()*WEATHER_LIST.length)];
-}
-
+function pickRandomCond() { return WEATHER_LIST[Math.floor(Math.random()*WEATHER_LIST.length)]; }
 function getMoonPhase() {
   const knownNew = new Date(2000,0,6,18,14,0);
   const lunarCycle = 29.53058867;
@@ -2857,32 +2271,19 @@ function maybeShoot() {
     _shootings.push({x:Math.random()*bgCv.width, y:Math.random()*bgCv.height*0.4,
       vx:(Math.random()*4+3)*(Math.random()<0.5?1:-1), vy:Math.random()*3+2, life:1.0});
 }
-
 function drawBg() {
   if (!bgCtx || !bgCv.width) return;
   const W=bgCv.width, H=bgCv.height;
   const cond = _bgCond;
-
   _bgCondTimer++;
-  if (_bgCondTimer > 60 * (30 + Math.random()*60)) {
-    _bgCond = pickRandomCond();
-    _bgCondTimer = 0;
-  }
-
+  if (_bgCondTimer > 60 * (30 + Math.random()*60)) { _bgCond = pickRandomCond(); _bgCondTimer = 0; }
   const grad = bgCtx.createLinearGradient(0,0,0,H);
-  if (cond==='rain') {
-    grad.addColorStop(0,'#080d18'); grad.addColorStop(1,'#131e28');
-  } else if (cond==='snow') {
-    grad.addColorStop(0,'#0e1220'); grad.addColorStop(1,'#1c202e');
-  } else if (cond==='cloudy') {
-    grad.addColorStop(0,'#080c18'); grad.addColorStop(1,'#141828');
-  } else if (cond==='aurora') {
-    grad.addColorStop(0,'#020408'); grad.addColorStop(0.5,'#021408'); grad.addColorStop(1,'#040a10');
-  } else {
-    grad.addColorStop(0,'#020408'); grad.addColorStop(1,'#050810');
-  }
+  if (cond==='rain') { grad.addColorStop(0,'#080d18'); grad.addColorStop(1,'#131e28'); }
+  else if (cond==='snow') { grad.addColorStop(0,'#0e1220'); grad.addColorStop(1,'#1c202e'); }
+  else if (cond==='cloudy') { grad.addColorStop(0,'#080c18'); grad.addColorStop(1,'#141828'); }
+  else if (cond==='aurora') { grad.addColorStop(0,'#020408'); grad.addColorStop(0.5,'#021408'); grad.addColorStop(1,'#040a10'); }
+  else { grad.addColorStop(0,'#020408'); grad.addColorStop(1,'#050810'); }
   bgCtx.fillStyle=grad; bgCtx.fillRect(0,0,W,H);
-
   if (cond==='aurora') {
     _auroras.forEach(au => {
       au.a += au.da; if(au.a>0.22||au.a<0.04) au.da*=-1;
@@ -2892,9 +2293,7 @@ function drawBg() {
       ag.addColorStop(0.4,'hsla('+(au.hue+20)+',90%,45%,'+(au.a*0.6)+')');
       ag.addColorStop(1, 'hsla('+au.hue+',80%,40%,0)');
       bgCtx.fillStyle=ag;
-      bgCtx.beginPath();
-      bgCtx.ellipse(au.x, au.y, au.w, au.h, 0, 0, Math.PI*2);
-      bgCtx.fill();
+      bgCtx.beginPath(); bgCtx.ellipse(au.x, au.y, au.w, au.h, 0, 0, Math.PI*2); bgCtx.fill();
     });
     _auroras.forEach(au => {
       for(let i=-3;i<=3;i++){
@@ -2909,7 +2308,6 @@ function drawBg() {
       }
     });
   }
-
   if (cond!=='rain') {
     const phase=getMoonPhase(), mpos=getMoonPosition(), mr=24;
     const mx=W*mpos.x, my=H*mpos.y;
@@ -2925,7 +2323,6 @@ function drawBg() {
       }); bgCtx.globalAlpha=1;
     }
   }
-
   if (cond!=='rain') {
     maybeShoot();
     const starAlpha = cond==='cloudy'?0.25:cond==='aurora'?0.4:0.9;
@@ -2946,7 +2343,6 @@ function drawBg() {
     });
     bgCtx.globalAlpha=1;
   }
-
   if (cond==='cloudy'||cond==='rain'||cond==='snow') {
     const ca=cond==='cloudy'?1.8:cond==='rain'?1.4:0.9;
     _clouds.forEach(c=>{
@@ -2955,7 +2351,6 @@ function drawBg() {
       drawRealCloud(bgCtx,c.x,c.y,c.w,c.h,cond); bgCtx.restore();
     }); bgCtx.globalAlpha=1;
   }
-
   if (cond==='rain') {
     _drops.forEach(d=>{
       d.y+=d.spd; d.x+=1.5; if(d.y>H){d.y=0;d.x=Math.random()*W;}
@@ -2963,7 +2358,6 @@ function drawBg() {
       bgCtx.beginPath(); bgCtx.moveTo(d.x,d.y); bgCtx.lineTo(d.x+2,d.y+d.len); bgCtx.stroke();
     }); bgCtx.globalAlpha=1;
   }
-
   if (cond==='snow') {
     _flakes.forEach(f=>{
       f.y+=f.spd; f.x+=f.drift; if(f.y>H){f.y=0;f.x=Math.random()*W;}
@@ -2973,19 +2367,11 @@ function drawBg() {
     }); bgCtx.globalAlpha=1;
   }
 }
-
-// [FIX9] requestAnimationFrameのコールバックにtimestampを受け取り、
-// 前回描画から BG_FRAME_INTERVAL(≈33ms) 未満なら描画をスキップして30fps上限を実現。
-// 60fps端末では描画回数が半減しCPU・バッテリー消費を抑制する。
 function bgLoop(timestamp) {
   if (!_bgOn) return;
-  if (timestamp - _bgLastFrame >= BG_FRAME_INTERVAL) {
-    _bgLastFrame = timestamp;
-    drawBg();
-  }
+  if (timestamp - _bgLastFrame >= BG_FRAME_INTERVAL) { _bgLastFrame = timestamp; drawBg(); }
   _bgRaf = requestAnimationFrame(bgLoop);
 }
-
 function startBgEffect() {
   if (!bgCv || !bgCtx) return;
   _bgCond = pickRandomCond();
@@ -2993,7 +2379,6 @@ function startBgEffect() {
   initStars(200); initClouds(7); initRain(130); initSnow(90); initAuroras(5);
   bgCv.style.opacity = '0.93';
   document.body.style.background = 'transparent';
-  // [FIX9] requestAnimationFrame経由で呼び出すことでtimestampが正しく渡される
   _bgLastFrame = 0;
   _bgRaf = requestAnimationFrame(bgLoop);
 }
@@ -3011,9 +2396,7 @@ function toggleBgEffect() {
   if(st) st.textContent = _bgOn ? '月齢・星・流れ星・オーロラ・ランダム天気' : '';
   if(_bgOn) startBgEffect(); else stopBgEffect();
 }
-
 window.addEventListener('resize', ()=>{ if(_bgOn){bgResize();initStars(200);initClouds(7);initAuroras(5);} });
-
 setTimeout(()=>{
   const btn=document.getElementById('bgToggleBtn');
   if(btn){ btn.textContent=_bgOn?'ON':'OFF'; btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn'; }
@@ -3022,6 +2405,5 @@ setTimeout(()=>{
   if(_bgOn) startBgEffect();
 }, 500);
 </script>
-
 </body>
 </html>
