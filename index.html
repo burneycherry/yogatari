@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v83</title>
+<title>夜語り v84</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -203,7 +203,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v83</span></div>
+  <div class="app-name">夜語り <span class="ver">v84</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -467,7 +467,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v83';
+const APP_VER = 'v84';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -889,9 +889,7 @@ function extractPage(html, pageUrl) {
         if (phost.includes('kakuyomu.jp')) {
           const wmR = pageUrl.match(/\/works\/([^/]+)\//);
           if (wmR && rnUrl.includes('/works/' + wmR[1] + '/episodes/') && rnUrl !== pageUrl) nextPageUrl = rnUrl;
-        } else {
-          nextPageUrl = rnUrl;
-        }
+        } else { nextPageUrl = rnUrl; }
       }
     }
   }
@@ -919,17 +917,18 @@ function extractPage(html, pageUrl) {
     } catch(e) {}
   }
   let novelTitle = null;
+  let chapterSubtitle = null;
   try {
     const ph2 = new URL(pageUrl).hostname.replace('www.','');
     if (ph2.includes('syosetu.com')) {
       const ntEl = doc.querySelector('.novel_title');
-      if (ntEl && ntEl.textContent.trim()) {
+      if (ntEl && ntEl.textContent.trim())
         novelTitle = ntEl.textContent.trim().replace(/\s*[|｜]\s*.+$/, '').trim();
-      } else {
-        const tt2 = doc.querySelector('title')?.textContent?.trim() || '';
-        const tp2 = tt2.split(/\s*[-－]\s*/);
-        const nPart = tp2.find(p => !/第\d+/.test(p) && !p.includes('小説家になろう') && !p.includes('なろう'));
-        if (nPart) novelTitle = nPart.replace(/\s*[|｜]\s*.+$/, '').trim();
+      const subEl = doc.querySelector('.novel_subtitle');
+      if (subEl && subEl.textContent.trim()) {
+        const subTxt = subEl.textContent.trim();
+        if (!/^第\d+話?$/.test(subTxt))
+          chapterSubtitle = subTxt;
       }
     }
   } catch(e) {}
@@ -963,7 +962,7 @@ function extractPage(html, pageUrl) {
     return el.textContent || '';
   }
   const rawText = domToText(bodyEl || doc.body).trim();
-  const title = extractTitle(doc, pageUrl, novelTitle);
+  const title = extractTitle(doc, pageUrl, chapterSubtitle, novelTitle);
   if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) {
     throw new Error('本文を取得できませんでした（最終話の可能性があります）');
   }
@@ -974,7 +973,7 @@ function extractPage(html, pageUrl) {
     throw new Error('本文を取得できませんでした。URLを確認してください。');
   return { title, novelTitle, text: rawText, nextUrl: nextPageUrl };
 }
-function extractTitle(doc, pageUrl, knownNovelTitle) {
+function extractTitle(doc, pageUrl, chapterSubtitleHint, novelTitleHint) {
   try {
     const u = new URL(pageUrl);
     if (u.hostname.includes('kakuyomu.jp') && u.pathname.includes('/episodes/')) {
@@ -982,18 +981,17 @@ function extractTitle(doc, pageUrl, knownNovelTitle) {
       return t.split(/\s*[-－]\s*/)[0].trim() || pageUrl;
     }
     if (u.hostname.includes('syosetu.com') && /\/\d+\/?$/.test(u.pathname)) {
-      const sub = doc.querySelector('.novel_subtitle');
-      if (sub && sub.textContent.trim()) return sub.textContent.trim();
+      if (chapterSubtitleHint) return chapterSubtitleHint;
       const t = doc.querySelector('title')?.textContent?.trim() || '';
       const pts = t.split(/\s*[-－]\s*/);
-      const chapPart = pts.find(p => /第\d+/.test(p));
+      const chapPart = pts.find(p => p && /第\d+/.test(p) && !p.includes('なろう'));
       if (chapPart) return chapPart.trim();
-      if (knownNovelTitle && pts.length >= 2) {
-        const nonNovel = pts.find(p => !p.includes(knownNovelTitle.slice(0,4)));
+      if (novelTitleHint && pts.length >= 2) {
+        const nonNovel = pts.find(p => p && !p.includes(novelTitleHint.slice(0,4)) && !p.includes('なろう'));
         if (nonNovel) return nonNovel.trim();
       }
-      const m = u.pathname.match(/\/(\d+)\/?$/);
-      if (m) return '第' + m[1] + '話';
+      const m2 = u.pathname.match(/\/(\d+)\/?$/);
+      if (m2) return '第' + m2[1] + '話';
       return pts[0].trim() || pageUrl;
     }
   } catch(e) {}
@@ -1823,9 +1821,13 @@ function renderHistList() {
       '<div class="hist-thumb">📖</div>' +
       '<div class="hist-main">' +
         '<div class="hist-title">' + esc(bk.novelTitle||bk.chapterTitle) + newBadge + '</div>' +
-        ((bk.novelTitle && bk.novelTitle !== bk.chapterTitle)
-          ? '<div class="hist-chap-title">' + esc(bk.chapterTitle||'') + '</div>'
-          : '') +
+        (function(){
+          const ct = bk.chapterTitle || '';
+          const nt = bk.novelTitle || '';
+          if (!ct || ct === nt) return '';
+          if (/^第\d+話?$/.test(ct.trim())) return '';
+          return '<div class="hist-chap-title">' + esc(ct) + '</div>';
+        })() +
         '<div class="hist-meta">' +
           '<span>第' + (bk.chapterNum||'?') + '話</span>' +
           '<span>段落' + (bk.segIdx+1) + '</span>' +
