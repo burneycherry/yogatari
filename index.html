@@ -203,7 +203,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v90</span></div>
+  <div class="app-name">夜語り <span class="ver">v90-DEBUG</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -467,7 +467,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v90';
+const APP_VER = 'v90-DEBUG';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -935,6 +935,14 @@ function extractPage(html, pageUrl) {
         var h1El0 = doc.querySelector('h1');
         if (h1El0 && h1El0.textContent.trim()) preChapTitle = h1El0.textContent.trim();
       }
+      console.log('[DEBUG] novelTitle=', novelTitle);
+      console.log('[DEBUG] .novel_subtitle element=', subEl0);
+      console.log('[DEBUG] .novel_subtitle text=', subEl0 ? subEl0.textContent.trim() : 'null');
+      console.log('[DEBUG] h1 text=', doc.querySelector('h1') ? doc.querySelector('h1').textContent.trim() : 'null');
+      console.log('[DEBUG] preChapTitle=', preChapTitle);
+      console.log('[DEBUG] title tag=', (doc.querySelector('title')||{textContent:''}).textContent.trim());
+      var allP = doc.querySelectorAll('p'); console.log('[DEBUG] p count=', allP.length);
+      var novelSubtitleAll = doc.querySelectorAll('.novel_subtitle'); console.log('[DEBUG] .novel_subtitle count=', novelSubtitleAll.length);
     }
   } catch(e3) {}
   ['script','style','iframe','nav','header','footer',
