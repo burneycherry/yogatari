@@ -203,7 +203,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v86</span></div>
+  <div class="app-name">夜語り <span class="ver">v87</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -467,7 +467,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v86';
+const APP_VER = 'v87';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -1883,7 +1883,7 @@ async function resumeFrom(novelId) {
       currentNovelTitle = bk.novelTitle || bk.chapterTitle || '';
       await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId,
         chapNumFromUrl(bk.chapterUrl) || bk.chapterNum || 1,
-        bk.novelTitle || '');
+        '');
       return;
     }
     let html;
@@ -1897,7 +1897,7 @@ async function resumeFrom(novelId) {
     }
     const page = extractPage(html, bk.chapterUrl);
     currentNovelId = novelId;
-    currentNovelTitle = bk.novelTitle || page.title;
+    currentNovelTitle = page.novelTitle || bk.novelTitle || page.title;
     currentChapterTitle = page.title;
     const resumeUrlNum = chapNumFromUrl(bk.chapterUrl);
     const titleNumMatch = (bk.chapterTitle || '').match(/^第(\d+)話/);
