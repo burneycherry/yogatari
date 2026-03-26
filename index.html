@@ -469,23 +469,17 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <script>
 const APP_VER = 'v90-DEBUG';
 function showDebugOverlay(msg) {
-  var el = document.getElementById('_dbgOverlay');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = '_dbgOverlay';
-    el.style.cssText = 'position:fixed;top:60px;left:10px;right:10px;z-index:9999;'
-      + 'background:rgba(0,0,0,0.92);color:#0f0;font-family:monospace;font-size:11px;'
-      + 'padding:12px;border-radius:10px;white-space:pre-wrap;border:1px solid #0f0;';
-    var btn = document.createElement('button');
-    btn.textContent = '✕ 閉じる';
-    btn.style.cssText = 'display:block;margin-top:10px;padding:6px 16px;'
-      + 'background:#0f0;color:#000;border:none;border-radius:6px;font-size:13px;cursor:pointer;';
-    btn.onclick = function(){ el.remove(); };
-    el.appendChild(document.createTextNode(''));
-    el.insertBefore(btn, null);
-    document.body.appendChild(el);
-  }
-  el.childNodes[0].textContent = '=== DEBUG ===\n' + msg + '\n';
+  try {
+    var el = document.getElementById('_dbgBox');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = '_dbgBox';
+      el.style.cssText = 'position:fixed;top:60px;left:8px;right:8px;z-index:9999;background:rgba(0,0,0,0.95);color:#00ff00;font-size:11px;font-family:monospace;padding:10px;border-radius:8px;border:1px solid #00ff00;white-space:pre-wrap;word-break:break-all;';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg + '\n\n[タップで閉じる]';
+    el.onclick = function(){ el.style.display='none'; };
+  } catch(ex) {}
 }
 
 let _actx = null, _silentOn = false;
@@ -955,15 +949,15 @@ if (!preChapTitle) {
 var h1El0 = doc.querySelector(‘h1’);
 if (h1El0 && h1El0.textContent.trim()) preChapTitle = h1El0.textContent.trim();
 }
-var _dbg = [
-‘novelTitle: ’ + (novelTitle||‘null’),
-‘.novel_subtitle count: ’ + doc.querySelectorAll(’.novel_subtitle’).length,
-‘.novel_subtitle text: ’ + (subEl0 ? subEl0.textContent.trim().slice(0,30) : ‘null’),
-‘h1 text: ’ + (doc.querySelector(‘h1’) ? doc.querySelector(‘h1’).textContent.trim().slice(0,30) : ‘null’),
-‘preChapTitle: ’ + (preChapTitle||‘null’),
-‘title tag: ’ + (doc.querySelector(‘title’)||{textContent:’’}).textContent.trim().slice(0,40),
-].join(’\n’);
-showDebugOverlay(_dbg);
+var dbgMsg = ‘=== DEBUG ===\n’
++ ‘novelTitle: ’ + (novelTitle || ‘null’) + ‘\n’
++ ‘.novel_subtitle count: ’ + doc.querySelectorAll(’.novel_subtitle’).length + ‘\n’
++ ‘.novel_subtitle text: ’ + (subEl0 ? subEl0.textContent.trim().slice(0,40) : ‘null’) + ‘\n’
++ ‘h1 count: ’ + doc.querySelectorAll(‘h1’).length + ‘\n’
++ ‘h1 text: ’ + (doc.querySelector(‘h1’) ? doc.querySelector(‘h1’).textContent.trim().slice(0,40) : ‘null’) + ‘\n’
++ ‘preChapTitle: ’ + (preChapTitle || ‘null’) + ‘\n’
++ ‘title: ’ + (doc.querySelector(‘title’) ? doc.querySelector(‘title’).textContent.trim().slice(0,50) : ‘null’);
+showDebugOverlay(dbgMsg);
 }
 } catch(e3) {}
 [‘script’,‘style’,‘iframe’,‘nav’,‘header’,‘footer’,
