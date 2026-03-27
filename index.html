@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v101</title>
+<title>夜語り v104</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -203,7 +203,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v101</span></div>
+  <div class="app-name">夜語り <span class="ver">v104</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
@@ -288,15 +288,14 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
         <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
       </div>
-      <div class="sett-sub" style="margin-bottom:10px">WaveNetは360万文字で警告 → 400万文字でKyokoに自動切替。<br>Neural2は90万文字で警告 → 100万文字で切替。<br>カウントは毎月1日に自動リセットされます。</div>
+      <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：各400万文字、Neural2：100万文字（合計900万文字）。<br>360万・90万文字で警告、上限到達でKyokoに自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
       <div class="sett-title">// Google側での使用量・請求確認</div>
       <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">実際の使用量や請求額はGoogle Cloud Consoleで確認できます。</div>
       <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
-      <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">💳 請求・料金を確認する</a>
-      <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">🔔 予算アラートを設定する（課金防止）</a>
+      <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">💳 請求・料金を確認する（課金防止設定）</a>
       <div class="sett-sub" style="margin-bottom:14px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">⭐ 予算アラートを <b>¥1</b> で設定しておくと<br>万が一の課金時にメールで通知が届いて安心です。</div>
       <div class="sett-title">// Google Cloud TTS（高品質）</div>
-      <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">GoogleアカウントのAPIキーを入力すると<br>Kyokoより自然な日本語音声になります。<br>WaveNet・Standard：月400万文字まで無料</div>
+      <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">GoogleアカウントのAPIキーを入力すると<br>Kyokoより自然な日本語音声になります。</div>
       <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
       <div class="api-status" id="apiStatus"></div>
       <input class="api-input" id="apiKeyInput" type="password" placeholder="AIzaSy…（APIキーを貼り付け）" autocomplete="off" autocorrect="off" spellcheck="false">
@@ -438,7 +437,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt"><b>Google Cloud Consoleを開く</b><br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#c8991e">console.cloud.google.com</span></div></div>
       <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt"><b>プロジェクトを作成</b> → 名前は何でもOK</div></div>
       <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>Text-to-Speech APIを有効化</b> → APIとサービス → ライブラリ → text to speech</div></div>
-      <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt"><b>請求先を設定</b>（月100万文字まで無料）</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt"><b>請求先を設定</b>（無料枠あり。詳細は設定タブで確認）</div></div>
       <div class="rdm-step"><div class="rdm-step-num">5</div><div class="rdm-step-txt"><b>APIキーを発行</b> → 認証情報 → APIキー作成 → <b>AIzaSy…</b> をコピー</div></div>
       <div class="rdm-step"><div class="rdm-step-num">6</div><div class="rdm-step-txt"><b>設定タブに貼り付け</b> → 保存して使う → 完了！</div></div>
       <div class="rdm-note">🔒 キーはこの端末にのみ保存。外部サーバーには送信しません。</div>
@@ -467,7 +466,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v101';
+const APP_VER = 'v104';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -2022,15 +2021,22 @@ function getVoiceLimits() {
 }
 function USAGE_WARN()  { return getVoiceLimits().warn; }
 function USAGE_LIMIT() { return getVoiceLimits().free; }
-function usageKey() {
-  const d = new Date();
-  return 'yogatari_usage_' + d.getFullYear() + '_' + (d.getMonth()+1);
+function voiceCategory() {
+  if (_gVoice.includes('Neural2')) return 'neural2';
+  if (_gVoice.includes('Wavenet') || _gVoice.includes('wavenet')) return 'wavenet';
+  return 'standard';
 }
-function getUsage() { return parseInt(localStorage.getItem(usageKey()) || '0'); }
+function usageKey(cat) {
+  const d = new Date();
+  const c = cat || voiceCategory();
+  return 'yogatari_usage_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + c;
+}
+function getUsage(cat) { return parseInt(localStorage.getItem(usageKey(cat)) || '0'); }
 function addUsage(chars) {
   const cur = getUsage() + chars;
   localStorage.setItem(usageKey(), cur);
   checkUsageAlert(cur);
+  updUsageDisplay();
   return cur;
 }
 function resetUsage() {
@@ -2038,7 +2044,7 @@ function resetUsage() {
     '使用量をリセット',
     '月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',
     () => {
-      localStorage.setItem(usageKey(), '0');
+      ['standard','wavenet','neural2'].forEach(function(c){ localStorage.setItem(usageKey(c), '0'); });
       updUsageDisplay();
       toast('使用量をリセットしました');
     }
@@ -2055,14 +2061,33 @@ function checkUsageAlert(cur) {
 }
 function isOverLimit() { return hasGoogleKey() && getUsage() >= USAGE_LIMIT(); }
 function updUsageDisplay() {
-  const cur = getUsage();
-  const pct = Math.min(cur / USAGE_LIMIT() * 100, 100);
-  const el = document.getElementById('usageVal');
-  const fill = document.getElementById('usageFill');
-  if (!el) return;
-  const lim2 = USAGE_LIMIT(); el.textContent = cur.toLocaleString() + ' / ' + lim2.toLocaleString() + '文字';
-  fill.style.width = pct + '%';
-  fill.className = 'usage-fill' + (cur >= USAGE_LIMIT() ? ' over' : cur >= USAGE_WARN() ? ' warn' : '');
+  var cats = [
+    { key: 'standard', label: 'Standard', limit: 4000000, warn: 3600000 },
+    { key: 'wavenet',  label: 'WaveNet',  limit: 4000000, warn: 3600000 },
+    { key: 'neural2',  label: 'Neural2',  limit: 1000000, warn:  900000 },
+  ];
+  var wrap = document.getElementById('usageWrap');
+  if (!wrap) return;
+  var html2 = '';
+  var totalUsed = 0;
+  cats.forEach(function(c) {
+    var cur = getUsage(c.key);
+    totalUsed += cur;
+    var pct = Math.min(cur / c.limit * 100, 100);
+    var cls = 'usage-fill' + (cur >= c.limit ? ' over' : cur >= c.warn ? ' warn' : '');
+    html2 += '<div class="usage-bar-header" style="margin-top:8px">'
+      + '<span class="usage-bar-label">' + c.label + '</span>'
+      + '<span class="usage-bar-val">' + cur.toLocaleString() + ' / ' + (c.limit/10000).toFixed(0) + '万</span>'
+      + '</div>'
+      + '<div class="usage-track"><div class="' + cls + '" style="width:' + pct + '%"></div></div>';
+  });
+  html2 += '<div class="usage-bar-header" style="margin-top:10px;border-top:1px solid #302618;padding-top:8px">'
+    + '<span class="usage-bar-label" style="color:#9e8660">今月合計</span>'
+    + '<span class="usage-bar-val">' + totalUsed.toLocaleString() + '文字</span>'
+    + '</div>';
+  // 既存のheader/track/resetボタンを置き換え
+  var resetBtn = '<button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>';
+  wrap.innerHTML = html2 + resetBtn;
 }
 function switchTab(name) {
   _tabSw = true;
