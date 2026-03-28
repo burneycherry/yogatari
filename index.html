@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v107</title>
+<title>夜語り v108</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -195,12 +195,12 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .howto-link:active{color:#c8991e}
 .mode-badge{display:inline-flex;align-items:center;gap:5px;font-family:'Courier New',Consolas,monospace;font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid #302618;color:#564838;background:#1e1a15}
 .mode-badge.google{border-color:rgba(66,133,244,0.4);color:#74a8f8;background:rgba(66,133,244,0.08)}
-.sleep-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;display:none}
+.sleep-row{display:none;align-items:center;gap:8px;margin-bottom:8px}
 .sleep-row.show{display:flex}
 .sleep-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
-.sleep-val{font-family:'Courier New',Consolas,monospace;font-size:13px;color:#9e8660;min-width:60px;text-align:center}
+.sleep-val{font-family:'Courier New',Consolas,monospace;font-size:13px;color:#9e8660;min-width:54px;text-align:center}
 .sleep-val.on{color:#e8be50}
-.sleep-btn{font-family:'Courier New',Consolas,monospace;font-size:10px;padding:5px 10px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;cursor:pointer;white-space:nowrap}
+.sleep-btn{font-family:'Courier New',Consolas,monospace;font-size:10px;padding:5px 10px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;cursor:pointer}
 .sleep-btn.on{border-color:rgba(200,153,30,0.4);color:#c8991e;background:rgba(200,153,30,0.08)}
 .toast{position:fixed;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(10px);background:#28221a;border:1px solid #564838;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#ede0c6;padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -210,10 +210,10 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v107</span></div>
+  <div class="app-name">夜語り <span class="ver">v108</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
-    <button class="readme-btn" onclick="toggleSleepRow()" id="sleepTopBtn" title="睡眠タイマー">🌙</button>
+    <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
     <button class="readme-btn" onclick="openReadme()" title="使い方">?</button>
   </div>
 </div>
@@ -356,9 +356,9 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <div class="sleep-row" id="sleepRow">
     <span class="sleep-lbl">睡眠</span>
     <span class="sleep-val" id="sleepVal">--:--</span>
-    <button class="sleep-btn" id="sleepBtn15" onclick="setSleepTimer(15)">15分</button>
-    <button class="sleep-btn" id="sleepBtn30" onclick="setSleepTimer(30)">30分</button>
-    <button class="sleep-btn" id="sleepBtn60" onclick="setSleepTimer(60)">60分</button>
+    <button class="sleep-btn" onclick="setSleepTimer(15)">15分</button>
+    <button class="sleep-btn" onclick="setSleepTimer(30)">30分</button>
+    <button class="sleep-btn" onclick="setSleepTimer(60)">60分</button>
     <button class="sleep-btn" onclick="cancelSleepTimer()">✕</button>
   </div>
   <div class="voice-remain-row">
@@ -489,2092 +489,2078 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v107';
-let _sleepTimer = null;
-let _sleepEnd = 0;
-let _sleepTick = null;
-
-function toggleSleepRow() {
-const row = document.getElementById(‘sleepRow’);
-row.classList.toggle(‘show’);
-}
-
-function setSleepTimer(minutes) {
-cancelSleepTimer();
-_sleepEnd = Date.now() + minutes * 60000;
-document.getElementById(‘sleepRow’).classList.add(‘show’);
-[‘sleepBtn15’,‘sleepBtn30’,‘sleepBtn60’].forEach(function(id){
-var el = document.getElementById(id);
-if (el) el.classList.remove(‘on’);
-});
-var activeId = ‘sleepBtn’ + minutes;
-var activeEl = document.getElementById(activeId);
-if (activeEl) activeEl.classList.add(‘on’);
-_sleepTick = setInterval(function() {
-var rem = _sleepEnd - Date.now();
-if (rem <= 0) {
-if (playing) togglePlay();
-toast(‘😴 おやすみなさい。再生を停止しました。’);
-cancelSleepTimer();
-return;
-}
-var m = Math.floor(rem / 60000);
-var s = Math.floor((rem % 60000) / 1000);
-var el = document.getElementById(‘sleepVal’);
-if (el) {
-el.textContent = m + ‘:’ + String(s).padStart(2,‘0’);
-el.className = ‘sleep-val on’;
-}
-}, 1000);
-}
-
-function cancelSleepTimer() {
-if (_sleepTick) { clearInterval(_sleepTick); _sleepTick = null; }
-_sleepEnd = 0;
-var el = document.getElementById(‘sleepVal’);
-if (el) { el.textContent = ‘–:–’; el.className = ‘sleep-val’; }
-[‘sleepBtn15’,‘sleepBtn30’,‘sleepBtn60’].forEach(function(id){
-var el2 = document.getElementById(id);
-if (el2) el2.classList.remove(‘on’);
-});
-}
+const APP_VER = 'v108';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
-if (_actx) return;
-try {
-_actx = new (window.AudioContext || window.webkitAudioContext)();
-const buf = _actx.createBuffer(1, _actx.sampleRate * 0.5, _actx.sampleRate);
-function loop() {
-if (!_silentOn) return;
-const s = _actx.createBufferSource(); s.buffer = buf;
-s.connect(_actx.destination); s.start();
-s.onended = loop;
-}
-_silentOn = true; loop();
-} catch(e) {}
+  if (_actx) return;
+  try {
+    _actx = new (window.AudioContext || window.webkitAudioContext)();
+    const buf = _actx.createBuffer(1, _actx.sampleRate * 0.5, _actx.sampleRate);
+    function loop() {
+      if (!_silentOn) return;
+      const s = _actx.createBufferSource(); s.buffer = buf;
+      s.connect(_actx.destination); s.start();
+      s.onended = loop;
+    }
+    _silentOn = true; loop();
+  } catch(e) {}
 }
 function stopSilentAudio() {
-_silentOn = false;
-if (_actx) { _actx.close().catch(()=>{}); _actx = null; }
+  _silentOn = false;
+  if (_actx) { _actx.close().catch(()=>{}); _actx = null; }
 }
-const _msSupported = (‘mediaSession’ in navigator);
+const _msSupported = ('mediaSession' in navigator);
 function msSetMetadata() {
-if (!_msSupported) return;
-try {
-navigator.mediaSession.metadata = new MediaMetadata({
-title: currentChapterTitle || ‘読み上げ中’,
-artist: currentNovelTitle  || ‘夜語り’,
-album: ‘夜語り’,
-artwork: [{
-src: ‘data:image/svg+xml,’ + encodeURIComponent(
-‘<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">’ +
-‘<rect width="512" height="512" fill="#0a0908"/>’ +
-‘<text x="256" y="300" text-anchor="middle" font-size="220" fill="#c8991e">夜</text>’ +
-‘</svg>’
-),
-sizes: ‘512x512’,
-type: ‘image/svg+xml’
-}]
-});
-} catch(e) {}
+  if (!_msSupported) return;
+  try {
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentChapterTitle || '読み上げ中',
+      artist: currentNovelTitle  || '夜語り',
+      album: '夜語り',
+      artwork: [{
+        src: 'data:image/svg+xml,' + encodeURIComponent(
+          '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">' +
+          '<rect width="512" height="512" fill="#0a0908"/>' +
+          '<text x="256" y="300" text-anchor="middle" font-size="220" fill="#c8991e">夜</text>' +
+          '</svg>'
+        ),
+        sizes: '512x512',
+        type: 'image/svg+xml'
+      }]
+    });
+  } catch(e) {}
 }
 function msSetState(state) {
-if (!_msSupported) return;
-try { navigator.mediaSession.playbackState = state; } catch(e) {}
+  if (!_msSupported) return;
+  try { navigator.mediaSession.playbackState = state; } catch(e) {}
 }
 function msRegisterHandlers() {
-if (!_msSupported) return;
-try {
-navigator.mediaSession.setActionHandler(‘play’, () => { if (!playing && segs.length) startPlay(); });
-navigator.mediaSession.setActionHandler(‘pause’, () => { if (playing) togglePlay(); });
-navigator.mediaSession.setActionHandler(‘previoustrack’, () => { if (prevUrl) goPrev(); else prevSeg(); });
-navigator.mediaSession.setActionHandler(‘nexttrack’, () => { if (nextUrl) goNext(); else nextSeg(); });
-navigator.mediaSession.setActionHandler(‘seekbackward’, (d) => { skipSec(-(d?.seekOffset || 10)); });
-navigator.mediaSession.setActionHandler(‘seekforward’, (d) => { skipSec(d?.seekOffset || 10); });
-} catch(e) {}
+  if (!_msSupported) return;
+  try {
+    navigator.mediaSession.setActionHandler('play', () => { if (!playing && segs.length) startPlay(); });
+    navigator.mediaSession.setActionHandler('pause', () => { if (playing) togglePlay(); });
+    navigator.mediaSession.setActionHandler('previoustrack', () => { if (prevUrl) goPrev(); else prevSeg(); });
+    navigator.mediaSession.setActionHandler('nexttrack', () => { if (nextUrl) goNext(); else nextSeg(); });
+    navigator.mediaSession.setActionHandler('seekbackward', (d) => { skipSec(-(d?.seekOffset || 10)); });
+    navigator.mediaSession.setActionHandler('seekforward', (d) => { skipSec(d?.seekOffset || 10); });
+  } catch(e) {}
 }
 let _msHandlersRegistered = false;
 function msInit() {
-if (!_msSupported || _msHandlersRegistered) return;
-msRegisterHandlers();
-_msHandlersRegistered = true;
+  if (!_msSupported || _msHandlersRegistered) return;
+  msRegisterHandlers();
+  _msHandlersRegistered = true;
 }
 const SS = window.speechSynthesis;
 let voices = [], selVoice = null;
 function loadVoices() {
-voices = SS.getVoices();
-const sel = document.getElementById(‘voiceSel’);
-const ja = voices.filter(v=>v.lang.startsWith(‘ja’));
-const all = […ja, …voices.filter(v=>!v.lang.startsWith(‘ja’))];
-sel.innerHTML = ‘’;
-if (!all.length) { sel.innerHTML=’<option>音声なし</option>’; return; }
-all.forEach(v => {
-const o = document.createElement(‘option’);
-o.value = voices.indexOf(v);
-o.textContent = v.name + ’ (’ + v.lang + ‘)’;
-if (v.lang.startsWith(‘ja’) && !selVoice) { o.selected=true; selVoice=v; }
-sel.appendChild(o);
-});
-if (!selVoice && voices.length) selVoice = voices[0];
+  voices = SS.getVoices();
+  const sel = document.getElementById('voiceSel');
+  const ja = voices.filter(v=>v.lang.startsWith('ja'));
+  const all = [...ja, ...voices.filter(v=>!v.lang.startsWith('ja'))];
+  sel.innerHTML = '';
+  if (!all.length) { sel.innerHTML='<option>音声なし</option>'; return; }
+  all.forEach(v => {
+    const o = document.createElement('option');
+    o.value = voices.indexOf(v);
+    o.textContent = v.name + ' (' + v.lang + ')';
+    if (v.lang.startsWith('ja') && !selVoice) { o.selected=true; selVoice=v; }
+    sel.appendChild(o);
+  });
+  if (!selVoice && voices.length) selVoice = voices[0];
 }
-SS.addEventListener ? SS.addEventListener(‘voiceschanged’, loadVoices) : (SS.onvoiceschanged = loadVoices);
+SS.addEventListener ? SS.addEventListener('voiceschanged', loadVoices) : (SS.onvoiceschanged = loadVoices);
 loadVoices();
 setTimeout(() => {
-syncVoiceSelect();
-updModeDisplay();
-document.getElementById(‘vRate’).textContent  = _rate.toFixed(1)  + ‘×’;
-document.getElementById(‘vPitch’).textContent = *pitch.toFixed(1);
+  syncVoiceSelect();
+  updModeDisplay();
+  document.getElementById('vRate').textContent  = _rate.toFixed(1)  + '×';
+  document.getElementById('vPitch').textContent = _pitch.toFixed(1);
 }, 300);
 setTimeout(() => { startupNewCheck(); }, 3000);
 (function cleanLegacyCache() {
-try {
-Object.keys(sessionStorage)
-.filter(k => k.startsWith(’yogatari_pc*’))
-.forEach(k => sessionStorage.removeItem(k));
-} catch(e) {}
+  try {
+    Object.keys(sessionStorage)
+      .filter(k => k.startsWith('yogatari_pc_'))
+      .forEach(k => sessionStorage.removeItem(k));
+  } catch(e) {}
 })();
 async function startupNewCheck() {
-const items = bkAll();
-for (const bk of items) {
-const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
-if (Date.now() - lastCheck < 3600000) continue;
-await checkNewChapter(bk);
-await new Promise(r => setTimeout(r, 1500));
-}
+  const items = bkAll();
+  for (const bk of items) {
+    const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
+    if (Date.now() - lastCheck < 3600000) continue;
+    await checkNewChapter(bk);
+    await new Promise(r => setTimeout(r, 1500));
+  }
 }
 function bkLoad() {
-try { return JSON.parse(localStorage.getItem(‘yogatari_bk’) || ‘{}’); } catch(e) { return {}; }
+  try { return JSON.parse(localStorage.getItem('yogatari_bk') || '{}'); } catch(e) { return {}; }
 }
 function bkSave(data) {
-try { localStorage.setItem(‘yogatari_bk’, JSON.stringify(data)); } catch(e) {}
+  try { localStorage.setItem('yogatari_bk', JSON.stringify(data)); } catch(e) {}
 }
 function bkSet(novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx, totalChap) {
-const all = bkLoad();
-const prev = all[novelId] || {};
-all[novelId] = {
-novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx,
-ts: Date.now(),
-totalChap: totalChap || prev.totalChap || null,
-tocUrl: prev.tocUrl || null,
-};
-bkSave(all);
+  const all = bkLoad();
+  const prev = all[novelId] || {};
+  all[novelId] = {
+    novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx,
+    ts: Date.now(),
+    totalChap: totalChap || prev.totalChap || null,
+    tocUrl: prev.tocUrl || null,
+  };
+  bkSave(all);
 }
 function bkSetToc(novelId, tocUrl, totalChap) {
-const all = bkLoad();
-if (!all[novelId]) return;
-all[novelId].tocUrl = tocUrl;
-if (totalChap) all[novelId].totalChap = totalChap;
-bkSave(all);
+  const all = bkLoad();
+  if (!all[novelId]) return;
+  all[novelId].tocUrl = tocUrl;
+  if (totalChap) all[novelId].totalChap = totalChap;
+  bkSave(all);
 }
 function inferTocUrl(chapterUrl) {
-try {
-const u = new URL(chapterUrl);
-if (u.hostname.includes(‘syosetu.com’)) {
-const m = u.pathname.match(/^(/[^/]+)/\d+/?$/);
-if (m) return u.origin + m[1] + ‘/’;
-}
-if (u.hostname.includes(‘kakuyomu.jp’)) {
-const m = u.pathname.match(/^(/works/[^/]+)/);
-if (m) return u.origin + m[1];
-}
-} catch(e) {}
-return null;
+  try {
+    const u = new URL(chapterUrl);
+    if (u.hostname.includes('syosetu.com')) {
+      const m = u.pathname.match(/^(\/[^\/]+)\/\d+\/?$/);
+      if (m) return u.origin + m[1] + '/';
+    }
+    if (u.hostname.includes('kakuyomu.jp')) {
+      const m = u.pathname.match(/^(\/works\/[^\/]+)/);
+      if (m) return u.origin + m[1];
+    }
+  } catch(e) {}
+  return null;
 }
 function bkGet(novelId) { return bkLoad()[novelId] || null; }
 function bkDel(novelId) { const a = bkLoad(); delete a[novelId]; bkSave(a); }
 function bkAll() { return Object.values(bkLoad()).sort((a,b)=>b.ts-a.ts); }
 function toNovelId(url) {
-try {
-const u = new URL(url);
-if (u.hostname.includes(‘syosetu.com’)) {
-const m = u.pathname.match(/^/([^/]+)/);
-return m ? u.origin + ‘/’ + m[1] + ‘/’ : url;
-}
-if (u.hostname.includes(‘kakuyomu.jp’)) {
-const m = u.pathname.match(/^(/works/[^/]+)/);
-return m ? u.origin + m[1] : url;
-}
-return url;
-} catch(e) { return url; }
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('syosetu.com')) {
+      const m = u.pathname.match(/^\/([^/]+)/);
+      return m ? u.origin + '/' + m[1] + '/' : url;
+    }
+    if (u.hostname.includes('kakuyomu.jp')) {
+      const m = u.pathname.match(/^(\/works\/[^/]+)/);
+      return m ? u.origin + m[1] : url;
+    }
+    return url;
+  } catch(e) { return url; }
 }
 let segs=[], idx=0, playing=false;
 let nextUrl=null, prevUrl=null, nextTimer=null, nextCount=0;
 let _goNextRunning = false;
-const SILENT_MP3 = ‘data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e////////////////////////////////////////////////////////////////AAAAAExhdmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//sQRAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE==’;
+const SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e////////////////////////////////////////////////////////////////AAAAAExhdmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//sQRAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE==';
 function keepAudioSessionAlive() {
-if (!playing) return;
-try {
-const el = getAudioEl();
-if (el && el.paused) {
-el.src = SILENT_MP3;
-el.play().catch(() => {});
-}
-} catch(e) {}
+  if (!playing) return;
+  try {
+    const el = getAudioEl();
+    if (el && el.paused) {
+      el.src = SILENT_MP3;
+      el.play().catch(() => {});
+    }
+  } catch(e) {}
 }
 let queue=[], qi=0;
 const QUEUE_MAX = 10;
 function trimQueue() {
-if (queue.length <= QUEUE_MAX) return;
-let removed = 0;
-const target = queue.length - QUEUE_MAX;
-const newQueue = [];
-let newQi = qi;
-for (let i = 0; i < queue.length; i++) {
-if (removed < target && queue[i].done && i !== qi) {
-removed++;
-if (i < qi) newQi–;
-} else {
-newQueue.push(queue[i]);
-}
-}
-while (newQueue.length > QUEUE_MAX) {
-const delIdx = newQueue.findIndex((q, i) => i !== newQi);
-if (delIdx < 0) break;
-newQueue.splice(delIdx, 1);
-if (delIdx < newQi) newQi–;
-}
-queue = newQueue;
-qi = Math.max(0, Math.min(newQi, queue.length - 1));
+  if (queue.length <= QUEUE_MAX) return;
+  let removed = 0;
+  const target = queue.length - QUEUE_MAX;
+  const newQueue = [];
+  let newQi = qi;
+  for (let i = 0; i < queue.length; i++) {
+    if (removed < target && queue[i].done && i !== qi) {
+      removed++;
+      if (i < qi) newQi--;
+    } else {
+      newQueue.push(queue[i]);
+    }
+  }
+  while (newQueue.length > QUEUE_MAX) {
+    const delIdx = newQueue.findIndex((q, i) => i !== newQi);
+    if (delIdx < 0) break;
+    newQueue.splice(delIdx, 1);
+    if (delIdx < newQi) newQi--;
+  }
+  queue = newQueue;
+  qi = Math.max(0, Math.min(newQi, queue.length - 1));
 }
 let watchdog=null;
-let currentNovelId=null, currentNovelTitle=’’, currentChapterTitle=’’, currentChapterNum=1, currentChapterUrl=null;
+let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentChapterNum=1, currentChapterUrl=null;
 const PROXIES = [
-{ build: u=>‘https://api.allorigins.win/raw?url=’+encodeURIComponent(u), isJson:false, ms:8000 },
-{ build: u=>‘https://api.allorigins.win/get?url=’+encodeURIComponent(u), isJson:true, field:‘contents’, ms:8000 },
-{ build: u=>‘https://cors.eu.org/’+u, isJson:false, ms:7000 },
-{ build: u=>‘https://yacdn.org/serve/’+u, isJson:false, ms:7000 },
-{ build: u=>‘https://api.codetabs.com/v1/proxy?quest=’+encodeURIComponent(u), isJson:false, ms:7000 },
-{ build: u=>‘https://corsproxy.io/?url=’+encodeURIComponent(u), isJson:false, ms:7000 },
-{ build: u=>‘https://thingproxy.freeboard.io/fetch/’+u, isJson:false, ms:7000 },
+  { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
+  { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
+  { build: u=>'https://cors.eu.org/'+u, isJson:false, ms:7000 },
+  { build: u=>'https://yacdn.org/serve/'+u, isJson:false, ms:7000 },
+  { build: u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u), isJson:false, ms:7000 },
+  { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u), isJson:false, ms:7000 },
+  { build: u=>'https://thingproxy.freeboard.io/fetch/'+u, isJson:false, ms:7000 },
 ];
 async function tryProxy(p, url) {
-const r = await fetch(p.build(url), { signal: AbortSignal.timeout(p.ms || 8000) });
-if (!r.ok) throw new Error(‘HTTP ’ + r.status);
-const raw = await r.text();
-if (!raw || raw.length < 200) throw new Error(‘レスポンス短すぎ’);
-if (p.isJson) {
-let j; try { j = JSON.parse(raw); } catch(e) { throw new Error(‘JSON解析失敗’); }
-const html = j && j[p.field];
-if (!html || html.length < 200) throw new Error(‘コンテンツ空’);
-return html;
-}
-const checkRange = raw.slice(0, 5000);
-if (/Access denied|403 Forbidden|Blocked|bot detection|Enable JavaScript and cookies|just a moment|Cloudflare Ray ID|DDoS protection|checking your browser|please wait...|Attention Required/i.test(checkRange)) {
-throw new Error(‘ブロック検出’);
-}
-return raw;
+  const r = await fetch(p.build(url), { signal: AbortSignal.timeout(p.ms || 8000) });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const raw = await r.text();
+  if (!raw || raw.length < 200) throw new Error('レスポンス短すぎ');
+  if (p.isJson) {
+    let j; try { j = JSON.parse(raw); } catch(e) { throw new Error('JSON解析失敗'); }
+    const html = j && j[p.field];
+    if (!html || html.length < 200) throw new Error('コンテンツ空');
+    return html;
+  }
+  const checkRange = raw.slice(0, 5000);
+  if (/Access denied|403 Forbidden|Blocked|bot detection|Enable JavaScript and cookies|just a moment|Cloudflare Ray ID|DDoS protection|checking your browser|please wait\.\.\.|Attention Required/i.test(checkRange)) {
+    throw new Error('ブロック検出');
+  }
+  return raw;
 }
 async function fetchHtml(url) {
-return new Promise((resolve, reject) => {
-let settled = false;
-let failCount = 0;
-const errors = [];
-PROXIES.forEach((p, i) => {
-const wave = Math.floor(i / 2);
-const delay = wave * 400;
-setTimeout(() => {
-if (settled) return;
-const label = p.build(url).replace(/https?://([^/]+).*/, ‘$1’);
-tryProxy(p, url).then(html => {
-if (!settled) { settled = true; resolve(html); }
-}).catch(e => {
-errors.push(label + ‘: ’ + e.message);
-failCount++;
-if (failCount === PROXIES.length && !settled) {
-settled = true;
-const isKakuyomu = url.includes(‘kakuyomu.jp’);
-reject(new Error(
-‘ページ取得失敗。’ +
-(isKakuyomu
-? ‘カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。’
-: ‘なろう等は直接取得できない場合があります。’) +
-‘\n📋 ’ + errors.slice(0,4).join(’ ／ ‘)
-));
-}
-});
-}, delay);
-});
-});
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let failCount = 0;
+    const errors = [];
+    PROXIES.forEach((p, i) => {
+      const wave = Math.floor(i / 2);
+      const delay = wave * 400;
+      setTimeout(() => {
+        if (settled) return;
+        const label = p.build(url).replace(/https?:\/\/([^/]+).*/, '$1');
+        tryProxy(p, url).then(html => {
+          if (!settled) { settled = true; resolve(html); }
+        }).catch(e => {
+          errors.push(label + ': ' + e.message);
+          failCount++;
+          if (failCount === PROXIES.length && !settled) {
+            settled = true;
+            const isKakuyomu = url.includes('kakuyomu.jp');
+            reject(new Error(
+              'ページ取得失敗。' +
+              (isKakuyomu
+                ? 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。'
+                : 'なろう等は直接取得できない場合があります。') +
+              '\n📋 ' + errors.slice(0,4).join(' ／ ')
+            ));
+          }
+        });
+      }, delay);
+    });
+  });
 }
 const SITE_RULES = [
-{ host:‘ncode.syosetu.com’,   body:’#novel_honbun’, next:’.novel_bn a:last-of-type’,
-toc:’#novel_color’, tocItem:’.novel_sublist2 a, dd a’ },
-{ host:‘novel18.syosetu.com’, body:’#novel_honbun’, next:’.novel_bn a:last-of-type’ },
-{ host:‘kakuyomu.jp’,         body:’.p-novel__body,.widget-episodeBody,.js-episode-body’,
-next:‘a.widget-episodeNavigation-button-next,a[rel=“next”]’ },
-{ host:‘alphapolis.co.jp’,    body:’.content-text,.novel_text’, next:’a.next,a[href*=“next”]’ },
-{ host:‘pixiv.net’,           body:’.novel-text-block,.sc-1bqysi4-0’, next:’’ },
-{ host:‘estar.jp’,            body:’#novel-content,.novel-content’, next:’.pager-next a’ },
+  { host:'ncode.syosetu.com',   body:'#novel_honbun', next:'.novel_bn a:last-of-type',
+    toc:'#novel_color', tocItem:'.novel_sublist2 a, dd a' },
+  { host:'novel18.syosetu.com', body:'#novel_honbun', next:'.novel_bn a:last-of-type' },
+  { host:'kakuyomu.jp',         body:'.p-novel__body,.widget-episodeBody,.js-episode-body',
+    next:'a.widget-episodeNavigation-button-next,a[rel="next"]' },
+  { host:'alphapolis.co.jp',    body:'.content-text,.novel_text', next:'a.next,a[href*="next"]' },
+  { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0', next:'' },
+  { host:'estar.jp',            body:'#novel-content,.novel-content', next:'.pager-next a' },
 ];
-const NEXT_TEXTS = [‘次の話’,‘次話’,‘次章’,‘次のページ’,‘次へ’,‘次話へ’,‘次のエピソード’,‘次のページへ’,’>>’,‘→’,‘next’,‘次回’];
+const NEXT_TEXTS = ['次の話','次話','次章','次のページ','次へ','次話へ','次のエピソード','次のページへ','>>','→','next','次回'];
 function getRule(url) {
-const host = new URL(url).hostname.replace(‘www.’,’’);
-return SITE_RULES.find(r => host.includes(r.host.replace(‘www.’,’’))) || null;
+  const host = new URL(url).hostname.replace('www.','');
+  return SITE_RULES.find(r => host.includes(r.host.replace('www.',''))) || null;
 }
 function isIndexUrl(url) {
-try {
-const u = new URL(url);
-if (u.hostname.includes(‘syosetu.com’)) {
-return /^/[^/]+/?$/.test(u.pathname);
-}
-if (u.hostname.includes(‘kakuyomu.jp’)) {
-return /^/works/[^/]+/?$/.test(u.pathname);
-}
-} catch(e) {}
-return false;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('syosetu.com')) {
+      return /^\/[^/]+\/?$/.test(u.pathname);
+    }
+    if (u.hostname.includes('kakuyomu.jp')) {
+      return /^\/works\/[^/]+\/?$/.test(u.pathname);
+    }
+  } catch(e) {}
+  return false;
 }
 function parseSyosetuToc(html, baseUrl) {
-const doc = new DOMParser().parseFromString(html, ‘text/html’);
-const items = [];
-let num = 0;
-doc.querySelectorAll(’.novel_sublist2 dd a, .novel_sublist2 a’).forEach(a => {
-const href = a.getAttribute(‘href’);
-if (!href) return;
-const url = resolveUrl(href, baseUrl);
-if (!url) return;
-num++;
-items.push({ title: a.textContent.trim(), url, num });
-});
-if (!items.length) {
-const seen = new Set();
-doc.querySelectorAll(‘a[href]’).forEach(a => {
-const href = a.getAttribute(‘href’);
-if (!href || !//\d+/?$/.test(href)) return;
-const url = resolveUrl(href, baseUrl);
-if (!url || seen.has(url)) return;
-seen.add(url);
-num++;
-items.push({ title: a.textContent.trim() || ‘第’+num+‘話’, url, num });
-});
-}
-return items;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const items = [];
+  let num = 0;
+  doc.querySelectorAll('.novel_sublist2 dd a, .novel_sublist2 a').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href) return;
+    const url = resolveUrl(href, baseUrl);
+    if (!url) return;
+    num++;
+    items.push({ title: a.textContent.trim(), url, num });
+  });
+  if (!items.length) {
+    const seen = new Set();
+    doc.querySelectorAll('a[href]').forEach(a => {
+      const href = a.getAttribute('href');
+      if (!href || !/\/\d+\/?$/.test(href)) return;
+      const url = resolveUrl(href, baseUrl);
+      if (!url || seen.has(url)) return;
+      seen.add(url);
+      num++;
+      items.push({ title: a.textContent.trim() || '第'+num+'話', url, num });
+    });
+  }
+  return items;
 }
 function parseKakuyomuToc(html, baseUrl) {
-const doc = new DOMParser().parseFromString(html, ‘text/html’);
-const items = [];
-const seen = new Set();
-let num = 0;
-try {
-const nd = doc.querySelector(‘script#**NEXT_DATA**’);
-if (nd) {
-const json = JSON.parse(nd.textContent);
-const eps = findInObj(json, ‘episodes’) || findInObj(json, ‘episodeUnions’);
-if (eps && Array.isArray(eps) && eps.length > 0) {
-eps.forEach((ep, i) => {
-const epId = ep.id || ep.node?.id || ep.__id;
-const epTitle = ep.title || ep.node?.title || (‘第’ + (i+1) + ‘話’);
-if (!epId) return;
-const wm = new URL(baseUrl).pathname.match(//works/([^/]+)/);
-if (!wm) return;
-const epUrl = new URL(’/works/’ + wm[1] + ‘/episodes/’ + epId, baseUrl).href;
-if (seen.has(epUrl)) return;
-seen.add(epUrl);
-num++;
-items.push({ title: epTitle.trim(), url: epUrl, num });
-});
-if (items.length > 0) return items;
-}
-}
-} catch(e) {}
-doc.querySelectorAll(‘a[href]’).forEach(a => {
-const href = a.getAttribute(‘href’);
-if (!href || !href.includes(’/episodes/’)) return;
-const wm = new URL(baseUrl).pathname.match(//works/([^/]+)/);
-if (wm && !href.includes(’/works/’ + wm[1] + ‘/episodes/’)) return;
-const url = resolveUrl(href, baseUrl);
-if (!url || seen.has(url)) return;
-const txt = a.textContent.trim();
-if (!txt || txt.length > 80) return;
-seen.add(url);
-num++;
-items.push({ title: txt, url, num });
-});
-return items;
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const items = [];
+  const seen = new Set();
+  let num = 0;
+  try {
+    const nd = doc.querySelector('script#__NEXT_DATA__');
+    if (nd) {
+      const json = JSON.parse(nd.textContent);
+      const eps = findInObj(json, 'episodes') || findInObj(json, 'episodeUnions');
+      if (eps && Array.isArray(eps) && eps.length > 0) {
+        eps.forEach((ep, i) => {
+          const epId = ep.id || ep.node?.id || ep.__id;
+          const epTitle = ep.title || ep.node?.title || ('第' + (i+1) + '話');
+          if (!epId) return;
+          const wm = new URL(baseUrl).pathname.match(/\/works\/([^/]+)/);
+          if (!wm) return;
+          const epUrl = new URL('/works/' + wm[1] + '/episodes/' + epId, baseUrl).href;
+          if (seen.has(epUrl)) return;
+          seen.add(epUrl);
+          num++;
+          items.push({ title: epTitle.trim(), url: epUrl, num });
+        });
+        if (items.length > 0) return items;
+      }
+    }
+  } catch(e) {}
+  doc.querySelectorAll('a[href]').forEach(a => {
+    const href = a.getAttribute('href');
+    if (!href || !href.includes('/episodes/')) return;
+    const wm = new URL(baseUrl).pathname.match(/\/works\/([^/]+)/);
+    if (wm && !href.includes('/works/' + wm[1] + '/episodes/')) return;
+    const url = resolveUrl(href, baseUrl);
+    if (!url || seen.has(url)) return;
+    const txt = a.textContent.trim();
+    if (!txt || txt.length > 80) return;
+    seen.add(url);
+    num++;
+    items.push({ title: txt, url, num });
+  });
+  return items;
 }
 function findInObj(obj, key, depth = 0) {
-if (depth > 8 || !obj || typeof obj !== ‘object’) return null;
-if (Array.isArray(obj)) {
-for (const v of obj) {
-const r = findInObj(v, key, depth + 1);
-if (r) return r;
-}
-return null;
-}
-if (key in obj) return obj[key];
-for (const v of Object.values(obj)) {
-const r = findInObj(v, key, depth + 1);
-if (r) return r;
-}
-return null;
+  if (depth > 8 || !obj || typeof obj !== 'object') return null;
+  if (Array.isArray(obj)) {
+    for (const v of obj) {
+      const r = findInObj(v, key, depth + 1);
+      if (r) return r;
+    }
+    return null;
+  }
+  if (key in obj) return obj[key];
+  for (const v of Object.values(obj)) {
+    const r = findInObj(v, key, depth + 1);
+    if (r) return r;
+  }
+  return null;
 }
 function parseToc(url, html) {
-try {
-const u = new URL(url);
-if (u.hostname.includes(‘kakuyomu.jp’)) return parseKakuyomuToc(html, url);
-} catch(e) {}
-return parseSyosetuToc(html, url);
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('kakuyomu.jp')) return parseKakuyomuToc(html, url);
+  } catch(e) {}
+  return parseSyosetuToc(html, url);
 }
 function parseTocTitle(url, doc) {
-try {
-const u = new URL(url);
-if (u.hostname.includes(‘kakuyomu.jp’)) {
-return doc.querySelector(‘h1’)?.textContent?.trim() ||
-doc.querySelector(’.WorkTitle’)?.textContent?.trim() || ‘小説’;
-}
-} catch(e) {}
-return doc.querySelector(’.novel_title,.title,h1’)?.textContent?.trim() || ‘小説’;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('kakuyomu.jp')) {
+      return doc.querySelector('h1')?.textContent?.trim() ||
+             doc.querySelector('.WorkTitle')?.textContent?.trim() || '小説';
+    }
+  } catch(e) {}
+  return doc.querySelector('.novel_title,.title,h1')?.textContent?.trim() || '小説';
 }
 function extractPage(html, pageUrl) {
-const doc = new DOMParser().parseFromString(html, ‘text/html’);
-const phost = new URL(pageUrl).hostname.replace(‘www.’,’’);
-const rule = SITE_RULES.find(r => phost.includes(r.host.replace(‘www.’,’’)));
-let nextPageUrl = null;
-if (rule && rule.next) {
-const a = doc.querySelector(rule.next);
-if (a) nextPageUrl = resolveUrl(a.getAttribute(‘href’), pageUrl);
-}
-if (!nextPageUrl && !phost.includes(‘kakuyomu.jp’)) {
-for (const a of doc.querySelectorAll(‘a’)) {
-const t = (a.textContent||’’).trim();
-if (NEXT_TEXTS.some(p=>t.includes(p))) {
-const href = a.getAttribute(‘href’);
-if (href && !href.startsWith(‘javascript’) && !href.startsWith(’#’)) {
-const r = resolveUrl(href, pageUrl);
-if (r && r !== pageUrl) {
-if (phost.includes(‘kakuyomu.jp’)) {
-const workMatch = pageUrl.match(//works/([^/]+)//);
-if (workMatch && !r.includes(’/works/’ + workMatch[1] + ‘/’)) continue;
-}
-nextPageUrl = r; break;
-}
-}
-}
-}
-}
-if (!nextPageUrl) {
-const rn = doc.querySelector(‘link[rel=“next”],a[rel=“next”]’);
-if (rn) {
-const rnUrl = resolveUrl(rn.getAttribute(‘href’), pageUrl);
-if (rnUrl) {
-if (phost.includes(‘kakuyomu.jp’)) {
-const wmR = pageUrl.match(//works/([^/]+)//);
-if (wmR && rnUrl.includes(’/works/’+wmR[1]+’/episodes/’) && rnUrl!==pageUrl) nextPageUrl=rnUrl;
-} else { nextPageUrl=rnUrl; }
-}
-}
-}
-if (!nextPageUrl && phost.includes(‘syosetu.com’)) {
-const m = pageUrl.match(/^(https?://[^/]+/[^/]+/)(\d+)/?$/);
-if (m) nextPageUrl = m[1] + (parseInt(m[2])+1) + ‘/’;
-}
-if (!nextPageUrl && phost.includes(‘kakuyomu.jp’) && pageUrl.includes(’/episodes/’)) {
-try {
-const nd = doc.querySelector(‘script#**NEXT_DATA**’);
-if (nd) {
-const json = JSON.parse(nd.textContent);
-const nextEp = findInObj(json, ‘nextEpisode’)
-|| findInObj(json, ‘nextEpisodeId’);
-if (nextEp) {
-const wm = pageUrl.match(//works/([^/]+)//);
-const epId = (typeof nextEp === ‘object’)
-? (nextEp.id || nextEp.slug || nextEp.__id || nextEp.episodeId || null)
-: String(nextEp);
-if (wm && epId && epId.length > 5) {
-nextPageUrl = ‘https://kakuyomu.jp/works/’ + wm[1] + ‘/episodes/’ + epId;
-}
-}
-}
-} catch(e) {}
-}
-var novelTitle = null;
-var preChapTitle = null;
-try {
-var ph2 = new URL(pageUrl).hostname.replace(‘www.’,’’);
-if (ph2.includes(‘syosetu.com’)) {
-var ntEl = doc.querySelector(’.novel_title’);
-if (ntEl && ntEl.textContent.trim())
-novelTitle = ntEl.textContent.trim().replace(/\s*[|｜]\s*.+$/, ‘’).trim();
-if (!novelTitle) {
-var t0 = (doc.querySelector(‘title’)||{textContent:’’}).textContent.trim();
-var tp0 = t0.split(/ *- */).map(function(s){return s.trim();}).filter(function(s){return s&&s.indexOf(‘なろう’)<0&&s.indexOf(‘小説家’)<0;});
-if (tp0.length >= 1) novelTitle = tp0[0];
-}
-if (!novelTitle) {
-var rawTm2 = html.match(/<title[^>]*>([\s\S]*?)</title>/i);
-if (rawTm2) {
-var rawPts2 = rawTm2[1].trim().split(/ *- */).map(function(s){return s.trim();}).filter(function(s){return s&&s.indexOf(‘なろう’)<0&&s.indexOf(‘小説家’)<0;});
-if (rawPts2.length >= 1) novelTitle = rawPts2[0];
-}
-}
-var subEl0 = doc.querySelector(’.novel_subtitle’);
-if (subEl0 && subEl0.textContent.trim()) preChapTitle = subEl0.textContent.trim();
-if (!preChapTitle) {
-var h1El0 = doc.querySelector(‘h1’);
-if (h1El0 && h1El0.textContent.trim()) preChapTitle = h1El0.textContent.trim();
-}
-if (!preChapTitle) {
-var titleEl0 = doc.querySelector(‘title’);
-if (titleEl0) {
-var tpts = titleEl0.textContent.trim().split(/ *- */).map(function(s){return s.trim();}).filter(function(s){return s && s.indexOf(‘なろう’)<0 && s.indexOf(‘小説家’)<0;});
-if (tpts.length >= 2) preChapTitle = tpts[1];
-}
-}
-if (!preChapTitle) {
-var rawSm = html.match(/class=[”’]novel_subtitle[”’][^>]*>([\s\S]*?)<//);
-if (rawSm && rawSm[1].trim()) preChapTitle = rawSm[1].trim();
-}
-if (!preChapTitle) {
-var rawTm = html.match(/<title[^>]*>([\s\S]*?)</title>/i);
-if (rawTm) {
-var rawPts = rawTm[1].trim().split(/ *- */).map(function(s){return s.trim();}).filter(function(s){return s && s.indexOf(‘なろう’)<0 && s.indexOf(‘小説家’)<0;});
-if (rawPts.length >= 2) preChapTitle = rawPts[1];
-}
-}
-}
-} catch(e3) {}
-[‘script’,‘style’,‘iframe’,‘nav’,‘header’,‘footer’,
-‘.ad’,’.advertisement’,’.banner’,’.sns’,’.share’,
-‘#global-header’,’#global-footer’,’.novel_bn’,’.index_box’,
-‘.widget-episodeNavigation’,’.widget-share’,’.widget-episodeFooterBanner’,
-‘#GiftBox’,’.widget-episodeActions’,’.js-giftToast’].forEach(s => {
-try { doc.querySelectorAll(s).forEach(el=>el.remove()); } catch(e) {}
-});
-let bodyEl = null;
-if (rule) bodyEl = doc.querySelector(rule.body);
-if (!bodyEl) {
-for (const sel of [’#novel_honbun’,’#novel-body’,’.episode-content’,
-‘.widget-episodeBody’,’.novel_text’,‘article’,‘main’,’#main’,’#content’,’.content’]) {
-const el = doc.querySelector(sel);
-if (el && el.textContent.trim().length > 100) { bodyEl = el; break; }
-}
-}
-if (!bodyEl) {
-let max = 0;
-doc.querySelectorAll(‘div,section,article’).forEach(el => {
-const l = el.textContent.trim().length;
-if (l > max && l < 80000) { max = l; bodyEl = el; }
-});
-}
-function domToText(el) {
-if (!el) return ‘’;
-el.querySelectorAll(‘br’).forEach(br => br.replaceWith(document.createTextNode(’\n’)));
-el.querySelectorAll(‘p’).forEach(p => { if(p.textContent.trim()) p.insertAdjacentText(‘afterend’,’\n’); });
-return el.textContent || ‘’;
-}
-const rawText = domToText(bodyEl || doc.body).trim();
-const title = extractTitle(doc, pageUrl, preChapTitle);
-if (rawText && rawText.length < 200 && rawText.includes(‘作品が見つかりません’)) {
-throw new Error(‘本文を取得できませんでした（最終話の可能性があります）’);
-}
-if (/Enable JavaScript and cookies to continue|Just a moment|Cloudflare Ray ID/i.test(rawText)) {
-throw new Error(‘このページはCloudflare保護により取得できませんでした。ハーメルン等は直接アクセスが必要な場合があります。’);
-}
-if (!rawText || rawText.length < 30)
-throw new Error(‘本文を取得できませんでした。URLを確認してください。’);
-return { title, novelTitle, text: rawText, nextUrl: nextPageUrl };
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const phost = new URL(pageUrl).hostname.replace('www.','');
+  const rule = SITE_RULES.find(r => phost.includes(r.host.replace('www.','')));
+  let nextPageUrl = null;
+  if (rule && rule.next) {
+    const a = doc.querySelector(rule.next);
+    if (a) nextPageUrl = resolveUrl(a.getAttribute('href'), pageUrl);
+  }
+  if (!nextPageUrl && !phost.includes('kakuyomu.jp')) {
+    for (const a of doc.querySelectorAll('a')) {
+      const t = (a.textContent||'').trim();
+      if (NEXT_TEXTS.some(p=>t.includes(p))) {
+        const href = a.getAttribute('href');
+        if (href && !href.startsWith('javascript') && !href.startsWith('#')) {
+          const r = resolveUrl(href, pageUrl);
+          if (r && r !== pageUrl) {
+            if (phost.includes('kakuyomu.jp')) {
+              const workMatch = pageUrl.match(/\/works\/([^/]+)\//);
+              if (workMatch && !r.includes('/works/' + workMatch[1] + '/')) continue;
+            }
+            nextPageUrl = r; break;
+          }
+        }
+      }
+    }
+  }
+  if (!nextPageUrl) {
+    const rn = doc.querySelector('link[rel="next"],a[rel="next"]');
+    if (rn) {
+      const rnUrl = resolveUrl(rn.getAttribute('href'), pageUrl);
+      if (rnUrl) {
+        if (phost.includes('kakuyomu.jp')) {
+          const wmR = pageUrl.match(/\/works\/([^/]+)\//);
+          if (wmR && rnUrl.includes('/works/'+wmR[1]+'/episodes/') && rnUrl!==pageUrl) nextPageUrl=rnUrl;
+        } else { nextPageUrl=rnUrl; }
+      }
+    }
+  }
+  if (!nextPageUrl && phost.includes('syosetu.com')) {
+    const m = pageUrl.match(/^(https?:\/\/[^/]+\/[^/]+\/)(\d+)\/?$/);
+    if (m) nextPageUrl = m[1] + (parseInt(m[2])+1) + '/';
+  }
+  if (!nextPageUrl && phost.includes('kakuyomu.jp') && pageUrl.includes('/episodes/')) {
+    try {
+      const nd = doc.querySelector('script#__NEXT_DATA__');
+      if (nd) {
+        const json = JSON.parse(nd.textContent);
+        const nextEp = findInObj(json, 'nextEpisode')
+                    || findInObj(json, 'nextEpisodeId');
+        if (nextEp) {
+          const wm = pageUrl.match(/\/works\/([^/]+)\//);
+          const epId = (typeof nextEp === 'object')
+            ? (nextEp.id || nextEp.slug || nextEp.__id || nextEp.episodeId || null)
+            : String(nextEp);
+          if (wm && epId && epId.length > 5) {
+            nextPageUrl = 'https://kakuyomu.jp/works/' + wm[1] + '/episodes/' + epId;
+          }
+        }
+      }
+    } catch(e) {}
+  }
+  var novelTitle = null;
+  var preChapTitle = null;
+  try {
+    var ph2 = new URL(pageUrl).hostname.replace('www.','');
+    if (ph2.includes('syosetu.com')) {
+      var ntEl = doc.querySelector('.novel_title');
+      if (ntEl && ntEl.textContent.trim())
+        novelTitle = ntEl.textContent.trim().replace(/\s*[|｜]\s*.+$/, '').trim();
+      if (!novelTitle) {
+        var t0 = (doc.querySelector('title')||{textContent:''}).textContent.trim();
+        var tp0 = t0.split(/ *- */).map(function(s){return s.trim();}).filter(function(s){return s&&s.indexOf('なろう')<0&&s.indexOf('小説家')<0;});
+        if (tp0.length >= 1) novelTitle = tp0[0];
+      }
+      if (!novelTitle) {
+        var rawTm2 = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        if (rawTm2) {
+          var rawPts2 = rawTm2[1].trim().split(/ *- */).map(function(s){return s.trim();}).filter(function(s){return s&&s.indexOf('なろう')<0&&s.indexOf('小説家')<0;});
+          if (rawPts2.length >= 1) novelTitle = rawPts2[0];
+        }
+      }
+      var subEl0 = doc.querySelector('.novel_subtitle');
+      if (subEl0 && subEl0.textContent.trim()) preChapTitle = subEl0.textContent.trim();
+      if (!preChapTitle) {
+        var h1El0 = doc.querySelector('h1');
+        if (h1El0 && h1El0.textContent.trim()) preChapTitle = h1El0.textContent.trim();
+      }
+      if (!preChapTitle) {
+        var titleEl0 = doc.querySelector('title');
+        if (titleEl0) {
+          var tpts = titleEl0.textContent.trim().split(/ *- */).map(function(s){return s.trim();}).filter(function(s){return s && s.indexOf('なろう')<0 && s.indexOf('小説家')<0;});
+          if (tpts.length >= 2) preChapTitle = tpts[1];
+        }
+      }
+      if (!preChapTitle) {
+        var rawSm = html.match(/class=["']novel_subtitle["'][^>]*>([\s\S]*?)<\//);
+        if (rawSm && rawSm[1].trim()) preChapTitle = rawSm[1].trim();
+      }
+      if (!preChapTitle) {
+        var rawTm = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+        if (rawTm) {
+          var rawPts = rawTm[1].trim().split(/ *- */).map(function(s){return s.trim();}).filter(function(s){return s && s.indexOf('なろう')<0 && s.indexOf('小説家')<0;});
+          if (rawPts.length >= 2) preChapTitle = rawPts[1];
+        }
+      }
+    }
+  } catch(e3) {}
+  ['script','style','iframe','nav','header','footer',
+   '.ad','.advertisement','.banner','.sns','.share',
+   '#global-header','#global-footer','.novel_bn','.index_box',
+   '.widget-episodeNavigation','.widget-share','.widget-episodeFooterBanner',
+   '#GiftBox','.widget-episodeActions','.js-giftToast'].forEach(s => {
+    try { doc.querySelectorAll(s).forEach(el=>el.remove()); } catch(e) {}
+  });
+  let bodyEl = null;
+  if (rule) bodyEl = doc.querySelector(rule.body);
+  if (!bodyEl) {
+    for (const sel of ['#novel_honbun','#novel-body','.episode-content',
+      '.widget-episodeBody','.novel_text','article','main','#main','#content','.content']) {
+      const el = doc.querySelector(sel);
+      if (el && el.textContent.trim().length > 100) { bodyEl = el; break; }
+    }
+  }
+  if (!bodyEl) {
+    let max = 0;
+    doc.querySelectorAll('div,section,article').forEach(el => {
+      const l = el.textContent.trim().length;
+      if (l > max && l < 80000) { max = l; bodyEl = el; }
+    });
+  }
+  function domToText(el) {
+    if (!el) return '';
+    el.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
+    el.querySelectorAll('p').forEach(p => { if(p.textContent.trim()) p.insertAdjacentText('afterend','\n'); });
+    return el.textContent || '';
+  }
+  const rawText = domToText(bodyEl || doc.body).trim();
+  const title = extractTitle(doc, pageUrl, preChapTitle);
+  if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) {
+    throw new Error('本文を取得できませんでした（最終話の可能性があります）');
+  }
+  if (/Enable JavaScript and cookies to continue|Just a moment|Cloudflare Ray ID/i.test(rawText)) {
+    throw new Error('このページはCloudflare保護により取得できませんでした。ハーメルン等は直接アクセスが必要な場合があります。');
+  }
+  if (!rawText || rawText.length < 30)
+    throw new Error('本文を取得できませんでした。URLを確認してください。');
+  return { title, novelTitle, text: rawText, nextUrl: nextPageUrl };
 }
 function extractTitle(doc, pageUrl, preChapTitle) {
-try {
-var u = new URL(pageUrl);
-if (u.hostname.includes(‘kakuyomu.jp’) && u.pathname.includes(’/episodes/’)) {
-var t = (doc.querySelector(‘title’)||{textContent:’’}).textContent.trim();
-return t.split(/\s*[-－]\s*/)[0].trim() || pageUrl;
-}
-if (u.hostname.includes(‘syosetu.com’) && //\d+/?$/.test(u.pathname)) {
-if (preChapTitle) return preChapTitle;
-var subEl = doc.querySelector(’.novel_subtitle’);
-if (subEl && subEl.textContent.trim()) return subEl.textContent.trim();
-var h1El = doc.querySelector(‘h1’);
-if (h1El && h1El.textContent.trim()) return h1El.textContent.trim();
-var mm = u.pathname.match(//(\d+)/?$/);
-return mm ? ‘第’ + mm[1] + ‘話’ : pageUrl;
-}
-} catch(e) {}
-var fallEl = doc.querySelector(’.novel-title,.episode-title,.chapter-title,.novel_subtitle,h1’);
-return (
-(fallEl ? fallEl.textContent.trim() : ‘’) ||
-(doc.querySelector(‘title’) ? doc.querySelector(‘title’).textContent.trim() : ‘’) || pageUrl
-).replace(/\s*[-|｜–—]\s*.+$/, ‘’).trim();
+  try {
+    var u = new URL(pageUrl);
+    if (u.hostname.includes('kakuyomu.jp') && u.pathname.includes('/episodes/')) {
+      var t = (doc.querySelector('title')||{textContent:''}).textContent.trim();
+      return t.split(/\s*[-－]\s*/)[0].trim() || pageUrl;
+    }
+    if (u.hostname.includes('syosetu.com') && /\/\d+\/?$/.test(u.pathname)) {
+      if (preChapTitle) return preChapTitle;
+      var subEl = doc.querySelector('.novel_subtitle');
+      if (subEl && subEl.textContent.trim()) return subEl.textContent.trim();
+      var h1El = doc.querySelector('h1');
+      if (h1El && h1El.textContent.trim()) return h1El.textContent.trim();
+      var mm = u.pathname.match(/\/(\d+)\/?$/);
+      return mm ? '第' + mm[1] + '話' : pageUrl;
+    }
+  } catch(e) {}
+  var fallEl = doc.querySelector('.novel-title,.episode-title,.chapter-title,.novel_subtitle,h1');
+  return (
+    (fallEl ? fallEl.textContent.trim() : '') ||
+    (doc.querySelector('title') ? doc.querySelector('title').textContent.trim() : '') || pageUrl
+  ).replace(/\s*[-|｜–—]\s*.+$/, '').trim();
 }
 function resolveUrl(href, base) {
-if (!href) return null;
-try { return new URL(href, base).href; } catch(e) { return null; }
+  if (!href) return null;
+  try { return new URL(href, base).href; } catch(e) { return null; }
 }
 function chapNumFromUrl(url) {
-try {
-const u = new URL(url);
-if (u.hostname.includes(‘kakuyomu.jp’)) return 0;
-} catch(e) {}
-const m = url.match(//(\d+)/?$/);
-return m ? parseInt(m[1]) : 1;
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('kakuyomu.jp')) return 0;
+  } catch(e) {}
+  const m = url.match(/\/(\d+)\/?$/);
+  return m ? parseInt(m[1]) : 1;
 }
 let _pendingTocItems = null;
 async function go() {
-let url = document.getElementById(‘urlIn’).value.trim();
-if (!url || !url.startsWith(‘http’)) { toast(‘正しいURLを入力してください’); return; }
-disable(true); cancelNext(); stop();
-const novelId = toNovelId(url);
-if (currentNovelId && currentNovelId !== novelId) {
-queue = []; qi = 0;
+  let url = document.getElementById('urlIn').value.trim();
+  if (!url || !url.startsWith('http')) { toast('正しいURLを入力してください'); return; }
+  disable(true); cancelNext(); stop();
+  const novelId = toNovelId(url);
+  if (currentNovelId && currentNovelId !== novelId) {
+    queue = []; qi = 0;
+  }
+  const bk = bkGet(novelId);
+  if (isIndexUrl(url)) {
+    showFetch('load', '目次を取得中…');
+    try {
+      const html = await fetchHtml(url);
+      const items = parseToc(url, html);
+      if (!items.length) { throw new Error('目次が見つかりませんでした'); }
+      hideFetch();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const nTitle = parseTocTitle(url, doc);
+      bkSetToc(novelId, url, items.length);
+      openChapPicker(nTitle, items, novelId, bk);
+    } catch(e) {
+      const errMsg = e.message || '';
+      const isKakuyomuUrl = url.includes('kakuyomu.jp');
+      const isNetFail = errMsg.includes('取得失敗') || errMsg.includes('Load failed') || errMsg.includes('HTTP 4');
+      if (isKakuyomuUrl && isNetFail) {
+        showFetch('err', 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。');
+      } else {
+        showFetch('err', errMsg);
+      }
+    }
+    disable(false);
+    return;
+  }
+  if (bk && bk.chapterUrl !== url) {
+  } else if (bk) {
+    showResumeBanner(bk);
+  }
+  await loadChapterUrl(url);
+  disable(false);
 }
-const bk = bkGet(novelId);
-if (isIndexUrl(url)) {
-showFetch(‘load’, ‘目次を取得中…’);
-try {
-const html = await fetchHtml(url);
-const items = parseToc(url, html);
-if (!items.length) { throw new Error(‘目次が見つかりませんでした’); }
-hideFetch();
-const doc = new DOMParser().parseFromString(html, ‘text/html’);
-const nTitle = parseTocTitle(url, doc);
-bkSetToc(novelId, url, items.length);
-openChapPicker(nTitle, items, novelId, bk);
-} catch(e) {
-const errMsg = e.message || ‘’;
-const isKakuyomuUrl = url.includes(‘kakuyomu.jp’);
-const isNetFail = errMsg.includes(‘取得失敗’) || errMsg.includes(‘Load failed’) || errMsg.includes(‘HTTP 4’);
-if (isKakuyomuUrl && isNetFail) {
-showFetch(‘err’, ‘カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。’);
-} else {
-showFetch(‘err’, errMsg);
-}
-}
-disable(false);
-return;
-}
-if (bk && bk.chapterUrl !== url) {
-} else if (bk) {
-showResumeBanner(bk);
-}
-await loadChapterUrl(url);
-disable(false);
-}
-async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNumOverride = null, novelTitleOverride = ‘’) {
-disable(true);
-showFetch(‘load’, ‘取得中… ’ + url);
-try {
-const html = await fetchHtml(url);
-const page = extractPage(html, url);
-const novelId = novelIdOverride || toNovelId(url);
-if (currentNovelId && currentNovelId !== novelId) {
-queue = []; qi = 0;
-}
-currentNovelId = novelId;
-const savedNovelTitle = bkGet(novelId)?.novelTitle || ‘’;
-currentNovelTitle = page.novelTitle || novelTitleOverride || savedNovelTitle || page.title;
-currentChapterTitle = page.title;
-currentChapterNum = chapNumOverride || chapNumFromUrl(url) || 1;
-if (!queue.find(q=>q.url===url)) { queue.push({url, title:page.title, done:false}); qi=queue.length-1; trimQueue(); }
-else qi = queue.findIndex(q=>q.url===url);
-displayPage(page, url, startSeg, null);
-startSilentAudio();
-startPlay();
-hideFetch();
-document.getElementById(‘bgTip’).classList.add(‘show’);
-hideResumeBanner();
-} catch(e) {
-showFetch(‘err’, e.message);
-}
-disable(false);
+async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNumOverride = null, novelTitleOverride = '') {
+  disable(true);
+  showFetch('load', '取得中… ' + url);
+  try {
+    const html = await fetchHtml(url);
+    const page = extractPage(html, url);
+    const novelId = novelIdOverride || toNovelId(url);
+    if (currentNovelId && currentNovelId !== novelId) {
+      queue = []; qi = 0;
+    }
+    currentNovelId = novelId;
+    const savedNovelTitle = bkGet(novelId)?.novelTitle || '';
+    currentNovelTitle = page.novelTitle || novelTitleOverride || savedNovelTitle || page.title;
+    currentChapterTitle = page.title;
+    currentChapterNum = chapNumOverride || chapNumFromUrl(url) || 1;
+    if (!queue.find(q=>q.url===url)) { queue.push({url, title:page.title, done:false}); qi=queue.length-1; trimQueue(); }
+    else qi = queue.findIndex(q=>q.url===url);
+    displayPage(page, url, startSeg, null);
+    startSilentAudio();
+    startPlay();
+    hideFetch();
+    document.getElementById('bgTip').classList.add('show');
+    hideResumeBanner();
+  } catch(e) {
+    showFetch('err', e.message);
+  }
+  disable(false);
 }
 let _pickerNovelId = null;
-let _pickerNovelTitle = ‘’;
+let _pickerNovelTitle = '';
 function openChapPicker(novelTitle, items, novelId, bk) {
-_pendingTocItems = items;
-_pickerNovelId = novelId;
-_pickerNovelTitle = novelTitle;
-document.getElementById(‘modalTitle’).textContent = novelTitle;
-const wrap = document.getElementById(‘chapListWrap’);
-wrap.innerHTML = items.map((item, i) => {
-const isBk = bk && bk.chapterUrl === item.url;
-return ‘<div class="chap-row ' + (isBk?'bookmarked':'') + '" onclick="pickChapter(' + i + ')">’ +
-‘<span class="chap-num-badge">’ + item.num + ‘</span>’ +
-‘<span class="chap-row-title">’ + esc(item.title) + (isBk ? ’ 🔖’ : ‘’) + ‘</span>’ +
-(isBk ? ‘<div class="bookmark-dot"></div>’ : ‘’) +
-‘</div>’;
-}).join(’’);
-if (bk) {
-const bkIdx = items.findIndex(it => it.url === bk.chapterUrl);
-if (bkIdx >= 0) setTimeout(() => {
-const rows = wrap.querySelectorAll(’.chap-row’);
-if (rows[bkIdx]) rows[bkIdx].scrollIntoView({block:‘center’});
-}, 100);
-}
-document.getElementById(‘chapModal’).classList.add(‘show’);
+  _pendingTocItems = items;
+  _pickerNovelId = novelId;
+  _pickerNovelTitle = novelTitle;
+  document.getElementById('modalTitle').textContent = novelTitle;
+  const wrap = document.getElementById('chapListWrap');
+  wrap.innerHTML = items.map((item, i) => {
+    const isBk = bk && bk.chapterUrl === item.url;
+    return '<div class="chap-row ' + (isBk?'bookmarked':'') + '" onclick="pickChapter(' + i + ')">' +
+      '<span class="chap-num-badge">' + item.num + '</span>' +
+      '<span class="chap-row-title">' + esc(item.title) + (isBk ? ' 🔖' : '') + '</span>' +
+      (isBk ? '<div class="bookmark-dot"></div>' : '') +
+      '</div>';
+  }).join('');
+  if (bk) {
+    const bkIdx = items.findIndex(it => it.url === bk.chapterUrl);
+    if (bkIdx >= 0) setTimeout(() => {
+      const rows = wrap.querySelectorAll('.chap-row');
+      if (rows[bkIdx]) rows[bkIdx].scrollIntoView({block:'center'});
+    }, 100);
+  }
+  document.getElementById('chapModal').classList.add('show');
 }
 async function pickChapter(i) {
-const item = _pendingTocItems[i];
-if (!item) return;
-closeModal();
-const novelId = _pickerNovelId;
-const bk = bkGet(novelId);
-const startSeg = (bk && bk.chapterUrl === item.url) ? (bk.segIdx || 0) : 0;
-const urlChapNum = chapNumFromUrl(item.url);
-const chapNum = urlChapNum || item.num;
-await loadChapterUrl(item.url, startSeg, novelId, chapNum, _pickerNovelTitle);
+  const item = _pendingTocItems[i];
+  if (!item) return;
+  closeModal();
+  const novelId = _pickerNovelId;
+  const bk = bkGet(novelId);
+  const startSeg = (bk && bk.chapterUrl === item.url) ? (bk.segIdx || 0) : 0;
+  const urlChapNum = chapNumFromUrl(item.url);
+  const chapNum = urlChapNum || item.num;
+  await loadChapterUrl(item.url, startSeg, novelId, chapNum, _pickerNovelTitle);
 }
 function closeModal(e) {
-if (e && e.target !== document.getElementById(‘chapModal’)) return;
-document.getElementById(‘chapModal’).classList.remove(‘show’);
+  if (e && e.target !== document.getElementById('chapModal')) return;
+  document.getElementById('chapModal').classList.remove('show');
 }
 function showResumeBanner(bk) {
-document.getElementById(‘resumeTitle’).textContent = bk.chapterTitle || ‘しおりから再開’;
-document.getElementById(‘resumeSub’).textContent = ‘第’ + (bk.chapterNum||’?’) + ‘話 · 段落 ’ + (bk.segIdx+1);
-document.getElementById(‘resumeBanner’).classList.add(‘show’);
+  document.getElementById('resumeTitle').textContent = bk.chapterTitle || 'しおりから再開';
+  document.getElementById('resumeSub').textContent = '第' + (bk.chapterNum||'?') + '話 · 段落 ' + (bk.segIdx+1);
+  document.getElementById('resumeBanner').classList.add('show');
 }
 function hideResumeBanner() {
-document.getElementById(‘resumeBanner’).classList.remove(‘show’);
+  document.getElementById('resumeBanner').classList.remove('show');
 }
 async function resumeBookmark() {
-const url = document.getElementById(‘urlIn’).value.trim();
-const novelId = toNovelId(url);
-const bk = bkGet(novelId);
-if (!bk) { toast(‘しおりが見つかりません’); return; }
-hideResumeBanner();
-const titleNum = (bk.chapterTitle || ‘’).match(/^第(\d+)話/);
-const chapNum = chapNumFromUrl(bk.chapterUrl) || (titleNum ? parseInt(titleNum[1]) : 0) || bk.chapterNum || 1;
-await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId, chapNum, bk.novelTitle || ‘’);
+  const url = document.getElementById('urlIn').value.trim();
+  const novelId = toNovelId(url);
+  const bk = bkGet(novelId);
+  if (!bk) { toast('しおりが見つかりません'); return; }
+  hideResumeBanner();
+  const titleNum = (bk.chapterTitle || '').match(/^第(\d+)話/);
+  const chapNum = chapNumFromUrl(bk.chapterUrl) || (titleNum ? parseInt(titleNum[1]) : 0) || bk.chapterNum || 1;
+  await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId, chapNum, bk.novelTitle || '');
 }
 function displayPage(page, url, startSeg = 0, prevUrlHint) {
-if (prevUrlHint !== undefined) {
-prevUrl = prevUrlHint;
-} else {
-prevUrl = currentChapterUrl || null;
-}
-currentChapterUrl = url;
-nextUrl = page.nextUrl || null;
-document.getElementById(‘chapTitle’).textContent = page.title || url;
-const lnk = document.getElementById(‘chapLink’); lnk.textContent = url; lnk.href = url;
-document.getElementById(‘chapInfo’).classList.add(‘show’);
-msSetMetadata();
-segs = splitText(page.text);
-idx = Math.min(startSeg, segs.length - 1);
-if (currentChapterTitle && /^\u7b2c\d+\u8a71?$/.test(currentChapterTitle.trim())) {
-for (var _si = 0; _si < Math.min(5, segs.length); _si++) {
-var _s = segs[_si].trim();
-if (!_s || _s.length > 60) continue;
-if (/^\d+[/.]\d+/.test(_s)) continue;
-if (/^\d{4}[\s\u5e74]/.test(_s)) continue;
-var _cp = _s.replace(/^(?:\u7b2c)?[\d\u4e00-\u9fff\u5341\u767e\u5343]+\u7ae0[\s\u3000]*/, ‘’).trim();
-if (_cp.length > 0 && _cp !== _s) { currentChapterTitle = _cp; break; }
-if (/[\u301c\uff5e\u3010\u300c\u300e\uff08\u2460-\u2473]/.test(_s)) { currentChapterTitle = _s; break; }
-}
-document.getElementById(‘chapTitle’).textContent = currentChapterTitle;
-}
-renderText();
-updProg();
-ctrlEnable(true);
-const isKakuyomu = url && url.includes(‘kakuyomu.jp’);
-document.getElementById(‘bNext’).disabled = !(nextUrl || isKakuyomu);
-document.getElementById(‘bPrev2’).disabled = !prevUrl;
-renderQueue();
-if (nextUrl) {
-clearNextChapterCache();
-const prefetchDelay = (nextUrl && nextUrl.includes(‘kakuyomu.jp’)) ? 500 : 3000;
-setTimeout(() => prefetchNextChapter(nextUrl), prefetchDelay);
-} else if (currentChapterUrl && currentChapterUrl.includes(‘kakuyomu.jp’)) {
-setTimeout(async () => {
-if (nextUrl) return;
-try {
-const curHtml = await fetchHtml(currentChapterUrl);
-const curPage = extractPage(curHtml, currentChapterUrl);
-if (curPage.nextUrl && !nextUrl) {
-nextUrl = curPage.nextUrl;
-const bNextEl = document.getElementById(‘bNext’);
-if (bNextEl) bNextEl.disabled = false;
-prefetchNextChapter(nextUrl);
-}
-} catch(e) {}
-}, 1000);
-}
+  if (prevUrlHint !== undefined) {
+    prevUrl = prevUrlHint;
+  } else {
+    prevUrl = currentChapterUrl || null;
+  }
+  currentChapterUrl = url;
+  nextUrl = page.nextUrl || null;
+  document.getElementById('chapTitle').textContent = page.title || url;
+  const lnk = document.getElementById('chapLink'); lnk.textContent = url; lnk.href = url;
+  document.getElementById('chapInfo').classList.add('show');
+  msSetMetadata();
+  segs = splitText(page.text);
+  idx = Math.min(startSeg, segs.length - 1);
+  if (currentChapterTitle && /^\u7b2c\d+\u8a71?$/.test(currentChapterTitle.trim())) {
+    for (var _si = 0; _si < Math.min(5, segs.length); _si++) {
+      var _s = segs[_si].trim();
+      if (!_s || _s.length > 60) continue;
+      if (/^\d+[\/\.]\d+/.test(_s)) continue;
+      if (/^\d{4}[\s\u5e74]/.test(_s)) continue;
+      var _cp = _s.replace(/^(?:\u7b2c)?[\d\u4e00-\u9fff\u5341\u767e\u5343]+\u7ae0[\s\u3000]*/, '').trim();
+      if (_cp.length > 0 && _cp !== _s) { currentChapterTitle = _cp; break; }
+      if (/[\u301c\uff5e\u3010\u300c\u300e\uff08\u2460-\u2473]/.test(_s)) { currentChapterTitle = _s; break; }
+    }
+    document.getElementById('chapTitle').textContent = currentChapterTitle;
+  }
+  renderText();
+  updProg();
+  ctrlEnable(true);
+  const isKakuyomu = url && url.includes('kakuyomu.jp');
+  document.getElementById('bNext').disabled = !(nextUrl || isKakuyomu);
+  document.getElementById('bPrev2').disabled = !prevUrl;
+  renderQueue();
+  if (nextUrl) {
+    clearNextChapterCache();
+    const prefetchDelay = (nextUrl && nextUrl.includes('kakuyomu.jp')) ? 500 : 3000;
+    setTimeout(() => prefetchNextChapter(nextUrl), prefetchDelay);
+  } else if (currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
+    setTimeout(async () => {
+      if (nextUrl) return;
+      try {
+        const curHtml = await fetchHtml(currentChapterUrl);
+        const curPage = extractPage(curHtml, currentChapterUrl);
+        if (curPage.nextUrl && !nextUrl) {
+          nextUrl = curPage.nextUrl;
+          const bNextEl = document.getElementById('bNext');
+          if (bNextEl) bNextEl.disabled = false;
+          prefetchNextChapter(nextUrl);
+        }
+      } catch(e) {}
+    }, 1000);
+  }
 }
 function splitText(t) {
-return t.replace(/\r\n/g,’\n’).split(/\n+/).map(s=>s.trim()).filter(s=>{
-if (!s.length) return false;
-if (/^\d{4}[./年]\d/.test(s)) return false;
-if (/^\d+ / \d+$/.test(s)) return false;
-if (/^\d+/\d+$/.test(s)) return false;
-if (s.length > 20) return true;
-if (/^(前へ|次へ|目次|<<|>>|＜＜|＞＞|PREV|NEXT|前の話|次の話|前のエピソード|次のエピソード)/.test(s)) return false;
-if (/^[←→◀▶]/.test(s) && s.length < 10) return false;
-if (/^(新規登録で充実|作者を応援|応援する|応援コメント|ハートをクリック|ギフトを贈る)/.test(s)) return false;
-return true;
-});
+  return t.replace(/\r\n/g,'\n').split(/\n+/).map(s=>s.trim()).filter(s=>{
+    if (!s.length) return false;
+    if (/^\d{4}[.\/年]\d/.test(s)) return false;
+    if (/^\d+ \/ \d+$/.test(s)) return false;
+    if (/^\d+\/\d+$/.test(s)) return false;
+    if (s.length > 20) return true;
+    if (/^(前へ|次へ|目次|<<|>>|＜＜|＞＞|PREV|NEXT|前の話|次の話|前のエピソード|次のエピソード)/.test(s)) return false;
+    if (/^[←→◀▶]/.test(s) && s.length < 10) return false;
+    if (/^(新規登録で充実|作者を応援|応援する|応援コメント|ハートをクリック|ギフトを贈る)/.test(s)) return false;
+    return true;
+  });
 }
 function renderText() {
-const box = document.getElementById(‘novelText’);
-box.innerHTML = segs.map((s,i)=>’<span class="seg" id="s'+i+'">’+esc(s)+’</span><br>’).join(’’);
-box.classList.add(‘show’);
-document.getElementById(‘progWrap’).classList.add(‘show’);
-setTimeout(() => {
-const el = document.getElementById(‘s’+idx);
-if (el) el.scrollIntoView({behavior:‘instant’,block:‘center’});
-}, 100);
+  const box = document.getElementById('novelText');
+  box.innerHTML = segs.map((s,i)=>'<span class="seg" id="s'+i+'">'+esc(s)+'</span><br>').join('');
+  box.classList.add('show');
+  document.getElementById('progWrap').classList.add('show');
+  setTimeout(() => {
+    const el = document.getElementById('s'+idx);
+    if (el) el.scrollIntoView({behavior:'instant',block:'center'});
+  }, 100);
 }
-function esc(t) { return t.replace(/&/g,’&’).replace(/</g,’<’).replace(/>/g,’>’); }
-let _gApiKey = localStorage.getItem(‘yogatari_gkey’) || ‘’;
-let _gVoice  = localStorage.getItem(‘yogatari_gvoice’) || ‘ja-JP-Wavenet-A’;
+function esc(t) { return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+let _gApiKey = localStorage.getItem('yogatari_gkey') || '';
+let _gVoice  = localStorage.getItem('yogatari_gvoice') || 'ja-JP-Wavenet-A';
 let _gAudio  = null;
 let _busy    = false;
 let _tabSw   = false;
 let _audioUnlocked = false;
 function getAudioEl() {
-if (!_gAudio) _gAudio = document.getElementById(‘gAudioEl’);
-return _gAudio;
+  if (!_gAudio) _gAudio = document.getElementById('gAudioEl');
+  return _gAudio;
 }
 function unlockAudio() {
-if (_audioUnlocked) return;
-const el = getAudioEl();
-if (!el) return;
-el.src = ‘data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSjATHQAAAN6AAAALMef+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA’;
-el.volume = 0;
-el.play().then(() => {
-_audioUnlocked = true;
-el.pause();
-el.src = ‘’;
-el.volume = 1;
-const hint = document.getElementById(‘iosHint’);
-if (hint) hint.classList.add(‘hidden’);
-}).catch(() => {});
+  if (_audioUnlocked) return;
+  const el = getAudioEl();
+  if (!el) return;
+  el.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSjATHQAAAN6AAAALMef+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  el.volume = 0;
+  el.play().then(() => {
+    _audioUnlocked = true;
+    el.pause();
+    el.src = '';
+    el.volume = 1;
+    const hint = document.getElementById('iosHint');
+    if (hint) hint.classList.add('hidden');
+  }).catch(() => {});
 }
 const _prefetchCache = new Map();
 let _nextHtmlCache = null;
 let _nextPageCache = null;
 let _prefetchGeneration = 0;
 function prefetchNextChapter(url) {
-if (!url) return;
-if (_nextHtmlCache && _nextHtmlCache.url === url) return;
-const myGeneration = ++_prefetchGeneration;
-_nextHtmlCache = {
-url,
-promise: fetchHtml(url).then(html => {
-if (myGeneration !== _prefetchGeneration) return null;
-const page = extractPage(html, url);
-_nextPageCache = { url, page };
-if (myGeneration === _prefetchGeneration && (!nextUrl || nextUrl !== url)) {
-nextUrl = url;
-const bNextEl = document.getElementById(‘bNext’);
-if (bNextEl) bNextEl.disabled = false;
-}
-if (hasGoogleKey() && page.text) {
-const nextSegs = splitText(page.text);
-if (nextSegs.length > 0) {
-_nextAudioCache = [];
-for (let k = 0; k < Math.min(2, nextSegs.length); k++) {
-_nextAudioCache.push({ idx: k, promise: fetchGoogleAudio(nextSegs[k]) });
-}
-}
-}
-return page;
-}).catch(() => null)
-};
+  if (!url) return;
+  if (_nextHtmlCache && _nextHtmlCache.url === url) return;
+  const myGeneration = ++_prefetchGeneration;
+  _nextHtmlCache = {
+    url,
+    promise: fetchHtml(url).then(html => {
+      if (myGeneration !== _prefetchGeneration) return null;
+      const page = extractPage(html, url);
+      _nextPageCache = { url, page };
+      if (myGeneration === _prefetchGeneration && (!nextUrl || nextUrl !== url)) {
+        nextUrl = url;
+        const bNextEl = document.getElementById('bNext');
+        if (bNextEl) bNextEl.disabled = false;
+      }
+      if (hasGoogleKey() && page.text) {
+        const nextSegs = splitText(page.text);
+        if (nextSegs.length > 0) {
+          _nextAudioCache = [];
+          for (let k = 0; k < Math.min(2, nextSegs.length); k++) {
+            _nextAudioCache.push({ idx: k, promise: fetchGoogleAudio(nextSegs[k]) });
+          }
+        }
+      }
+      return page;
+    }).catch(() => null)
+  };
 }
 let _nextAudioCache = [];
 function clearNextChapterCache() {
-_prefetchGeneration++;
-_nextHtmlCache = null;
-_nextPageCache = null;
-_nextAudioCache = [];
+  _prefetchGeneration++;
+  _nextHtmlCache = null;
+  _nextPageCache = null;
+  _nextAudioCache = [];
 }
 function hasGoogleKey() { return _gApiKey.trim().length > 10; }
 function currentGVoice() { return _gVoice; }
 async function fetchGoogleAudio(text) {
-if (isOverLimit()) throw new Error(‘月間無料枠(’ + (USAGE_LIMIT()/10000).toFixed(0) + ‘万文字)に達しました。設定タブでリセットを。’);
-const body = {
-input: { text },
-voice: { languageCode: ‘ja-JP’, name: currentGVoice() },
-audioConfig: {
-audioEncoding: ‘MP3’,
-speakingRate: Math.max(0.25, Math.min(4.0, getRate())),
-pitch: Math.max(-20, Math.min(20, (getPitch() - 1.0) * 6))
-}
-};
-const res = await fetch(
-‘https://texttospeech.googleapis.com/v1/text:synthesize?key=’ + _gApiKey.trim(),
-{ method:‘POST’, headers:{‘Content-Type’:‘application/json’},
-body: JSON.stringify(body),
-signal: typeof AbortSignal.timeout===‘function’ ? AbortSignal.timeout(15000) : undefined }
-);
-if (!res.ok) {
-const err = await res.json().catch(()=>({}));
-throw new Error(err?.error?.message || ‘HTTP ’ + res.status);
-}
-const data = await res.json();
-addUsage(text.length);
-return ‘data:audio/mp3;base64,’ + data.audioContent;
+  if (isOverLimit()) throw new Error('月間無料枠(' + (USAGE_LIMIT()/10000).toFixed(0) + '万文字)に達しました。設定タブでリセットを。');
+  const body = {
+    input: { text },
+    voice: { languageCode: 'ja-JP', name: currentGVoice() },
+    audioConfig: {
+      audioEncoding: 'MP3',
+      speakingRate: Math.max(0.25, Math.min(4.0, getRate())),
+      pitch: Math.max(-20, Math.min(20, (getPitch() - 1.0) * 6))
+    }
+  };
+  const res = await fetch(
+    'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + _gApiKey.trim(),
+    { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body),
+      signal: typeof AbortSignal.timeout==='function' ? AbortSignal.timeout(15000) : undefined }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err?.error?.message || 'HTTP ' + res.status);
+  }
+  const data = await res.json();
+  addUsage(text.length);
+  return 'data:audio/mp3;base64,' + data.audioContent;
 }
 function getAudioCached(i) {
-if (!_prefetchCache.has(i)) {
-if (i < segs.length) { _prefetchCache.set(i, fetchGoogleAudio(segs[i])); }
-}
-return _prefetchCache.get(i);
+  if (!_prefetchCache.has(i)) {
+    if (i < segs.length) { _prefetchCache.set(i, fetchGoogleAudio(segs[i])); }
+  }
+  return _prefetchCache.get(i);
 }
 function evictCache(currentIdx) {
-for (const key of _prefetchCache.keys()) {
-if (key < currentIdx - 1 || key > currentIdx + 2) { _prefetchCache.delete(key); }
-}
+  for (const key of _prefetchCache.keys()) {
+    if (key < currentIdx - 1 || key > currentIdx + 2) { _prefetchCache.delete(key); }
+  }
 }
 function prefetchNext(i) {
-if (!hasGoogleKey()) return;
-if (i + 1 < segs.length && !_prefetchCache.has(i + 1)) { getAudioCached(i + 1); }
+  if (!hasGoogleKey()) return;
+  if (i + 1 < segs.length && !_prefetchCache.has(i + 1)) { getAudioCached(i + 1); }
 }
 function clearPrefetchCache() { _prefetchCache.clear(); }
 function stopGoogleAudio() {
-const el = getAudioEl();
-if (el) { el.onended = null; el.onerror = null; el.pause(); el.src = ‘’; }
+  const el = getAudioEl();
+  if (el) { el.onended = null; el.onerror = null; el.pause(); el.src = ''; }
 }
 let _skipLabel = null;
 function skipSec(sec) {
-if (!playing || !segs.length) return;
-const el = getAudioEl();
-if (hasGoogleKey() && el && el.src && !el.paused) {
-const newTime = Math.max(0, el.currentTime + sec);
-if (newTime < el.duration) { el.currentTime = newTime; }
-else { if (sec > 0) nextSeg(); else prevSeg(); }
-} else {
-if (sec > 0) nextSeg(); else prevSeg();
-}
-showSkipLabel(sec > 0 ? ‘+’ + Math.abs(sec) + ‘秒’ : ‘-’ + Math.abs(sec) + ‘秒’);
+  if (!playing || !segs.length) return;
+  const el = getAudioEl();
+  if (hasGoogleKey() && el && el.src && !el.paused) {
+    const newTime = Math.max(0, el.currentTime + sec);
+    if (newTime < el.duration) { el.currentTime = newTime; }
+    else { if (sec > 0) nextSeg(); else prevSeg(); }
+  } else {
+    if (sec > 0) nextSeg(); else prevSeg();
+  }
+  showSkipLabel(sec > 0 ? '+' + Math.abs(sec) + '秒' : '-' + Math.abs(sec) + '秒');
 }
 function showSkipLabel(text) {
-let lbl = document.getElementById(‘skipLbl’);
-if (!lbl) {
-lbl = document.createElement(‘div’);
-lbl.id = ‘skipLbl’;
-lbl.style.cssText = ‘position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);color:#c8991e;font-size:22px;font-weight:bold;padding:12px 24px;border-radius:12px;z-index:999;pointer-events:none;transition:opacity 0.4s’;
-document.body.appendChild(lbl);
-}
-lbl.textContent = text;
-lbl.style.opacity = ‘1’;
-if (_skipLabel) clearTimeout(_skipLabel);
-_skipLabel = setTimeout(() => { lbl.style.opacity = ‘0’; }, 800);
+  let lbl = document.getElementById('skipLbl');
+  if (!lbl) {
+    lbl = document.createElement('div');
+    lbl.id = 'skipLbl';
+    lbl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.7);color:#c8991e;font-size:22px;font-weight:bold;padding:12px 24px;border-radius:12px;z-index:999;pointer-events:none;transition:opacity 0.4s';
+    document.body.appendChild(lbl);
+  }
+  lbl.textContent = text;
+  lbl.style.opacity = '1';
+  if (_skipLabel) clearTimeout(_skipLabel);
+  _skipLabel = setTimeout(() => { lbl.style.opacity = '0'; }, 800);
 }
 function splitSentences(text) {
-const normalized = text.replace(/…+/g, ‘…’);
-const result = [];
-let buf = ‘’;
-for (let i = 0; i < normalized.length; i++) {
-buf += normalized[i];
-if (’。！？…」』.!?’.includes(normalized[i]) && buf.trim().length > 0) {
-result.push(buf);
-buf = ‘’;
-}
-}
-if (buf.trim().length > 0) result.push(buf);
-const filtered = result.filter(s => s.trim().length > 0);
-return filtered.length > 0 ? filtered : [text];
+  const normalized = text.replace(/…+/g, '…');
+  const result = [];
+  let buf = '';
+  for (let i = 0; i < normalized.length; i++) {
+    buf += normalized[i];
+    if ('。！？…」』.!?'.includes(normalized[i]) && buf.trim().length > 0) {
+      result.push(buf);
+      buf = '';
+    }
+  }
+  if (buf.trim().length > 0) result.push(buf);
+  const filtered = result.filter(s => s.trim().length > 0);
+  return filtered.length > 0 ? filtered : [text];
 }
 let _sentIdx = -1;
 function prevSent() {
-if (!segs.length || !playing) return;
-const sents = splitSentences(segs[idx]);
-if (sents.length <= 1) { prevSeg(); return; }
-if (_sentIdx <= 0) { prevSegFull(); }
-else { _sentIdx = Math.max(0, _sentIdx - 1); playSentence(_sentIdx); }
+  if (!segs.length || !playing) return;
+  const sents = splitSentences(segs[idx]);
+  if (sents.length <= 1) { prevSeg(); return; }
+  if (_sentIdx <= 0) { prevSegFull(); }
+  else { _sentIdx = Math.max(0, _sentIdx - 1); playSentence(_sentIdx); }
 }
 function nextSent() {
-if (!segs.length || !playing) return;
-const sents = splitSentences(segs[idx]);
-if (sents.length <= 1) { nextSeg(); return; }
-_sentIdx = Math.min(sents.length - 1, (_sentIdx < 0 ? 0 : _sentIdx) + 1);
-if (_sentIdx >= sents.length - 1) { nextSeg(); return; }
-playSentence(_sentIdx);
+  if (!segs.length || !playing) return;
+  const sents = splitSentences(segs[idx]);
+  if (sents.length <= 1) { nextSeg(); return; }
+  _sentIdx = Math.min(sents.length - 1, (_sentIdx < 0 ? 0 : _sentIdx) + 1);
+  if (_sentIdx >= sents.length - 1) { nextSeg(); return; }
+  playSentence(_sentIdx);
 }
 function playSentence(si) {
-const sents = splitSentences(segs[idx]);
-if (!sents[si]) return;
-_busy = false;
-clearWatchdog();
-SS.cancel(); stopGoogleAudio();
-if (hasGoogleKey()) {
-_busy = true;
-const el = getAudioEl();
-fetchGoogleAudio(sents[si]).then(src => {
-_busy = false;
-if (!playing) return;
-el.onended = () => {
-clearWatchdog();
-if (!playing) return;
-_sentIdx++;
-if (_sentIdx >= sents.length) { _sentIdx = -1; speakIdx(idx + 1); }
-else playSentence(_sentIdx);
-};
-el.src = src;
-el.play().catch(()=>{ _busy=false; });
-}).catch(()=>{ _busy=false; });
-} else {
-const utt = new SpeechSynthesisUtterance(sents[si]);
-if (selVoice) utt.voice = selVoice;
-utt.rate = getRate(); utt.pitch = getPitch(); utt.lang = ‘ja-JP’;
-utt.onend = () => {
-if (!playing) return;
-_sentIdx++;
-if (_sentIdx >= sents.length) { _sentIdx = -1; speakIdx(idx + 1); }
-else playSentence(_sentIdx);
-};
-SS.speak(utt);
-}
+  const sents = splitSentences(segs[idx]);
+  if (!sents[si]) return;
+  _busy = false;
+  clearWatchdog();
+  SS.cancel(); stopGoogleAudio();
+  if (hasGoogleKey()) {
+    _busy = true;
+    const el = getAudioEl();
+    fetchGoogleAudio(sents[si]).then(src => {
+      _busy = false;
+      if (!playing) return;
+      el.onended = () => {
+        clearWatchdog();
+        if (!playing) return;
+        _sentIdx++;
+        if (_sentIdx >= sents.length) { _sentIdx = -1; speakIdx(idx + 1); }
+        else playSentence(_sentIdx);
+      };
+      el.src = src;
+      el.play().catch(()=>{ _busy=false; });
+    }).catch(()=>{ _busy=false; });
+  } else {
+    const utt = new SpeechSynthesisUtterance(sents[si]);
+    if (selVoice) utt.voice = selVoice;
+    utt.rate = getRate(); utt.pitch = getPitch(); utt.lang = 'ja-JP';
+    utt.onend = () => {
+      if (!playing) return;
+      _sentIdx++;
+      if (_sentIdx >= sents.length) { _sentIdx = -1; speakIdx(idx + 1); }
+      else playSentence(_sentIdx);
+    };
+    SS.speak(utt);
+  }
 }
 function speakIdx(i) {
-if (_busy) return;
-_sentIdx = -1;
-clearWatchdog();
-if (i >= segs.length) {
-playing = false; updBtn(); setBadge(false);
-saveBookmarkCurrent(i);
-if (queue[qi]) queue[qi].done = true;
-renderQueue();
-clearPrefetchCache();
-if (!nextUrl && _nextHtmlCache && _nextHtmlCache.url) {
-nextUrl = _nextHtmlCache.url;
-const bNextEl = document.getElementById(‘bNext’);
-if (bNextEl) bNextEl.disabled = false;
-}
-if (nextUrl) startNextCd(); else toast(‘📖 この話の読み上げが完了しました’);
-return;
-}
-idx = i;
-updHighlight(); updProg();
-if (i % 5 === 0) saveBookmarkCurrent(i);
-msSetState(‘playing’);
-if (hasGoogleKey()) {
-SS.cancel();
-_busy = true;
-evictCache(i);
-getAudioCached(i).then(audioSrc => {
-_busy = false;
-if (!playing) return;
-stopGoogleAudio();
-const el = getAudioEl();
-el.onended = () => {
-clearWatchdog();
-if (playing && !_tabSw) {
-msSetState(‘playing’);
-keepAudioSessionAlive();
-speakIdx(idx + 1);
-}
-};
-el.onerror = () => {
-clearWatchdog(); _busy = false;
-_prefetchCache.delete(i);
-if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 800);
-};
-el.src = audioSrc;
-el.play().catch(e => {
-console.warn(‘play() failed:’, e.name, e.message);
-clearWatchdog(); _busy = false;
-_prefetchCache.delete(i);
-if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 600);
-});
-el.onplay = () => { msSetState(‘playing’); };
-startWatchdog(getRate(), true);
-prefetchNext(i);
-}).catch(e => {
-_busy = false;
-_prefetchCache.delete(i);
-if (!playing) return;
-const msg = (e.message || ‘Google TTSエラー’).slice(0, 60);
-toast(‘⚠ ’ + msg);
-if (/quota|key|API|無料枠|401|403/.test(msg)) {
-playing = false; updBtn(); setBadge(false);
-} else {
-setTimeout(() => { if (playing) speakIdx(idx); }, 2000);
-}
-});
-} else {
-stopGoogleAudio();
-const utt = new SpeechSynthesisUtterance(segs[i]);
-if (selVoice) utt.voice = selVoice;
-utt.rate   = getRate();
-utt.volume = 1.0;
-utt.pitch  = getPitch();
-utt.lang   = ‘ja-JP’;
-utt.onstart = () => startWatchdog(getRate(), false);
-utt.onend   = () => { clearWatchdog(); if (playing) speakIdx(idx + 1); };
-utt.onerror = (e) => {
-clearWatchdog();
-if (e.error === ‘interrupted’ || e.error === ‘canceled’) return;
-if (playing) setTimeout(() => speakIdx(idx), 500);
-};
-SS.speak(utt);
-}
+  if (_busy) return;
+  _sentIdx = -1;
+  clearWatchdog();
+  if (i >= segs.length) {
+    playing = false; updBtn(); setBadge(false);
+    saveBookmarkCurrent(i);
+    if (queue[qi]) queue[qi].done = true;
+    renderQueue();
+    clearPrefetchCache();
+    if (!nextUrl && _nextHtmlCache && _nextHtmlCache.url) {
+      nextUrl = _nextHtmlCache.url;
+      const bNextEl = document.getElementById('bNext');
+      if (bNextEl) bNextEl.disabled = false;
+    }
+    if (nextUrl) startNextCd(); else toast('📖 この話の読み上げが完了しました');
+    return;
+  }
+  idx = i;
+  updHighlight(); updProg();
+  if (i % 5 === 0) saveBookmarkCurrent(i);
+  msSetState('playing');
+  if (hasGoogleKey()) {
+    SS.cancel();
+    _busy = true;
+    evictCache(i);
+    getAudioCached(i).then(audioSrc => {
+      _busy = false;
+      if (!playing) return;
+      stopGoogleAudio();
+      const el = getAudioEl();
+      el.onended = () => {
+        clearWatchdog();
+        if (playing && !_tabSw) {
+          msSetState('playing');
+          keepAudioSessionAlive();
+          speakIdx(idx + 1);
+        }
+      };
+      el.onerror = () => {
+        clearWatchdog(); _busy = false;
+        _prefetchCache.delete(i);
+        if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 800);
+      };
+      el.src = audioSrc;
+      el.play().catch(e => {
+        console.warn('play() failed:', e.name, e.message);
+        clearWatchdog(); _busy = false;
+        _prefetchCache.delete(i);
+        if (playing && !_tabSw) setTimeout(() => speakIdx(idx), 600);
+      });
+      el.onplay = () => { msSetState('playing'); };
+      startWatchdog(getRate(), true);
+      prefetchNext(i);
+    }).catch(e => {
+      _busy = false;
+      _prefetchCache.delete(i);
+      if (!playing) return;
+      const msg = (e.message || 'Google TTSエラー').slice(0, 60);
+      toast('⚠ ' + msg);
+      if (/quota|key|API|無料枠|401|403/.test(msg)) {
+        playing = false; updBtn(); setBadge(false);
+      } else {
+        setTimeout(() => { if (playing) speakIdx(idx); }, 2000);
+      }
+    });
+  } else {
+    stopGoogleAudio();
+    const utt = new SpeechSynthesisUtterance(segs[i]);
+    if (selVoice) utt.voice = selVoice;
+    utt.rate   = getRate();
+    utt.volume = 1.0;
+    utt.pitch  = getPitch();
+    utt.lang   = 'ja-JP';
+    utt.onstart = () => startWatchdog(getRate(), false);
+    utt.onend   = () => { clearWatchdog(); if (playing) speakIdx(idx + 1); };
+    utt.onerror = (e) => {
+      clearWatchdog();
+      if (e.error === 'interrupted' || e.error === 'canceled') return;
+      if (playing) setTimeout(() => speakIdx(idx), 500);
+    };
+    SS.speak(utt);
+  }
 }
 function startWatchdog(rate, isGoogle = false) {
-const segLen = segs[idx]?.length || 20;
-const estimatedSpeechMs = segLen / (rate * 4) * 1000;
-const bufferMs = isGoogle ? 12000 : 5000;
-const minMs = isGoogle ? 5000 : 2000;
-const ms = Math.min(Math.max(estimatedSpeechMs + bufferMs, minMs), 60000);
-watchdog = setTimeout(() => {
-if (!playing) return;
-_busy = false;
-if (isGoogle) { stopGoogleAudio(); speakIdx(idx); }
-else if (!SS.speaking && !SS.pending) { SS.cancel(); speakIdx(idx); }
-}, ms);
+  const segLen = segs[idx]?.length || 20;
+  const estimatedSpeechMs = segLen / (rate * 4) * 1000;
+  const bufferMs = isGoogle ? 12000 : 5000;
+  const minMs = isGoogle ? 5000 : 2000;
+  const ms = Math.min(Math.max(estimatedSpeechMs + bufferMs, minMs), 60000);
+  watchdog = setTimeout(() => {
+    if (!playing) return;
+    _busy = false;
+    if (isGoogle) { stopGoogleAudio(); speakIdx(idx); }
+    else if (!SS.speaking && !SS.pending) { SS.cancel(); speakIdx(idx); }
+  }, ms);
 }
 function clearWatchdog() { if (watchdog) { clearTimeout(watchdog); watchdog = null; } }
 function startPlay() {
-if (playing) return;
-unlockAudio();
-playing = true; _busy = false;
-updBtn(); setBadge(true);
-SS.cancel();
-stopGoogleAudio();
-clearPrefetchCache();
-if (hasGoogleKey()) getAudioCached(idx);
-msInit();
-msSetMetadata();
-msSetState(‘playing’);
-setTimeout(() => speakIdx(idx), 100);
+  if (playing) return;
+  unlockAudio();
+  playing = true; _busy = false;
+  updBtn(); setBadge(true);
+  SS.cancel();
+  stopGoogleAudio();
+  clearPrefetchCache();
+  if (hasGoogleKey()) getAudioCached(idx);
+  msInit();
+  msSetMetadata();
+  msSetState('playing');
+  setTimeout(() => speakIdx(idx), 100);
 }
 function togglePlay() {
-if (!segs.length) return;
-if (playing) {
-playing = false; _busy = false; clearWatchdog();
-SS.cancel(); stopGoogleAudio();
-updBtn(); setBadge(false);
-msSetState(‘paused’);
-} else {
-startPlay();
-}
+  if (!segs.length) return;
+  if (playing) {
+    playing = false; _busy = false; clearWatchdog();
+    SS.cancel(); stopGoogleAudio();
+    updBtn(); setBadge(false);
+    msSetState('paused');
+  } else {
+    startPlay();
+  }
 }
 function stop() {
-playing = false; _busy = false;
-SS.cancel(); stopGoogleAudio();
-clearWatchdog(); clearPrefetchCache();
-updBtn(); setBadge(false); cancelNext();
-msSetState(‘none’);
+  playing = false; _busy = false;
+  SS.cancel(); stopGoogleAudio();
+  clearWatchdog(); clearPrefetchCache();
+  updBtn(); setBadge(false); cancelNext();
+  msSetState('none');
 }
 function stopForChapterTransition() {
-playing = false; _busy = false;
-SS.cancel(); stopGoogleAudio();
-clearWatchdog(); clearPrefetchCache();
-updBtn(); setBadge(false); cancelNext();
+  playing = false; _busy = false;
+  SS.cancel(); stopGoogleAudio();
+  clearWatchdog(); clearPrefetchCache();
+  updBtn(); setBadge(false); cancelNext();
 }
 function prevSeg() {
-if (_busy) return;
-SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false; _sentIdx = -1;
-const i = Math.max(0, idx - 1);
-if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
+  if (_busy) return;
+  SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false; _sentIdx = -1;
+  const i = Math.max(0, idx - 1);
+  if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
 }
 function nextSeg() {
-if (_busy) return;
-SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false; _sentIdx = -1;
-const i = Math.min(segs.length - 1, idx + 1);
-if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
+  if (_busy) return;
+  SS.cancel(); stopGoogleAudio(); clearWatchdog(); clearPrefetchCache(); _busy = false; _sentIdx = -1;
+  const i = Math.min(segs.length - 1, idx + 1);
+  if (playing) speakIdx(i); else { idx = i; updHighlight(); updProg(); }
 }
 function prevSegFull() { prevSeg(); }
 function nextSegFull() { nextSeg(); }
 function initSettings() {
-if (_gApiKey) {
-document.getElementById(‘apiKeyInput’).value = _gApiKey;
-document.getElementById(‘googleVoiceSection’).style.display = ‘block’;
-}
-syncVoiceSelect();
-updModeDisplay();
-updUsageDisplay();
+  if (_gApiKey) {
+    document.getElementById('apiKeyInput').value = _gApiKey;
+    document.getElementById('googleVoiceSection').style.display = 'block';
+  }
+  syncVoiceSelect();
+  updModeDisplay();
+  updUsageDisplay();
 }
 function syncVoiceSelect() {
-const sel = document.getElementById(‘googleVoiceSel’);
-if (!sel) return;
-const exists = Array.from(sel.options).some(o => o.value === _gVoice);
-if (exists) sel.value = _gVoice;
-else { sel.value = ‘ja-JP-Wavenet-A’; _gVoice = ‘ja-JP-Wavenet-A’; }
+  const sel = document.getElementById('googleVoiceSel');
+  if (!sel) return;
+  const exists = Array.from(sel.options).some(o => o.value === _gVoice);
+  if (exists) sel.value = _gVoice;
+  else { sel.value = 'ja-JP-Wavenet-A'; _gVoice = 'ja-JP-Wavenet-A'; }
 }
 function saveApiKey() {
-const key = document.getElementById(‘apiKeyInput’).value.trim();
-if (!key) { showApiStatus(‘ng’, ‘キーを入力してください’); return; }
-if (!key.startsWith(‘AIza’)) { showApiStatus(‘ng’, ‘キーの形式が正しくありません（AIzaSy…）’); return; }
-_gApiKey = key;
-const selEl = document.getElementById(‘googleVoiceSel’);
-if (selEl && selEl.value) _gVoice = selEl.value;
-localStorage.setItem(‘yogatari_gkey’, _gApiKey);
-localStorage.setItem(‘yogatari_gvoice’, _gVoice);
-document.getElementById(‘googleVoiceSection’).style.display = ‘block’;
-showApiStatus(‘ok’, ‘✓ 保存しました — Google TTS が有効です’);
-updModeDisplay();
-toast(‘Google TTSを設定しました’);
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { showApiStatus('ng', 'キーを入力してください'); return; }
+  if (!key.startsWith('AIza')) { showApiStatus('ng', 'キーの形式が正しくありません（AIzaSy…）'); return; }
+  _gApiKey = key;
+  const selEl = document.getElementById('googleVoiceSel');
+  if (selEl && selEl.value) _gVoice = selEl.value;
+  localStorage.setItem('yogatari_gkey', _gApiKey);
+  localStorage.setItem('yogatari_gvoice', _gVoice);
+  document.getElementById('googleVoiceSection').style.display = 'block';
+  showApiStatus('ok', '✓ 保存しました — Google TTS が有効です');
+  updModeDisplay();
+  toast('Google TTSを設定しました');
 }
 function clearApiKey() {
-_gApiKey = ‘’;
-localStorage.removeItem(‘yogatari_gkey’);
-document.getElementById(‘apiKeyInput’).value = ‘’;
-document.getElementById(‘googleVoiceSection’).style.display = ‘none’;
-showApiStatus(‘ng’, ‘クリアしました — Kyokoに戻ります’);
-updModeDisplay();
-toast(‘Kyokoに戻しました’);
+  _gApiKey = '';
+  localStorage.removeItem('yogatari_gkey');
+  document.getElementById('apiKeyInput').value = '';
+  document.getElementById('googleVoiceSection').style.display = 'none';
+  showApiStatus('ng', 'クリアしました — Kyokoに戻ります');
+  updModeDisplay();
+  toast('Kyokoに戻しました');
 }
 function showApiStatus(type, msg) {
-const el = document.getElementById(‘apiStatus’);
-el.textContent = msg;
-el.className = ‘api-status show ’ + type;
+  const el = document.getElementById('apiStatus');
+  el.textContent = msg;
+  el.className = 'api-status show ' + type;
 }
 function friendlyVoiceName(v) {
-const m = v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);
-if (m) {
-const type = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
-return type + ‘-’ + m[2];
-}
-return v;
+  const m = v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);
+  if (m) {
+    const type = m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase();
+    return type + '-' + m[2];
+  }
+  return v;
 }
 function updModeDisplay() {
-const el = document.getElementById(‘modeDisplay’);
-if (!el) return;
-const row   = document.getElementById(‘voiceRowKyoko’);
-const rowG  = document.getElementById(‘voiceRowGoogle’);
-const badge = document.getElementById(‘googleBadge’);
-if (hasGoogleKey()) {
-const fname = friendlyVoiceName(_gVoice);
-const lim   = (USAGE_LIMIT() / 10000).toFixed(0) + ‘万文字/月無料’;
-el.innerHTML = ‘<span class="mode-badge google">🎙 ’ + fname + ‘<br><span style="font-size:9px;opacity:0.7">’ + lim + ‘</span></span>’;
-if (badge) badge.textContent = ‘🎙 ’ + fname;
-if (row)  row.style.display  = ‘none’;
-if (rowG) rowG.style.display = ‘flex’;
-} else {
-el.innerHTML = ‘<span class="mode-badge">🔊 Kyoko（デフォルト）</span>’;
-if (row)  row.style.display  = ‘flex’;
-if (rowG) rowG.style.display = ‘none’;
-}
+  const el = document.getElementById('modeDisplay');
+  if (!el) return;
+  const row   = document.getElementById('voiceRowKyoko');
+  const rowG  = document.getElementById('voiceRowGoogle');
+  const badge = document.getElementById('googleBadge');
+  if (hasGoogleKey()) {
+    const fname = friendlyVoiceName(_gVoice);
+    const lim   = (USAGE_LIMIT() / 10000).toFixed(0) + '万文字/月無料';
+    el.innerHTML = '<span class="mode-badge google">🎙 ' + fname + '<br><span style="font-size:9px;opacity:0.7">' + lim + '</span></span>';
+    if (badge) badge.textContent = '🎙 ' + fname;
+    if (row)  row.style.display  = 'none';
+    if (rowG) rowG.style.display = 'flex';
+  } else {
+    el.innerHTML = '<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';
+    if (row)  row.style.display  = 'flex';
+    if (rowG) rowG.style.display = 'none';
+  }
 }
 function saveBookmarkCurrent(segIdx) {
-if (!currentNovelId) return;
-const url = document.getElementById(‘chapLink’).href;
-const urlNum = chapNumFromUrl(url);
-if (urlNum > 0) currentChapterNum = urlNum;
-bkSet(currentNovelId, currentNovelTitle, url, currentChapterTitle, currentChapterNum, segIdx);
-renderHistList();
+  if (!currentNovelId) return;
+  const url = document.getElementById('chapLink').href;
+  const urlNum = chapNumFromUrl(url);
+  if (urlNum > 0) currentChapterNum = urlNum;
+  bkSet(currentNovelId, currentNovelTitle, url, currentChapterTitle, currentChapterNum, segIdx);
+  renderHistList();
 }
 function startNextCd() {
-nextCount=3;
-document.getElementById(‘nextNotice’).classList.add(‘show’);
-document.getElementById(‘nextCd’).textContent=nextCount;
-nextTimer=setInterval(()=>{
-nextCount–;
-document.getElementById(‘nextCd’).textContent=nextCount;
-if(nextCount<=0){cancelNext();goNext();}
-},1000);
+  nextCount=3;
+  document.getElementById('nextNotice').classList.add('show');
+  document.getElementById('nextCd').textContent=nextCount;
+  nextTimer=setInterval(()=>{
+    nextCount--;
+    document.getElementById('nextCd').textContent=nextCount;
+    if(nextCount<=0){cancelNext();goNext();}
+  },1000);
 }
 function cancelNext() {
-if(nextTimer){clearInterval(nextTimer);nextTimer=null;}
-document.getElementById(‘nextNotice’).classList.remove(‘show’);
+  if(nextTimer){clearInterval(nextTimer);nextTimer=null;}
+  document.getElementById('nextNotice').classList.remove('show');
 }
 async function goPrev() {
-if (!prevUrl) { toast(‘前の話はありません’); return; }
-const url = prevUrl;
-document.getElementById(‘urlIn’).value = url;
-stopForChapterTransition(); disable(true); showFetch(‘load’,‘前の話を取得中…’);
-if (!queue.find(q=>q.url===url)) { queue.push({url,title:‘読込中…’,done:false}); qi=queue.length-1; trimQueue(); }
-else qi = queue.findIndex(q=>q.url===url);
-try {
-const html = await fetchHtml(url);
-const page = extractPage(html, url);
-if (queue[qi]) queue[qi].title = page.title;
-currentChapterTitle = page.title;
-currentChapterNum = chapNumFromUrl(url) || (currentChapterNum > 1 ? currentChapterNum - 1 : 1);
-displayPage(page, url, 0, null);
-hideFetch();
-if (_actx && _actx.state === ‘suspended’) await _actx.resume().catch(()=>{});
-await new Promise(r=>setTimeout(r,200));
-_busy = false;
-if (!playing) startPlay();
-} catch(e) { showFetch(‘err’, e.message); }
-disable(false);
+  if (!prevUrl) { toast('前の話はありません'); return; }
+  const url = prevUrl;
+  document.getElementById('urlIn').value = url;
+  stopForChapterTransition(); disable(true); showFetch('load','前の話を取得中…');
+  if (!queue.find(q=>q.url===url)) { queue.push({url,title:'読込中…',done:false}); qi=queue.length-1; trimQueue(); }
+  else qi = queue.findIndex(q=>q.url===url);
+  try {
+    const html = await fetchHtml(url);
+    const page = extractPage(html, url);
+    if (queue[qi]) queue[qi].title = page.title;
+    currentChapterTitle = page.title;
+    currentChapterNum = chapNumFromUrl(url) || (currentChapterNum > 1 ? currentChapterNum - 1 : 1);
+    displayPage(page, url, 0, null);
+    hideFetch();
+    if (_actx && _actx.state === 'suspended') await _actx.resume().catch(()=>{});
+    await new Promise(r=>setTimeout(r,200));
+    _busy = false;
+    if (!playing) startPlay();
+  } catch(e) { showFetch('err', e.message); }
+  disable(false);
 }
 async function goNext() {
-if (_goNextRunning) return;
-_goNextRunning = true;
-try {
-await _goNextImpl();
-} finally {
-_goNextRunning = false;
-}
+  if (_goNextRunning) return;
+  _goNextRunning = true;
+  try {
+    await _goNextImpl();
+  } finally {
+    _goNextRunning = false;
+  }
 }
 async function _goNextImpl() {
-if (!nextUrl && currentChapterUrl && currentChapterUrl.includes(‘kakuyomu.jp’)) {
-if (_nextHtmlCache && _nextHtmlCache.url) {
-nextUrl = _nextHtmlCache.url;
-document.getElementById(‘bNext’).disabled = false;
-}
-if (!nextUrl) {
-showFetch(‘load’, ‘次話URLを取得中…’);
-disable(true);
-try {
-const curHtml = await fetchHtml(currentChapterUrl);
-const curPage = extractPage(curHtml, currentChapterUrl);
-if (curPage.nextUrl) {
-nextUrl = curPage.nextUrl;
-document.getElementById(‘bNext’).disabled = false;
-}
-} catch(e) {}
-if (!nextUrl) {
-try {
-const tocUrl = inferTocUrl(currentChapterUrl);
-if (tocUrl) {
-const html = await fetchHtml(tocUrl);
-const items = parseKakuyomuToc(html, tocUrl);
-const curIdx = items.findIndex(it => it.url === currentChapterUrl);
-if (curIdx >= 0 && curIdx < items.length - 1) {
-nextUrl = items[curIdx + 1].url;
-document.getElementById(‘bNext’).disabled = false;
-}
-}
-} catch(e) {}
-}
-disable(false);
-if (!nextUrl) { toast(‘次のページが見つかりませんでした’); hideFetch(); return; }
-}
-}
-if(!nextUrl){toast(‘次のページなし’);return;}
-const url=nextUrl;
-document.getElementById(‘urlIn’).value=url;
-stopForChapterTransition(); disable(true); showFetch(‘load’,‘次のページ取得中…’);
-if(!queue.find(q=>q.url===url)){queue.push({url,title:‘読込中…’,done:false});qi=queue.length-1; trimQueue();}
-else qi=queue.findIndex(q=>q.url===url);
-try {
-let page = null;
-if (_nextPageCache && _nextPageCache.url === url) {
-page = _nextPageCache.page;
-showFetch(‘load’, ‘✓ 先読み済み — 即開始’);
-await new Promise(r => setTimeout(r, 300));
-} else {
-if (_nextHtmlCache && _nextHtmlCache.url === url) {
-showFetch(‘load’, ‘先読み中… しばらくお待ちください’);
-page = await _nextHtmlCache.promise;
-}
-if (!page) {
-page = await fetchHtml(url).then(html => extractPage(html, url));
-}
-}
-if (!page) throw new Error(‘ページ取得失敗’);
-if(queue[qi]) queue[qi].title = page.title;
-currentChapterTitle = page.title;
-const nextTitleNum = (page.title || ‘’).match(/^第(\d+)話/);
-currentChapterNum = chapNumFromUrl(url)
-|| (nextTitleNum ? parseInt(nextTitleNum[1]) : 0)
-|| (currentChapterNum > 0 ? currentChapterNum + 1 : 1);
-if (_nextAudioCache.length > 0 && hasGoogleKey()) {
-clearPrefetchCache();
-_nextAudioCache.forEach(({idx: k, promise}) => _prefetchCache.set(k, promise));
-_nextAudioCache = [];
-}
-const prevUrlForNext = currentChapterUrl;
-displayPage(page, url, 0, prevUrlForNext);
-hideFetch();
-if(_actx && _actx.state===‘suspended’) await _actx.resume().catch(()=>{});
-await new Promise(r => setTimeout(r, 200));
-_busy = false;
-if (!playing) startPlay();
-} catch(e) {
-const msg = e.message || ‘’;
-const isTrulyFinal = msg.includes(‘最終話の可能性’);
-const isNetErr = msg.includes(‘取得失敗’) || msg.includes(‘HTTP’) ||
-msg.includes(‘Load failed’) || msg.includes(‘全プロキシ’);
-if (isTrulyFinal) {
-nextUrl = null;
-clearNextChapterCache();
-document.getElementById(‘bNext’).disabled = true;
-showFetch(‘err’, ‘📖 最終話まで読み終わりました。続きは作者の更新をお待ちください’);
-} else if (isNetErr) {
-clearNextChapterCache();
-showFetch(‘err’, ‘⚠ ページ取得に失敗しました。「次話→」で再試行できます’);
-document.getElementById(‘bNext’).disabled = !nextUrl;
-} else {
-showFetch(‘err’, msg.slice(0, 80));
-document.getElementById(‘bNext’).disabled = !nextUrl;
-}
-}
-disable(false);
+  if (!nextUrl && currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
+    if (_nextHtmlCache && _nextHtmlCache.url) {
+      nextUrl = _nextHtmlCache.url;
+      document.getElementById('bNext').disabled = false;
+    }
+    if (!nextUrl) {
+      showFetch('load', '次話URLを取得中…');
+      disable(true);
+      try {
+        const curHtml = await fetchHtml(currentChapterUrl);
+        const curPage = extractPage(curHtml, currentChapterUrl);
+        if (curPage.nextUrl) {
+          nextUrl = curPage.nextUrl;
+          document.getElementById('bNext').disabled = false;
+        }
+      } catch(e) {}
+      if (!nextUrl) {
+        try {
+          const tocUrl = inferTocUrl(currentChapterUrl);
+          if (tocUrl) {
+            const html = await fetchHtml(tocUrl);
+            const items = parseKakuyomuToc(html, tocUrl);
+            const curIdx = items.findIndex(it => it.url === currentChapterUrl);
+            if (curIdx >= 0 && curIdx < items.length - 1) {
+              nextUrl = items[curIdx + 1].url;
+              document.getElementById('bNext').disabled = false;
+            }
+          }
+        } catch(e) {}
+      }
+      disable(false);
+      if (!nextUrl) { toast('次のページが見つかりませんでした'); hideFetch(); return; }
+    }
+  }
+  if(!nextUrl){toast('次のページなし');return;}
+  const url=nextUrl;
+  document.getElementById('urlIn').value=url;
+  stopForChapterTransition(); disable(true); showFetch('load','次のページ取得中…');
+  if(!queue.find(q=>q.url===url)){queue.push({url,title:'読込中…',done:false});qi=queue.length-1; trimQueue();}
+  else qi=queue.findIndex(q=>q.url===url);
+  try {
+    let page = null;
+    if (_nextPageCache && _nextPageCache.url === url) {
+      page = _nextPageCache.page;
+      showFetch('load', '✓ 先読み済み — 即開始');
+      await new Promise(r => setTimeout(r, 300));
+    } else {
+      if (_nextHtmlCache && _nextHtmlCache.url === url) {
+        showFetch('load', '先読み中… しばらくお待ちください');
+        page = await _nextHtmlCache.promise;
+      }
+      if (!page) {
+        page = await fetchHtml(url).then(html => extractPage(html, url));
+      }
+    }
+    if (!page) throw new Error('ページ取得失敗');
+    if(queue[qi]) queue[qi].title = page.title;
+    currentChapterTitle = page.title;
+    const nextTitleNum = (page.title || '').match(/^第(\d+)話/);
+    currentChapterNum = chapNumFromUrl(url)
+      || (nextTitleNum ? parseInt(nextTitleNum[1]) : 0)
+      || (currentChapterNum > 0 ? currentChapterNum + 1 : 1);
+    if (_nextAudioCache.length > 0 && hasGoogleKey()) {
+      clearPrefetchCache();
+      _nextAudioCache.forEach(({idx: k, promise}) => _prefetchCache.set(k, promise));
+      _nextAudioCache = [];
+    }
+    const prevUrlForNext = currentChapterUrl;
+    displayPage(page, url, 0, prevUrlForNext);
+    hideFetch();
+    if(_actx && _actx.state==='suspended') await _actx.resume().catch(()=>{});
+    await new Promise(r => setTimeout(r, 200));
+    _busy = false;
+    if (!playing) startPlay();
+  } catch(e) {
+    const msg = e.message || '';
+    const isTrulyFinal = msg.includes('最終話の可能性');
+    const isNetErr = msg.includes('取得失敗') || msg.includes('HTTP') ||
+                     msg.includes('Load failed') || msg.includes('全プロキシ');
+    if (isTrulyFinal) {
+      nextUrl = null;
+      clearNextChapterCache();
+      document.getElementById('bNext').disabled = true;
+      showFetch('err', '📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');
+    } else if (isNetErr) {
+      clearNextChapterCache();
+      showFetch('err', '⚠ ページ取得に失敗しました。「次話→」で再試行できます');
+      document.getElementById('bNext').disabled = !nextUrl;
+    } else {
+      showFetch('err', msg.slice(0, 80));
+      document.getElementById('bNext').disabled = !nextUrl;
+    }
+  }
+  disable(false);
 }
 function renderQueue() {
-const row=document.getElementById(‘queueRow’);
-if(!queue.length){row.classList.remove(‘show’);return;}
-row.classList.add(‘show’);
-row.innerHTML=queue.map((q,i)=>{
-let c=‘q-chip’;
-if(i===qi)c+=’ cur’; if(q.done)c+=’ done’;
-const t=q.title.length>14?q.title.slice(0,13)+’…’:q.title;
-return ‘<span class="'+c+'" onclick="jumpQ('+i+')" title="'+esc(q.url)+'">’+esc(t)+’</span>’;
-}).join(’’);
+  const row=document.getElementById('queueRow');
+  if(!queue.length){row.classList.remove('show');return;}
+  row.classList.add('show');
+  row.innerHTML=queue.map((q,i)=>{
+    let c='q-chip';
+    if(i===qi)c+=' cur'; if(q.done)c+=' done';
+    const t=q.title.length>14?q.title.slice(0,13)+'…':q.title;
+    return '<span class="'+c+'" onclick="jumpQ('+i+')" title="'+esc(q.url)+'">'+esc(t)+'</span>';
+  }).join('');
 }
 async function jumpQ(i) {
-if(i===qi)return; qi=i;
-const url=queue[i].url;
-document.getElementById(‘urlIn’).value=url;
-stop(); disable(true); showFetch(‘load’,‘取得中…’);
-clearNextChapterCache();
-try {
-const html=await fetchHtml(url);
-const page=extractPage(html,url);
-queue[i].title=page.title;
-currentChapterTitle=page.title;
-currentChapterNum = chapNumFromUrl(url) || (i + 1);
-displayPage(page, url, 0, null);
-startPlay();
-hideFetch();
-} catch(e){showFetch(‘err’,e.message);}
-disable(false);
+  if(i===qi)return; qi=i;
+  const url=queue[i].url;
+  document.getElementById('urlIn').value=url;
+  stop(); disable(true); showFetch('load','取得中…');
+  clearNextChapterCache();
+  try {
+    const html=await fetchHtml(url);
+    const page=extractPage(html,url);
+    queue[i].title=page.title;
+    currentChapterTitle=page.title;
+    currentChapterNum = chapNumFromUrl(url) || (i + 1);
+    displayPage(page, url, 0, null);
+    startPlay();
+    hideFetch();
+  } catch(e){showFetch('err',e.message);}
+  disable(false);
 }
 const _newChapCache = {};
 function renderHistList() {
-const list = document.getElementById(‘histList’);
-const items = bkAll();
-if (!items.length) {
-list.innerHTML = ‘<div class="hist-empty">まだ履歴がありません<br>小説を読むと自動で保存されます</div>’;
-return;
-}
-list.innerHTML = items.map(bk => {
-const d = new Date(bk.ts);
-const dateStr = d.getMonth()+1+’/’+d.getDate()+’ ‘+d.getHours()+’:’+String(d.getMinutes()).padStart(2,‘0’);
-const newInfo = _newChapCache[bk.novelId];
-const diff = newInfo?.diff || (bk.hasNew ? bk.newDiff : 0) || 0;
-const newBadge = diff > 0 ? ‘<span class="hist-new">NEW +’ + diff + ‘話</span>’ : ‘’;
-return ‘<div class="hist-item" id="hi-' + esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_') + '" onclick="resumeFrom(\'' + esc(bk.novelId) + '\')">’ +
-‘<div class="hist-thumb">📖</div>’ +
-‘<div class="hist-main">’ +
-‘<div class="hist-title">’ + esc(bk.novelTitle||bk.chapterTitle) + ‘</div>’ +
-(function(){
-var ct=bk.chapterTitle||’’,nt=bk.novelTitle||’’;
-if(!ct||ct===nt||/^第\d+話?$/.test(ct.trim()))return ‘’;
-return ‘<div class="hist-chap-title">’+esc(ct)+’</div>’;
-})() +
-‘<div class="hist-meta">’ +
-(newBadge ? newBadge + ’ ’ : ‘’) +
-‘<span>第’ + (bk.chapterNum||’?’) + ‘話</span>’ +
-‘<span>段落’ + (bk.segIdx+1) + ‘</span>’ +
-‘<span>’ + dateStr + ‘</span>’ +
-‘</div>’ +
-‘</div>’ +
-‘<button class="hist-del" onclick="event.stopPropagation();delHist(\'' + esc(bk.novelId) + '\')">✕</button>’ +
-‘</div>’;
-}).join(’’);
-items.forEach(bk => {
-if (!bk.tocUrl || !bk.totalChap) return;
-const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
-if (Date.now() - lastCheck < 3600000) return;
-checkNewChapter(bk);
-});
+  const list = document.getElementById('histList');
+  const items = bkAll();
+  if (!items.length) {
+    list.innerHTML = '<div class="hist-empty">まだ履歴がありません<br>小説を読むと自動で保存されます</div>';
+    return;
+  }
+  list.innerHTML = items.map(bk => {
+    const d = new Date(bk.ts);
+    const dateStr = d.getMonth()+1+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
+    const newInfo = _newChapCache[bk.novelId];
+    const diff = newInfo?.diff || (bk.hasNew ? bk.newDiff : 0) || 0;
+    const newBadge = diff > 0 ? '<span class="hist-new">NEW +' + diff + '話</span>' : '';
+    return '<div class="hist-item" id="hi-' + esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_') + '" onclick="resumeFrom(\'' + esc(bk.novelId) + '\')">' +
+      '<div class="hist-thumb">📖</div>' +
+      '<div class="hist-main">' +
+        '<div class="hist-title">' + esc(bk.novelTitle||bk.chapterTitle) + '</div>' +
+        (function(){
+          var ct=bk.chapterTitle||'',nt=bk.novelTitle||'';
+          if(!ct||ct===nt||/^第\d+話?$/.test(ct.trim()))return '';
+          return '<div class="hist-chap-title">'+esc(ct)+'</div>';
+        })() +
+        '<div class="hist-meta">' +
+          (newBadge ? newBadge + ' ' : '') +
+          '<span>第' + (bk.chapterNum||'?') + '話</span>' +
+          '<span>段落' + (bk.segIdx+1) + '</span>' +
+          '<span>' + dateStr + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<button class="hist-del" onclick="event.stopPropagation();delHist(\'' + esc(bk.novelId) + '\')">✕</button>' +
+    '</div>';
+  }).join('');
+  items.forEach(bk => {
+    if (!bk.tocUrl || !bk.totalChap) return;
+    const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
+    if (Date.now() - lastCheck < 3600000) return;
+    checkNewChapter(bk);
+  });
 }
 async function checkNewChapter(bk) {
-const tocUrl = bk.tocUrl || inferTocUrl(bk.chapterUrl);
-if (!tocUrl) return;
-try {
-const html = await fetchHtml(tocUrl);
-const isKakuyomuBk = bk.chapterUrl && bk.chapterUrl.includes(‘kakuyomu.jp’);
-const items = isKakuyomuBk ? parseKakuyomuToc(html, tocUrl) : parseSyosetuToc(html, tocUrl);
-if (!items.length) return;
-const current = items.length;
-const saved = bk.totalChap || 0;
-const diff = Math.max(0, current - saved);
-*newChapCache[bk.novelId] = { total: current, diff, checkedAt: Date.now() };
-if (!bk.tocUrl) bkSetToc(bk.novelId, tocUrl, current);
-if (diff > 0) {
-const all = bkLoad();
-if (all[bk.novelId]) {
-all[bk.novelId].hasNew = true;
-all[bk.novelId].newDiff = diff;
-bkSave(all);
-}
-renderHistList();
-}
-} catch(e) {}
+  const tocUrl = bk.tocUrl || inferTocUrl(bk.chapterUrl);
+  if (!tocUrl) return;
+  try {
+    const html = await fetchHtml(tocUrl);
+    const isKakuyomuBk = bk.chapterUrl && bk.chapterUrl.includes('kakuyomu.jp');
+    const items = isKakuyomuBk ? parseKakuyomuToc(html, tocUrl) : parseSyosetuToc(html, tocUrl);
+    if (!items.length) return;
+    const current = items.length;
+    const saved = bk.totalChap || 0;
+    const diff = Math.max(0, current - saved);
+    _newChapCache[bk.novelId] = { total: current, diff, checkedAt: Date.now() };
+    if (!bk.tocUrl) bkSetToc(bk.novelId, tocUrl, current);
+    if (diff > 0) {
+      const all = bkLoad();
+      if (all[bk.novelId]) {
+        all[bk.novelId].hasNew = true;
+        all[bk.novelId].newDiff = diff;
+        bkSave(all);
+      }
+      renderHistList();
+    }
+  } catch(e) {}
 }
 async function resumeFrom(novelId) {
-const bk = bkGet(novelId);
-if (!bk) { toast(‘しおりが見つかりません’); return; }
-const all = bkLoad();
-if (all[novelId]) { delete all[novelId].hasNew; delete all[novelId].newDiff; bkSave(all); }
-delete *newChapCache[novelId];
-switchTab(‘read’);
-document.getElementById(‘urlIn’).value = bk.novelId;
-stop(); disable(true); showFetch(‘load’,‘履歴から読み込み中…’);
-try {
-const cacheKey = makePageCacheKey(bk.chapterUrl);
-const cached = sessionStorage.getItem(cacheKey);
-const isKakuyomu = bk.chapterUrl && bk.chapterUrl.includes(‘kakuyomu.jp’);
-if (!cached && isKakuyomu) {
-hideFetch();
-disable(false);
-currentNovelId = novelId;
-currentNovelTitle = bk.novelTitle || bk.chapterTitle || ‘’;
-await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId,
-chapNumFromUrl(bk.chapterUrl) || bk.chapterNum || 1,
-‘’);
-return;
-}
-let html;
-if (cached) {
-html = cached;
-showFetch(‘load’,‘キャッシュから復元中…’);
-} else {
-showFetch(‘load’,‘ページ取得中… (初回は時間がかかります)’);
-html = await fetchHtml(bk.chapterUrl);
-safeSessionSet(cacheKey, html);
-}
-const page = extractPage(html, bk.chapterUrl);
-currentNovelId = novelId;
-currentNovelTitle = page.novelTitle || bk.novelTitle || page.title;
-currentChapterTitle = page.title;
-const resumeUrlNum = chapNumFromUrl(bk.chapterUrl);
-const titleNumMatch = (bk.chapterTitle || ‘’).match(/^第(\d+)話/);
-const titleNum = titleNumMatch ? parseInt(titleNumMatch[1]) : 0;
-currentChapterNum = resumeUrlNum || titleNum || bk.chapterNum || 1;
-if (!queue.find(q=>q.url===bk.chapterUrl)) { queue.push({url:bk.chapterUrl,title:page.title,done:false}); qi=queue.length-1; trimQueue(); }
-else qi = queue.findIndex(q=>q.url===bk.chapterUrl);
-displayPage(page, bk.chapterUrl, bk.segIdx||0, null);
-startSilentAudio();
-hideFetch();
-document.getElementById(‘bgTip’).classList.add(‘show’);
-} catch(e) { showFetch(‘err’, e.message); }
-disable(false);
+  const bk = bkGet(novelId);
+  if (!bk) { toast('しおりが見つかりません'); return; }
+  const all = bkLoad();
+  if (all[novelId]) { delete all[novelId].hasNew; delete all[novelId].newDiff; bkSave(all); }
+  delete _newChapCache[novelId];
+  switchTab('read');
+  document.getElementById('urlIn').value = bk.novelId;
+  stop(); disable(true); showFetch('load','履歴から読み込み中…');
+  try {
+    const cacheKey = makePageCacheKey(bk.chapterUrl);
+    const cached = sessionStorage.getItem(cacheKey);
+    const isKakuyomu = bk.chapterUrl && bk.chapterUrl.includes('kakuyomu.jp');
+    if (!cached && isKakuyomu) {
+      hideFetch();
+      disable(false);
+      currentNovelId = novelId;
+      currentNovelTitle = bk.novelTitle || bk.chapterTitle || '';
+      await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId,
+        chapNumFromUrl(bk.chapterUrl) || bk.chapterNum || 1,
+        '');
+      return;
+    }
+    let html;
+    if (cached) {
+      html = cached;
+      showFetch('load','キャッシュから復元中…');
+    } else {
+      showFetch('load','ページ取得中… (初回は時間がかかります)');
+      html = await fetchHtml(bk.chapterUrl);
+      safeSessionSet(cacheKey, html);
+    }
+    const page = extractPage(html, bk.chapterUrl);
+    currentNovelId = novelId;
+    currentNovelTitle = page.novelTitle || bk.novelTitle || page.title;
+    currentChapterTitle = page.title;
+    const resumeUrlNum = chapNumFromUrl(bk.chapterUrl);
+    const titleNumMatch = (bk.chapterTitle || '').match(/^第(\d+)話/);
+    const titleNum = titleNumMatch ? parseInt(titleNumMatch[1]) : 0;
+    currentChapterNum = resumeUrlNum || titleNum || bk.chapterNum || 1;
+    if (!queue.find(q=>q.url===bk.chapterUrl)) { queue.push({url:bk.chapterUrl,title:page.title,done:false}); qi=queue.length-1; trimQueue(); }
+    else qi = queue.findIndex(q=>q.url===bk.chapterUrl);
+    displayPage(page, bk.chapterUrl, bk.segIdx||0, null);
+    startSilentAudio();
+    hideFetch();
+    document.getElementById('bgTip').classList.add('show');
+  } catch(e) { showFetch('err', e.message); }
+  disable(false);
 }
 function delHist(novelId) {
-bkDel(novelId);
-renderHistList();
-toast(‘削除しました’);
+  bkDel(novelId);
+  renderHistList();
+  toast('削除しました');
 }
 function urlHash(str) {
-let h = 5381;
-for (let i = 0; i < str.length; i++) {
-h = ((h << 5) + h) ^ str.charCodeAt(i);
-h = h >>> 0;
-}
-return h.toString(16).padStart(8, ‘0’);
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = ((h << 5) + h) ^ str.charCodeAt(i);
+    h = h >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
 }
 function makePageCacheKey(url) {
-return SS_PAGE_CACHE_PREFIX + urlHash(url) + ’*’ + urlHash(url.split(’’).reverse().join(’’));
+  return SS_PAGE_CACHE_PREFIX + urlHash(url) + '_' + urlHash(url.split('').reverse().join(''));
 }
-const SS_PAGE_CACHE_PREFIX = ’yogatari_pc*’;
+const SS_PAGE_CACHE_PREFIX = 'yogatari_pc_';
 const SS_PAGE_CACHE_MAX_ENTRIES = 3;
 const SS_PAGE_CACHE_MAX_BYTES = 600000;
 function safeSessionSet(key, data) {
-if (!data || data.length > SS_PAGE_CACHE_MAX_BYTES) return;
-try {
-const existing = Object.keys(sessionStorage).filter(k => k.startsWith(SS_PAGE_CACHE_PREFIX));
-if (existing.length >= SS_PAGE_CACHE_MAX_ENTRIES) {
-sessionStorage.removeItem(existing[0]);
-}
-sessionStorage.setItem(key, data);
-} catch(e) {
-try {
-Object.keys(sessionStorage)
-.filter(k => k.startsWith(SS_PAGE_CACHE_PREFIX))
-.forEach(k => sessionStorage.removeItem(k));
-sessionStorage.setItem(key, data);
-} catch(e2) {}
-}
+  if (!data || data.length > SS_PAGE_CACHE_MAX_BYTES) return;
+  try {
+    const existing = Object.keys(sessionStorage).filter(k => k.startsWith(SS_PAGE_CACHE_PREFIX));
+    if (existing.length >= SS_PAGE_CACHE_MAX_ENTRIES) {
+      sessionStorage.removeItem(existing[0]);
+    }
+    sessionStorage.setItem(key, data);
+  } catch(e) {
+    try {
+      Object.keys(sessionStorage)
+        .filter(k => k.startsWith(SS_PAGE_CACHE_PREFIX))
+        .forEach(k => sessionStorage.removeItem(k));
+      sessionStorage.setItem(key, data);
+    } catch(e2) {}
+  }
 }
 let _cfmCallback = null;
 function openConfirm(title, msg, onOk) {
-_cfmCallback = onOk;
-document.getElementById(‘cfmTitle’).textContent = title;
-document.getElementById(‘cfmMsg’).textContent = msg;
-document.getElementById(‘cfmOkBtn’).onclick = () => { closeConfirm(); if(_cfmCallback) _cfmCallback(); };
-document.getElementById(‘cfmOverlay’).classList.add(‘show’);
+  _cfmCallback = onOk;
+  document.getElementById('cfmTitle').textContent = title;
+  document.getElementById('cfmMsg').textContent = msg;
+  document.getElementById('cfmOkBtn').onclick = () => { closeConfirm(); if(_cfmCallback) _cfmCallback(); };
+  document.getElementById('cfmOverlay').classList.add('show');
 }
 function closeConfirm() {
-document.getElementById(‘cfmOverlay’).classList.remove(‘show’);
-_cfmCallback = null;
+  document.getElementById('cfmOverlay').classList.remove('show');
+  _cfmCallback = null;
 }
-function openReadme()  { document.getElementById(‘rdmOverlay’).classList.add(‘show’); }
-function closeReadme() { document.getElementById(‘rdmOverlay’).classList.remove(‘show’); }
+function openReadme()  { document.getElementById('rdmOverlay').classList.add('show'); }
+function closeReadme() { document.getElementById('rdmOverlay').classList.remove('show'); }
+var _sleepEnd = 0;
+var _sleepTick = null;
+function toggleSleepRow() {
+  var row = document.getElementById('sleepRow');
+  if (!row) return;
+  if (row.classList.contains('show')) { row.classList.remove('show'); }
+  else { row.classList.add('show'); }
+}
+function setSleepTimer(mins) {
+  if (_sleepTick) { clearInterval(_sleepTick); _sleepTick = null; }
+  _sleepEnd = Date.now() + mins * 60000;
+  document.getElementById('sleepRow').classList.add('show');
+  var el = document.getElementById('sleepVal');
+  if (el) el.className = 'sleep-val on';
+  _sleepTick = setInterval(function() {
+    var rem = _sleepEnd - Date.now();
+    if (rem <= 0) {
+      clearInterval(_sleepTick); _sleepTick = null;
+      if (playing) togglePlay();
+      toast('睡眠タイマー：再生を停止しました。');
+      var v = document.getElementById('sleepVal');
+      if (v) { v.textContent = '--:--'; v.className = 'sleep-val'; }
+      return;
+    }
+    var mm = Math.floor(rem / 60000);
+    var ss = Math.floor((rem % 60000) / 1000);
+    var v2 = document.getElementById('sleepVal');
+    if (v2) v2.textContent = mm + ':' + (ss < 10 ? '0' : '') + ss;
+  }, 1000);
+}
+function cancelSleepTimer() {
+  if (_sleepTick) { clearInterval(_sleepTick); _sleepTick = null; }
+  _sleepEnd = 0;
+  var el = document.getElementById('sleepVal');
+  if (el) { el.textContent = '--:--'; el.className = 'sleep-val'; }
+}
 const VOICE_LIMITS = {
-‘Wavenet’:  { free: 4000000, warn: 3600000 },
-‘Standard’: { free: 4000000, warn: 3600000 },
-‘Neural2’:  { free: 1000000, warn:  900000 },
-‘default’:  { free: 1000000, warn:  900000 },
+  'Wavenet':  { free: 4000000, warn: 3600000 },
+  'Standard': { free: 4000000, warn: 3600000 },
+  'Neural2':  { free: 1000000, warn:  900000 },
+  'default':  { free: 1000000, warn:  900000 },
 };
 function getVoiceLimits() {
-const v = _gVoice || ‘’;
-if (v.includes(‘Wavenet’))  return VOICE_LIMITS[‘Wavenet’];
-if (v.includes(‘Standard’)) return VOICE_LIMITS[‘Standard’];
-if (v.includes(‘Neural2’))  return VOICE_LIMITS[‘Neural2’];
-return VOICE_LIMITS[‘default’];
+  const v = _gVoice || '';
+  if (v.includes('Wavenet'))  return VOICE_LIMITS['Wavenet'];
+  if (v.includes('Standard')) return VOICE_LIMITS['Standard'];
+  if (v.includes('Neural2'))  return VOICE_LIMITS['Neural2'];
+  return VOICE_LIMITS['default'];
 }
 function USAGE_WARN()  { return getVoiceLimits().warn; }
 function USAGE_LIMIT() { return getVoiceLimits().free; }
 function voiceCategory() {
-if (*gVoice.includes(‘Neural2’)) return ‘neural2’;
-if (*gVoice.includes(‘Wavenet’) || *gVoice.includes(‘wavenet’)) return ‘wavenet’;
-return ‘standard’;
+  if (_gVoice.includes('Neural2')) return 'neural2';
+  if (_gVoice.includes('Wavenet') || _gVoice.includes('wavenet')) return 'wavenet';
+  return 'standard';
 }
 function usageKey(cat) {
-const d = new Date();
-const c = cat || voiceCategory();
-return ’yogatari_usage*’ + d.getFullYear() + ’*’ + (d.getMonth()+1) + ’*’ + c;
+  const d = new Date();
+  const c = cat || voiceCategory();
+  return 'yogatari_usage_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + c;
 }
-function getUsage(cat) { return parseInt(localStorage.getItem(usageKey(cat)) || ‘0’); }
+function getUsage(cat) { return parseInt(localStorage.getItem(usageKey(cat)) || '0'); }
 function addUsage(chars) {
-const cur = getUsage() + chars;
-localStorage.setItem(usageKey(), cur);
-checkUsageAlert(cur);
-updUsageDisplay();
-return cur;
+  const cur = getUsage() + chars;
+  localStorage.setItem(usageKey(), cur);
+  checkUsageAlert(cur);
+  updUsageDisplay();
+  return cur;
 }
 function resetUsage() {
-openConfirm(
-‘使用量をリセット’,
-‘月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？’,
-() => {
-[‘standard’,‘wavenet’,‘neural2’].forEach(function(c){ localStorage.setItem(usageKey(c), ‘0’); });
-updUsageDisplay();
-toast(‘使用量をリセットしました’);
-}
-);
+  openConfirm(
+    '使用量をリセット',
+    '月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',
+    () => {
+      ['standard','wavenet','neural2'].forEach(function(c){ localStorage.setItem(usageKey(c), '0'); });
+      updUsageDisplay();
+      toast('使用量をリセットしました');
+    }
+  );
 }
 function checkUsageAlert(cur) {
-const lim = USAGE_LIMIT(), warn = USAGE_WARN();
-const limStr = (lim/10000).toFixed(0) + ‘万’;
-if (cur >= lim) {
-toast(‘⚠ 月間無料枠(’ + limStr + ‘文字)に達しました。Kyokoに切り替えます。’);
-} else if (cur >= warn) {
-toast(‘⚠ 使用量が’ + (warn/10000).toFixed(0) + ‘万文字を超えました。残り’ + Math.round((lim-cur)/10000) + ‘万文字’);
-}
+  const lim = USAGE_LIMIT(), warn = USAGE_WARN();
+  const limStr = (lim/10000).toFixed(0) + '万';
+  if (cur >= lim) {
+    toast('⚠ 月間無料枠(' + limStr + '文字)に達しました。Kyokoに切り替えます。');
+  } else if (cur >= warn) {
+    toast('⚠ 使用量が' + (warn/10000).toFixed(0) + '万文字を超えました。残り' + Math.round((lim-cur)/10000) + '万文字');
+  }
 }
 function isOverLimit() { return hasGoogleKey() && getUsage() >= USAGE_LIMIT(); }
 function updUsageDisplay() {
-var cats = [
-{ key: ‘standard’, label: ‘Standard’, limit: 4000000, warn: 3600000 },
-{ key: ‘wavenet’,  label: ‘WaveNet’,  limit: 4000000, warn: 3600000 },
-{ key: ‘neural2’,  label: ‘Neural2’,  limit: 1000000, warn:  900000 },
-];
-var wrap = document.getElementById(‘usageWrap’);
-if (!wrap) return;
-var html2 = ‘’;
-var totalUsed = 0;
-cats.forEach(function(c) {
-var cur = getUsage(c.key);
-totalUsed += cur;
-var pct = Math.min(cur / c.limit * 100, 100);
-var cls = ‘usage-fill’ + (cur >= c.limit ? ’ over’ : cur >= c.warn ? ’ warn’ : ‘’);
-html2 += ‘<div class="usage-bar-header" style="margin-top:8px">’
-+ ‘<span class="usage-bar-label">’ + c.label + ‘</span>’
-+ ‘<span class="usage-bar-val">’ + cur.toLocaleString() + ’ / ’ + (c.limit/10000).toFixed(0) + ‘万</span>’
-+ ‘</div>’
-+ ‘<div class="usage-track"><div class="' + cls + '" style="width:' + pct + '%"></div></div>’;
-});
-html2 += ‘<div class="usage-bar-header" style="margin-top:10px;border-top:1px solid #302618;padding-top:8px">’
-+ ‘<span class="usage-bar-label" style="color:#9e8660">今月合計</span>’
-+ ‘<span class="usage-bar-val">’ + totalUsed.toLocaleString() + ‘文字</span>’
-+ ‘</div>’;
-// 既存のheader/track/resetボタンを置き換え
-var resetBtn = ‘<button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>’;
-wrap.innerHTML = html2 + resetBtn;
+  var cats = [
+    { key: 'standard', label: 'Standard', limit: 4000000, warn: 3600000 },
+    { key: 'wavenet',  label: 'WaveNet',  limit: 4000000, warn: 3600000 },
+    { key: 'neural2',  label: 'Neural2',  limit: 1000000, warn:  900000 },
+  ];
+  var wrap = document.getElementById('usageWrap');
+  if (!wrap) return;
+  var html2 = '';
+  var totalUsed = 0;
+  cats.forEach(function(c) {
+    var cur = getUsage(c.key);
+    totalUsed += cur;
+    var pct = Math.min(cur / c.limit * 100, 100);
+    var cls = 'usage-fill' + (cur >= c.limit ? ' over' : cur >= c.warn ? ' warn' : '');
+    html2 += '<div class="usage-bar-header" style="margin-top:8px">'
+      + '<span class="usage-bar-label">' + c.label + '</span>'
+      + '<span class="usage-bar-val">' + cur.toLocaleString() + ' / ' + (c.limit/10000).toFixed(0) + '万</span>'
+      + '</div>'
+      + '<div class="usage-track"><div class="' + cls + '" style="width:' + pct + '%"></div></div>';
+  });
+  html2 += '<div class="usage-bar-header" style="margin-top:10px;border-top:1px solid #302618;padding-top:8px">'
+    + '<span class="usage-bar-label" style="color:#9e8660">今月合計</span>'
+    + '<span class="usage-bar-val">' + totalUsed.toLocaleString() + '文字</span>'
+    + '</div>';
+  // 既存のheader/track/resetボタンを置き換え
+  var resetBtn = '<button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>';
+  wrap.innerHTML = html2 + resetBtn;
 }
 function switchTab(name) {
-_tabSw = true;
-document.querySelectorAll(’.tab’).forEach(t => t.classList.remove(‘active’));
-document.querySelectorAll(’.panel’).forEach(p => p.classList.remove(‘active’));
-document.getElementById(‘tab-’+name).classList.add(‘active’);
-document.getElementById(‘panel-’+name).classList.add(‘active’);
-if (name===‘hist’) renderHistList();
-if (name===‘sett’) { initSettings(); updUsageDisplay(); }
-setTimeout(() => { _tabSw = false; }, 600);
+  _tabSw = true;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if (name==='hist') renderHistList();
+  if (name==='sett') { initSettings(); updUsageDisplay(); }
+  setTimeout(() => { _tabSw = false; }, 600);
 }
-document.addEventListener(‘visibilitychange’, ()=>{
-if (document.visibilityState===‘visible’) {
-if(playing && !_busy) {
-if(hasGoogleKey()) {
-const _ael = getAudioEl();
-if(!_ael || _ael.paused || _ael.ended) {
-stopGoogleAudio(); _busy=false; setTimeout(()=>speakIdx(idx),400);
-}
-} else if(!SS.speaking && !SS.pending) {
-SS.cancel(); setTimeout(()=>speakIdx(idx),300);
-}
-}
-if(_actx&&_actx.state===‘suspended’) _actx.resume().catch(()=>{});
-}
+document.addEventListener('visibilitychange', ()=>{
+  if (document.visibilityState==='visible') {
+    if(playing && !_busy) {
+      if(hasGoogleKey()) {
+        const _ael = getAudioEl();
+        if(!_ael || _ael.paused || _ael.ended) {
+          stopGoogleAudio(); _busy=false; setTimeout(()=>speakIdx(idx),400);
+        }
+      } else if(!SS.speaking && !SS.pending) {
+        SS.cancel(); setTimeout(()=>speakIdx(idx),300);
+      }
+    }
+    if(_actx&&_actx.state==='suspended') _actx.resume().catch(()=>{});
+  }
 });
-document.addEventListener(‘touchstart’, (e)=>{
-if(_actx && _actx.state===‘suspended’) _actx.resume().catch(()=>{});
-const tag = (e.target && e.target.tagName) ? e.target.tagName : ‘’;
-const cl  = (e.target && typeof e.target.className === ‘string’) ? e.target.className : ‘’;
-const skip = [‘BUTTON’,‘INPUT’,‘SELECT’,‘A’,‘LABEL’].includes(tag)
-|| cl.includes(‘cb’) || cl.includes(‘tab’) || cl.includes(‘seg’)
-|| cl.includes(‘step’) || cl.includes(‘chip’) || cl.includes(‘howto’)
-|| cl.includes(‘sleep’) || cl.includes(‘readme’)
-|| (e.target && e.target.closest && !!e.target.closest(‘button, input, select, a’));
-if (skip) return;
-if (!playing) return;
-if (hasGoogleKey()) {
-const _ael = getAudioEl(); if (_ael && _ael.src && !_ael.paused && !_ael.ended) return;
-if (!_busy) { stopGoogleAudio(); setTimeout(()=>speakIdx(idx), 300); }
-} else {
-if (!SS.speaking && !SS.pending) { SS.cancel(); setTimeout(()=>speakIdx(idx), 200); }
-}
+document.addEventListener('touchstart', (e)=>{
+  if(_actx && _actx.state==='suspended') _actx.resume().catch(()=>{});
+  const tag = e.target?.tagName || '';
+  const cl  = e.target?.className || '';
+  const skip = ['BUTTON','INPUT','SELECT','A','LABEL'].includes(tag)
+    || cl.includes('cb') || cl.includes('tab') || cl.includes('seg')
+    || cl.includes('step') || cl.includes('chip') || cl.includes('howto')
+    || e.target?.closest?.('button, input, select, a, .cb, .tab, .stepper, .q-chip');
+  if (skip) return;
+  if (!playing) return;
+  if (hasGoogleKey()) {
+    const _ael = getAudioEl(); if (_ael && _ael.src && !_ael.paused && !_ael.ended) return;
+    if (!_busy) { stopGoogleAudio(); setTimeout(()=>speakIdx(idx), 300); }
+  } else {
+    if (!SS.speaking && !SS.pending) { SS.cancel(); setTimeout(()=>speakIdx(idx), 200); }
+  }
 },{passive:true});
 let _userScrolling = false;
 let _scrollTimer   = null;
-document.addEventListener(‘scroll’, ()=>{
-_userScrolling = true;
-if(_scrollTimer) clearTimeout(_scrollTimer);
-_scrollTimer = setTimeout(()=>{ _userScrolling = false; }, 2000);
+document.addEventListener('scroll', ()=>{
+  _userScrolling = true;
+  if(_scrollTimer) clearTimeout(_scrollTimer);
+  _scrollTimer = setTimeout(()=>{ _userScrolling = false; }, 2000);
 }, {passive:true});
 function updHighlight(autoScroll=true) {
-document.querySelectorAll(’.seg’).forEach((el,i)=>{
-el.classList.remove(‘active’,‘past’);
-if(i===idx) el.classList.add(‘active’);
-else if(i<idx) el.classList.add(‘past’);
-});
-if(autoScroll && !_userScrolling) {
-const el=document.getElementById(‘s’+idx);
-if(el) el.scrollIntoView({behavior:‘smooth’,block:‘center’});
-}
+  document.querySelectorAll('.seg').forEach((el,i)=>{
+    el.classList.remove('active','past');
+    if(i===idx) el.classList.add('active');
+    else if(i<idx) el.classList.add('past');
+  });
+  if(autoScroll && !_userScrolling) {
+    const el=document.getElementById('s'+idx);
+    if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+  }
 }
 function updProg() {
-const total=segs.length, cur=Math.min(idx+1,total);
-document.getElementById(‘progNum’).textContent=cur+’ / ’+total;
-document.getElementById(‘progFill’).style.width=(total?cur/total*100:0)+’%’;
-const remEl = document.getElementById(‘vRemain’);
-if (remEl && total > 0) {
-const remSegs = segs.slice(idx);
-const remChars = remSegs.reduce((a,s)=>a+s.length, 0);
-const baseRate = hasGoogleKey() ? 360 : 250;
-const cpm = baseRate * getRate() * 0.85;
-const remMin = remChars / cpm;
-if (remMin < 1) remEl.textContent = ‘1分未満’;
-else remEl.textContent = ‘約’ + Math.ceil(remMin) + ‘分’;
-}
+  const total=segs.length, cur=Math.min(idx+1,total);
+  document.getElementById('progNum').textContent=cur+' / '+total;
+  document.getElementById('progFill').style.width=(total?cur/total*100:0)+'%';
+  const remEl = document.getElementById('vRemain');
+  if (remEl && total > 0) {
+    const remSegs = segs.slice(idx);
+    const remChars = remSegs.reduce((a,s)=>a+s.length, 0);
+    const baseRate = hasGoogleKey() ? 360 : 250;
+    const cpm = baseRate * getRate() * 0.85;
+    const remMin = remChars / cpm;
+    if (remMin < 1) remEl.textContent = '1分未満';
+    else remEl.textContent = '約' + Math.ceil(remMin) + '分';
+  }
 }
 function updBtn() {
-const b=document.getElementById(‘bPlay’);
-b.textContent=playing?‘⏸’:‘▶’; b.classList.toggle(‘on’,playing);
+  const b=document.getElementById('bPlay');
+  b.textContent=playing?'⏸':'▶'; b.classList.toggle('on',playing);
 }
 function setBadge(on) {
-document.getElementById(‘badge’).classList.toggle(‘on’,on);
-document.getElementById(‘btext’).textContent=on?‘読み上げ中’:‘待機中’;
-const tz = document.getElementById(‘tapZones’);
-if (tz) {
-tz.style.display = on ? ‘block’ : ‘none’;
-tz.style.pointerEvents = ‘none’;
-const tl = document.getElementById(‘tapL’);
-const tr = document.getElementById(‘tapR’);
-if (tl) tl.style.pointerEvents = on ? ‘auto’ : ‘none’;
-if (tr) tr.style.pointerEvents = on ? ‘auto’ : ‘none’;
-}
+  document.getElementById('badge').classList.toggle('on',on);
+  document.getElementById('btext').textContent=on?'読み上げ中':'待機中';
+  const tz = document.getElementById('tapZones');
+  if (tz) {
+    tz.style.display = on ? 'block' : 'none';
+    tz.style.pointerEvents = 'none';
+    const tl = document.getElementById('tapL');
+    const tr = document.getElementById('tapR');
+    if (tl) tl.style.pointerEvents = on ? 'auto' : 'none';
+    if (tr) tr.style.pointerEvents = on ? 'auto' : 'none';
+  }
 }
 function ctrlEnable(on) {
-[‘bPlay’,‘bPrev’,‘bFwd’].forEach(id=>{ document.getElementById(id).disabled=!on; });
-document.getElementById(‘bNext’).disabled = !(on && nextUrl);
-document.getElementById(‘bPrev2’).disabled = !(on && prevUrl);
+  ['bPlay','bPrev','bFwd'].forEach(id=>{ document.getElementById(id).disabled=!on; });
+  document.getElementById('bNext').disabled = !(on && nextUrl);
+  document.getElementById('bPrev2').disabled = !(on && prevUrl);
 }
-function disable(on) { document.getElementById(‘btnGo’).disabled=on; }
+function disable(on) { document.getElementById('btnGo').disabled=on; }
 function showFetch(type,msg) {
-const b=document.getElementById(‘fetchBox’);
-document.getElementById(‘fetchMsg’).textContent=msg;
-b.classList.remove(‘err’);
-if(type===‘err’){b.classList.add(‘err’);document.getElementById(‘spin’).style.display=‘none’;}
-else{document.getElementById(‘spin’).style.display=’’;}
-b.classList.add(‘show’);
+  const b=document.getElementById('fetchBox');
+  document.getElementById('fetchMsg').textContent=msg;
+  b.classList.remove('err');
+  if(type==='err'){b.classList.add('err');document.getElementById('spin').style.display='none';}
+  else{document.getElementById('spin').style.display='';}
+  b.classList.add('show');
 }
-function hideFetch() { document.getElementById(‘fetchBox’).classList.remove(‘show’); }
+function hideFetch() { document.getElementById('fetchBox').classList.remove('show'); }
 function resetAll() {
-stop(); stopSilentAudio();
-document.getElementById(‘urlIn’).value=’’;
-hideFetch(); hideResumeBanner();
-document.getElementById(‘chapInfo’).classList.remove(‘show’);
-document.getElementById(‘progWrap’).classList.remove(‘show’);
-document.getElementById(‘novelText’).classList.remove(‘show’);
-document.getElementById(‘bgTip’).classList.remove(‘show’);
-queue=[]; qi=0; nextUrl=null; prevUrl=null;
-renderQueue(); ctrlEnable(false);
+  stop(); stopSilentAudio();
+  document.getElementById('urlIn').value='';
+  hideFetch(); hideResumeBanner();
+  document.getElementById('chapInfo').classList.remove('show');
+  document.getElementById('progWrap').classList.remove('show');
+  document.getElementById('novelText').classList.remove('show');
+  document.getElementById('bgTip').classList.remove('show');
+  queue=[]; qi=0; nextUrl=null; prevUrl=null;
+  renderQueue(); ctrlEnable(false);
 }
 function toast(msg) {
-const t=document.getElementById(‘toast’);
-t.textContent=msg; t.classList.add(‘show’);
-setTimeout(()=>t.classList.remove(‘show’),2600);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
 }
-let _rate  = parseFloat(localStorage.getItem(‘yogatari_rate’))  || 1.1;
-let _pitch = parseFloat(localStorage.getItem(‘yogatari_pitch’)) || 1.0;
+let _rate  = parseFloat(localStorage.getItem('yogatari_rate'))  || 1.1;
+let _pitch = parseFloat(localStorage.getItem('yogatari_pitch')) || 1.0;
 const RATE_MIN=0.5, RATE_MAX=2.5, RATE_STEP=0.1;
 const PITCH_MIN=0.5, PITCH_MAX=2.0, PITCH_STEP=0.1;
 function stepRate(dir) {
-_rate = Math.round(Math.min(RATE_MAX, Math.max(RATE_MIN, _rate + dir*RATE_STEP)) * 10) / 10;
-document.getElementById(‘vRate’).textContent = _rate.toFixed(1)+‘×’;
-localStorage.setItem(‘yogatari_rate’, _rate);
+  _rate = Math.round(Math.min(RATE_MAX, Math.max(RATE_MIN, _rate + dir*RATE_STEP)) * 10) / 10;
+  document.getElementById('vRate').textContent = _rate.toFixed(1)+'×';
+  localStorage.setItem('yogatari_rate', _rate);
 }
 function stepPitch(dir) {
-_pitch = Math.round(Math.min(PITCH_MAX, Math.max(PITCH_MIN, _pitch + dir*PITCH_STEP)) * 10) / 10;
-document.getElementById(‘vPitch’).textContent = _pitch.toFixed(1);
-localStorage.setItem(‘yogatari_pitch’, _pitch);
+  _pitch = Math.round(Math.min(PITCH_MAX, Math.max(PITCH_MIN, _pitch + dir*PITCH_STEP)) * 10) / 10;
+  document.getElementById('vPitch').textContent = _pitch.toFixed(1);
+  localStorage.setItem('yogatari_pitch', _pitch);
 }
 function getRate()  { return _rate; }
 function getPitch() { return _pitch; }
 function onGVoiceChange() {
-const sel = document.getElementById(‘googleVoiceSel’);
-if (sel && sel.value) {
-_gVoice = sel.value;
-localStorage.setItem(‘yogatari_gvoice’, _gVoice);
-}
-clearPrefetchCache();
-const note = document.getElementById(‘voiceLimitNote’);
-if (note) {
-const isWave = _gVoice.includes(‘Wavenet’) || _gVoice.includes(‘Standard’);
-note.innerHTML = isWave ? ‘WaveNet / Standard：月<b>400万文字</b>まで無料’ : ‘Neural2：月<b>100万文字</b>まで無料’;
-}
-updModeDisplay();
-updUsageDisplay();
+  const sel = document.getElementById('googleVoiceSel');
+  if (sel && sel.value) {
+    _gVoice = sel.value;
+    localStorage.setItem('yogatari_gvoice', _gVoice);
+  }
+  clearPrefetchCache();
+  const note = document.getElementById('voiceLimitNote');
+  if (note) {
+    const isWave = _gVoice.includes('Wavenet') || _gVoice.includes('Standard');
+    note.innerHTML = isWave ? 'WaveNet / Standard：月<b>400万文字</b>まで無料' : 'Neural2：月<b>100万文字</b>まで無料';
+  }
+  updModeDisplay();
+  updUsageDisplay();
 }
 async function testVoice() {
-if (!hasGoogleKey()) { toast(‘APIキーを先に保存してください’); return; }
-const btn = document.getElementById(‘testVoiceBtn’);
-if (btn) btn.classList.add(‘testing’);
-const sel = document.getElementById(‘googleVoiceSel’);
-if (sel && sel.value) { _gVoice = sel.value; localStorage.setItem(‘yogatari_gvoice’, _gVoice); }
-try {
-const src = await fetchGoogleAudio(‘こんにちは。これは’ + friendlyVoiceName(_gVoice) + ‘の声です。いかがでしょうか。’);
-const a = new Audio(src);
-a.onended = () => { if(btn) btn.classList.remove(‘testing’); };
-a.onerror = () => { if(btn) btn.classList.remove(‘testing’); toast(‘再生エラー’); };
-a.play().catch(()=>{ if(btn) btn.classList.remove(‘testing’); toast(‘再生できませんでした’); });
-} catch(e) {
-if(btn) btn.classList.remove(‘testing’);
-toast(‘⚠ ’ + (e.message||‘試聴エラー’).slice(0,40));
+  if (!hasGoogleKey()) { toast('APIキーを先に保存してください'); return; }
+  const btn = document.getElementById('testVoiceBtn');
+  if (btn) btn.classList.add('testing');
+  const sel = document.getElementById('googleVoiceSel');
+  if (sel && sel.value) { _gVoice = sel.value; localStorage.setItem('yogatari_gvoice', _gVoice); }
+  try {
+    const src = await fetchGoogleAudio('こんにちは。これは' + friendlyVoiceName(_gVoice) + 'の声です。いかがでしょうか。');
+    const a = new Audio(src);
+    a.onended = () => { if(btn) btn.classList.remove('testing'); };
+    a.onerror = () => { if(btn) btn.classList.remove('testing'); toast('再生エラー'); };
+    a.play().catch(()=>{ if(btn) btn.classList.remove('testing'); toast('再生できませんでした'); });
+  } catch(e) {
+    if(btn) btn.classList.remove('testing');
+    toast('⚠ ' + (e.message||'試聴エラー').slice(0,40));
+  }
 }
-}
-function onVoice() { const i=+document.getElementById(‘voiceSel’).value; if(!isNaN(i)) selVoice=voices[i]; }
-let _bgOn  = localStorage.getItem(‘yogatari_bg’) === ‘1’;
+function onVoice() { const i=+document.getElementById('voiceSel').value; if(!isNaN(i)) selVoice=voices[i]; }
+let _bgOn  = localStorage.getItem('yogatari_bg') === '1';
 let _bgRaf = null;
-let _bgCond= ‘clear’;
+let _bgCond= 'clear';
 let _bgCondTimer = 0;
 const BG_FRAME_INTERVAL = 1000 / 30;
 let _bgLastFrame = 0;
-const bgCv  = document.getElementById(‘bgCanvas’);
-const bgCtx = bgCv ? bgCv.getContext(‘2d’) : null;
+const bgCv  = document.getElementById('bgCanvas');
+const bgCtx = bgCv ? bgCv.getContext('2d') : null;
 let _stars=[], _clouds=[], _drops=[], _flakes=[], _shootings=[], _auroras=[];
 function bgResize() {
-if (!bgCv) return;
-bgCv.width = window.innerWidth;
-bgCv.height = window.innerHeight;
+  if (!bgCv) return;
+  bgCv.width = window.innerWidth;
+  bgCv.height = window.innerHeight;
 }
 function initStars(n) {
-_stars = Array.from({length:n}, () => ({
-x: Math.random() * bgCv.width,
-y: Math.random() * bgCv.height * 0.82,
-r: Math.random() * 1.5 + 0.3,
-a: Math.random(), da: (Math.random()-0.5)*0.007,
-}));
+  _stars = Array.from({length:n}, () => ({
+    x: Math.random() * bgCv.width,
+    y: Math.random() * bgCv.height * 0.82,
+    r: Math.random() * 1.5 + 0.3,
+    a: Math.random(), da: (Math.random()-0.5)*0.007,
+  }));
 }
 function initClouds(n) {
-_clouds = Array.from({length:n}, () => ({
-x: Math.random() * bgCv.width * 1.5,
-y: Math.random() * bgCv.height * 0.55,
-w: Math.random() * 200 + 80, h: Math.random() * 55 + 28,
-spd: Math.random() * 0.2 + 0.06, a: Math.random() * 0.3 + 0.1,
-}));
+  _clouds = Array.from({length:n}, () => ({
+    x: Math.random() * bgCv.width * 1.5,
+    y: Math.random() * bgCv.height * 0.55,
+    w: Math.random() * 200 + 80, h: Math.random() * 55 + 28,
+    spd: Math.random() * 0.2 + 0.06, a: Math.random() * 0.3 + 0.1,
+  }));
 }
 function initRain(n) {
-_drops = Array.from({length:n}, () => ({
-x: Math.random()*bgCv.width, y: Math.random()*bgCv.height,
-len: Math.random()*14+6, spd: Math.random()*7+7, a: Math.random()*0.4+0.15,
-}));
+  _drops = Array.from({length:n}, () => ({
+    x: Math.random()*bgCv.width, y: Math.random()*bgCv.height,
+    len: Math.random()*14+6, spd: Math.random()*7+7, a: Math.random()*0.4+0.15,
+  }));
 }
 function initSnow(n) {
-_flakes = Array.from({length:n}, () => ({
-x: Math.random()*bgCv.width, y: Math.random()*bgCv.height,
-r: Math.random()*3+1, spd: Math.random()*1.2+0.4,
-drift: (Math.random()-0.5)*0.5, a: Math.random()*0.6+0.3,
-}));
+  _flakes = Array.from({length:n}, () => ({
+    x: Math.random()*bgCv.width, y: Math.random()*bgCv.height,
+    r: Math.random()*3+1, spd: Math.random()*1.2+0.4,
+    drift: (Math.random()-0.5)*0.5, a: Math.random()*0.6+0.3,
+  }));
 }
 function initAuroras(n) {
-_auroras = Array.from({length:n}, () => ({
-x: Math.random()*bgCv.width, y: bgCv.height*0.05 + Math.random()*bgCv.height*0.25,
-w: Math.random()*180+120, h: Math.random()*140+80,
-hue: Math.random()*60+140,
-a: Math.random()*0.18+0.05, da: (Math.random()-0.5)*0.003,
-drift: (Math.random()-0.5)*0.15,
-}));
+  _auroras = Array.from({length:n}, () => ({
+    x: Math.random()*bgCv.width, y: bgCv.height*0.05 + Math.random()*bgCv.height*0.25,
+    w: Math.random()*180+120, h: Math.random()*140+80,
+    hue: Math.random()*60+140,
+    a: Math.random()*0.18+0.05, da: (Math.random()-0.5)*0.003,
+    drift: (Math.random()-0.5)*0.15,
+  }));
 }
-const WEATHER_LIST = [‘clear’,‘clear’,‘clear’,‘cloudy’,‘rain’,‘snow’,‘aurora’];
+const WEATHER_LIST = ['clear','clear','clear','cloudy','rain','snow','aurora'];
 function pickRandomCond() { return WEATHER_LIST[Math.floor(Math.random()*WEATHER_LIST.length)]; }
 function getMoonPhase() {
-const knownNew = new Date(2000,0,6,18,14,0);
-const lunarCycle = 29.53058867;
-const diff = (Date.now() - knownNew) / 86400000;
-return ((diff % lunarCycle) + lunarCycle) % lunarCycle / lunarCycle;
+  const knownNew = new Date(2000,0,6,18,14,0);
+  const lunarCycle = 29.53058867;
+  const diff = (Date.now() - knownNew) / 86400000;
+  return ((diff % lunarCycle) + lunarCycle) % lunarCycle / lunarCycle;
 }
 function getMoonPosition() {
-const h = new Date().getHours() + new Date().getMinutes()/60;
-const t = h < 6 ? h+24 : h;
-const progress = Math.max(0, Math.min(1, (t-20)/10));
-const angle = Math.PI * progress;
-return { x: 0.85 - Math.sin(angle)*0.65, y: 0.36 - Math.sin(angle)*0.22 };
+  const h = new Date().getHours() + new Date().getMinutes()/60;
+  const t = h < 6 ? h+24 : h;
+  const progress = Math.max(0, Math.min(1, (t-20)/10));
+  const angle = Math.PI * progress;
+  return { x: 0.85 - Math.sin(angle)*0.65, y: 0.36 - Math.sin(angle)*0.22 };
 }
 function drawMoonPhase(ctx, cx, cy, r, phase) {
-ctx.save();
-ctx.fillStyle = ‘#f0e8c0’;
-ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
-ctx.globalCompositeOperation = ‘source-atop’;
-const p = phase < 0.5 ? phase*2 : (phase-0.5)*2;
-const shadowX = phase < 0.5 ? cx+r*(1-p*2) : cx+r*(p*2-1);
-ctx.fillStyle = ‘#030710’;
-ctx.beginPath();
-if (phase < 0.5) {
-ctx.arc(cx,cy,r, Math.PI/2,-Math.PI/2);
-ctx.bezierCurveTo(shadowX,cy-r,shadowX,cy+r,cx,cy+r);
-} else {
-ctx.arc(cx,cy,r,-Math.PI/2,Math.PI/2);
-ctx.bezierCurveTo(shadowX,cy+r,shadowX,cy-r,cx,cy-r);
-}
-ctx.closePath(); ctx.fill();
-ctx.globalCompositeOperation = ‘source-over’;
-ctx.strokeStyle = ‘rgba(255,245,200,0.5)’;
-ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
-ctx.restore();
+  ctx.save();
+  ctx.fillStyle = '#f0e8c0';
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+  ctx.globalCompositeOperation = 'source-atop';
+  const p = phase < 0.5 ? phase*2 : (phase-0.5)*2;
+  const shadowX = phase < 0.5 ? cx+r*(1-p*2) : cx+r*(p*2-1);
+  ctx.fillStyle = '#030710';
+  ctx.beginPath();
+  if (phase < 0.5) {
+    ctx.arc(cx,cy,r, Math.PI/2,-Math.PI/2);
+    ctx.bezierCurveTo(shadowX,cy-r,shadowX,cy+r,cx,cy+r);
+  } else {
+    ctx.arc(cx,cy,r,-Math.PI/2,Math.PI/2);
+    ctx.bezierCurveTo(shadowX,cy+r,shadowX,cy-r,cx,cy-r);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = 'rgba(255,245,200,0.5)';
+  ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+  ctx.restore();
 }
 function drawRealCloud(ctx, cx, cy, w, h, cond) {
-const isDark = cond===‘rain’;
-const baseL = isDark ? ‘rgba(55,60,75,’ : ‘rgba(75,85,115,’;
-const baseS = isDark ? ‘rgba(35,38,48,’ : ‘rgba(45,50,72,’;
-const bumps = [
-{dx:0,dy:0,rx:w*0.42,ry:h*0.55},{dx:-w*0.28,dy:h*0.18,rx:w*0.30,ry:h*0.45},
-{dx:w*0.28,dy:h*0.15,rx:w*0.32,ry:h*0.42},{dx:-w*0.50,dy:h*0.32,rx:w*0.22,ry:h*0.32},
-{dx:w*0.50,dy:h*0.28,rx:w*0.24,ry:h*0.30},{dx:-w*0.15,dy:-h*0.15,rx:w*0.28,ry:h*0.38},
-{dx:w*0.18,dy:-h*0.12,rx:w*0.26,ry:h*0.36},
-];
-ctx.fillStyle = baseS+‘0.65)’;
-bumps.forEach(b=>{ ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy+h*0.12,b.rx*0.95,b.ry*0.7,0,0,Math.PI*2); ctx.fill(); });
-bumps.forEach((b,i)=>{ ctx.fillStyle=baseL+(i===0?‘0.88)’:‘0.80)’); ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy,b.rx,b.ry,0,0,Math.PI*2); ctx.fill(); });
+  const isDark = cond==='rain';
+  const baseL = isDark ? 'rgba(55,60,75,' : 'rgba(75,85,115,';
+  const baseS = isDark ? 'rgba(35,38,48,' : 'rgba(45,50,72,';
+  const bumps = [
+    {dx:0,dy:0,rx:w*0.42,ry:h*0.55},{dx:-w*0.28,dy:h*0.18,rx:w*0.30,ry:h*0.45},
+    {dx:w*0.28,dy:h*0.15,rx:w*0.32,ry:h*0.42},{dx:-w*0.50,dy:h*0.32,rx:w*0.22,ry:h*0.32},
+    {dx:w*0.50,dy:h*0.28,rx:w*0.24,ry:h*0.30},{dx:-w*0.15,dy:-h*0.15,rx:w*0.28,ry:h*0.38},
+    {dx:w*0.18,dy:-h*0.12,rx:w*0.26,ry:h*0.36},
+  ];
+  ctx.fillStyle = baseS+'0.65)';
+  bumps.forEach(b=>{ ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy+h*0.12,b.rx*0.95,b.ry*0.7,0,0,Math.PI*2); ctx.fill(); });
+  bumps.forEach((b,i)=>{ ctx.fillStyle=baseL+(i===0?'0.88)':'0.80)'); ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy,b.rx,b.ry,0,0,Math.PI*2); ctx.fill(); });
 }
 function maybeShoot() {
-if (Math.random()<0.004 && _shootings.length<3)
-_shootings.push({x:Math.random()*bgCv.width, y:Math.random()*bgCv.height*0.4,
-vx:(Math.random()*4+3)*(Math.random()<0.5?1:-1), vy:Math.random()*3+2, life:1.0});
+  if (Math.random()<0.004 && _shootings.length<3)
+    _shootings.push({x:Math.random()*bgCv.width, y:Math.random()*bgCv.height*0.4,
+      vx:(Math.random()*4+3)*(Math.random()<0.5?1:-1), vy:Math.random()*3+2, life:1.0});
 }
 function drawBg() {
-if (!bgCtx || !bgCv.width) return;
-const W=bgCv.width, H=bgCv.height;
-const cond = _bgCond;
-_bgCondTimer++;
-if (_bgCondTimer > 60 * (30 + Math.random()*60)) { _bgCond = pickRandomCond(); _bgCondTimer = 0; }
-const grad = bgCtx.createLinearGradient(0,0,0,H);
-if (cond===‘rain’) { grad.addColorStop(0,’#080d18’); grad.addColorStop(1,’#131e28’); }
-else if (cond===‘snow’) { grad.addColorStop(0,’#0e1220’); grad.addColorStop(1,’#1c202e’); }
-else if (cond===‘cloudy’) { grad.addColorStop(0,’#080c18’); grad.addColorStop(1,’#141828’); }
-else if (cond===‘aurora’) { grad.addColorStop(0,’#020408’); grad.addColorStop(0.5,’#021408’); grad.addColorStop(1,’#040a10’); }
-else { grad.addColorStop(0,’#020408’); grad.addColorStop(1,’#050810’); }
-bgCtx.fillStyle=grad; bgCtx.fillRect(0,0,W,H);
-if (cond===‘aurora’) {
-_auroras.forEach(au => {
-au.a += au.da; if(au.a>0.22||au.a<0.04) au.da*=-1;
-au.x += au.drift; if(au.x>W+au.w) au.x=-au.w; if(au.x<-au.w) au.x=W+au.w;
-const ag = bgCtx.createRadialGradient(au.x,au.y,0,au.x,au.y,au.w);
-ag.addColorStop(0, ‘hsla(’+au.hue+’,100%,55%,’+au.a+’)’);
-ag.addColorStop(0.4,‘hsla(’+(au.hue+20)+’,90%,45%,’+(au.a*0.6)+’)’);
-ag.addColorStop(1, ‘hsla(’+au.hue+’,80%,40%,0)’);
-bgCtx.fillStyle=ag;
-bgCtx.beginPath(); bgCtx.ellipse(au.x, au.y, au.w, au.h, 0, 0, Math.PI*2); bgCtx.fill();
-});
-_auroras.forEach(au => {
-for(let i=-3;i<=3;i++){
-const sx=au.x+i*au.w*0.15;
-const sg=bgCtx.createLinearGradient(sx,au.y-au.h,sx,au.y+au.h*1.5);
-sg.addColorStop(0,‘hsla(’+(au.hue+i*8)+’,100%,60%,0)’);
-sg.addColorStop(0.3,‘hsla(’+(au.hue+i*8)+’,100%,55%,’+(au.a*0.7)+’)’);
-sg.addColorStop(0.7,‘hsla(’+(au.hue+i*8+30)+’,90%,45%,’+(au.a*0.4)+’)’);
-sg.addColorStop(1,‘hsla(’+(au.hue)+’,80%,40%,0)’);
-bgCtx.fillStyle=sg;
-bgCtx.fillRect(sx-6, au.y-au.h, 12, au.h*2.5);
-}
-});
-}
-if (cond!==‘rain’) {
-const phase=getMoonPhase(), mpos=getMoonPosition(), mr=24;
-const mx=W*mpos.x, my=H*mpos.y;
-const mg=bgCtx.createRadialGradient(mx,my,mr*0.8,mx,my,mr*3.5);
-mg.addColorStop(0,‘rgba(255,245,200,0.18)’); mg.addColorStop(1,‘rgba(255,245,200,0)’);
-bgCtx.fillStyle=mg; bgCtx.beginPath(); bgCtx.arc(mx,my,mr*3.5,0,Math.PI*2); bgCtx.fill();
-drawMoonPhase(bgCtx,mx,my,mr,phase);
-const fullness=1-Math.abs(phase-0.5)*2;
-if(fullness>0.3){
-bgCtx.globalAlpha=fullness*0.22; bgCtx.fillStyle=‘rgba(180,160,90,1)’;
-[[mx-7,my+5,4.5],[mx+8,my-7,3.5],[mx-2,my-9,2.5],[mx+4,my+8,2]].forEach(([cx,cy,cr])=>{
-bgCtx.beginPath(); bgCtx.arc(cx,cy,cr,0,Math.PI*2); bgCtx.fill();
-}); bgCtx.globalAlpha=1;
-}
-}
-if (cond!==‘rain’) {
-maybeShoot();
-const starAlpha = cond===‘cloudy’?0.25:cond===‘aurora’?0.4:0.9;
-_stars.forEach(s=>{
-s.a+=s.da; if(s.a>1||s.a<0.1) s.da*=-1;
-bgCtx.globalAlpha=s.a*starAlpha;
-bgCtx.fillStyle=’#fff’;
-bgCtx.beginPath(); bgCtx.arc(s.x,s.y,s.r,0,Math.PI*2); bgCtx.fill();
-});
-_shootings=_shootings.filter(s=>{
-s.x+=s.vx*3; s.y+=s.vy*3; s.life-=0.025;
-if(s.life<=0) return false;
-bgCtx.globalAlpha=s.life*0.9;
-bgCtx.strokeStyle=’#fff’; bgCtx.lineWidth=1.5;
-bgCtx.beginPath(); bgCtx.moveTo(s.x,s.y);
-bgCtx.lineTo(s.x-s.vx*30/Math.abs(s.vx),s.y-s.vy*30/Math.abs(s.vx)); bgCtx.stroke();
-return true;
-});
-bgCtx.globalAlpha=1;
-}
-if (cond===‘cloudy’||cond===‘rain’||cond===‘snow’) {
-const ca=cond===‘cloudy’?1.8:cond===‘rain’?1.4:0.9;
-_clouds.forEach(c=>{
-c.x+=c.spd; if(c.x>W+c.w*1.2) c.x=-c.w*1.2;
-bgCtx.save(); bgCtx.globalAlpha=Math.min(1,c.a*ca);
-drawRealCloud(bgCtx,c.x,c.y,c.w,c.h,cond); bgCtx.restore();
-}); bgCtx.globalAlpha=1;
-}
-if (cond===‘rain’) {
-_drops.forEach(d=>{
-d.y+=d.spd; d.x+=1.5; if(d.y>H){d.y=0;d.x=Math.random()*W;}
-bgCtx.globalAlpha=d.a; bgCtx.strokeStyle=‘rgba(140,170,210,0.8)’; bgCtx.lineWidth=1;
-bgCtx.beginPath(); bgCtx.moveTo(d.x,d.y); bgCtx.lineTo(d.x+2,d.y+d.len); bgCtx.stroke();
-}); bgCtx.globalAlpha=1;
-}
-if (cond===‘snow’) {
-_flakes.forEach(f=>{
-f.y+=f.spd; f.x+=f.drift; if(f.y>H){f.y=0;f.x=Math.random()*W;}
-if(f.x>W)f.x=0; if(f.x<0)f.x=W;
-bgCtx.globalAlpha=f.a; bgCtx.fillStyle=’#ddeeff’;
-bgCtx.beginPath(); bgCtx.arc(f.x,f.y,f.r,0,Math.PI*2); bgCtx.fill();
-}); bgCtx.globalAlpha=1;
-}
+  if (!bgCtx || !bgCv.width) return;
+  const W=bgCv.width, H=bgCv.height;
+  const cond = _bgCond;
+  _bgCondTimer++;
+  if (_bgCondTimer > 60 * (30 + Math.random()*60)) { _bgCond = pickRandomCond(); _bgCondTimer = 0; }
+  const grad = bgCtx.createLinearGradient(0,0,0,H);
+  if (cond==='rain') { grad.addColorStop(0,'#080d18'); grad.addColorStop(1,'#131e28'); }
+  else if (cond==='snow') { grad.addColorStop(0,'#0e1220'); grad.addColorStop(1,'#1c202e'); }
+  else if (cond==='cloudy') { grad.addColorStop(0,'#080c18'); grad.addColorStop(1,'#141828'); }
+  else if (cond==='aurora') { grad.addColorStop(0,'#020408'); grad.addColorStop(0.5,'#021408'); grad.addColorStop(1,'#040a10'); }
+  else { grad.addColorStop(0,'#020408'); grad.addColorStop(1,'#050810'); }
+  bgCtx.fillStyle=grad; bgCtx.fillRect(0,0,W,H);
+  if (cond==='aurora') {
+    _auroras.forEach(au => {
+      au.a += au.da; if(au.a>0.22||au.a<0.04) au.da*=-1;
+      au.x += au.drift; if(au.x>W+au.w) au.x=-au.w; if(au.x<-au.w) au.x=W+au.w;
+      const ag = bgCtx.createRadialGradient(au.x,au.y,0,au.x,au.y,au.w);
+      ag.addColorStop(0, 'hsla('+au.hue+',100%,55%,'+au.a+')');
+      ag.addColorStop(0.4,'hsla('+(au.hue+20)+',90%,45%,'+(au.a*0.6)+')');
+      ag.addColorStop(1, 'hsla('+au.hue+',80%,40%,0)');
+      bgCtx.fillStyle=ag;
+      bgCtx.beginPath(); bgCtx.ellipse(au.x, au.y, au.w, au.h, 0, 0, Math.PI*2); bgCtx.fill();
+    });
+    _auroras.forEach(au => {
+      for(let i=-3;i<=3;i++){
+        const sx=au.x+i*au.w*0.15;
+        const sg=bgCtx.createLinearGradient(sx,au.y-au.h,sx,au.y+au.h*1.5);
+        sg.addColorStop(0,'hsla('+(au.hue+i*8)+',100%,60%,0)');
+        sg.addColorStop(0.3,'hsla('+(au.hue+i*8)+',100%,55%,'+(au.a*0.7)+')');
+        sg.addColorStop(0.7,'hsla('+(au.hue+i*8+30)+',90%,45%,'+(au.a*0.4)+')');
+        sg.addColorStop(1,'hsla('+(au.hue)+',80%,40%,0)');
+        bgCtx.fillStyle=sg;
+        bgCtx.fillRect(sx-6, au.y-au.h, 12, au.h*2.5);
+      }
+    });
+  }
+  if (cond!=='rain') {
+    const phase=getMoonPhase(), mpos=getMoonPosition(), mr=24;
+    const mx=W*mpos.x, my=H*mpos.y;
+    const mg=bgCtx.createRadialGradient(mx,my,mr*0.8,mx,my,mr*3.5);
+    mg.addColorStop(0,'rgba(255,245,200,0.18)'); mg.addColorStop(1,'rgba(255,245,200,0)');
+    bgCtx.fillStyle=mg; bgCtx.beginPath(); bgCtx.arc(mx,my,mr*3.5,0,Math.PI*2); bgCtx.fill();
+    drawMoonPhase(bgCtx,mx,my,mr,phase);
+    const fullness=1-Math.abs(phase-0.5)*2;
+    if(fullness>0.3){
+      bgCtx.globalAlpha=fullness*0.22; bgCtx.fillStyle='rgba(180,160,90,1)';
+      [[mx-7,my+5,4.5],[mx+8,my-7,3.5],[mx-2,my-9,2.5],[mx+4,my+8,2]].forEach(([cx,cy,cr])=>{
+        bgCtx.beginPath(); bgCtx.arc(cx,cy,cr,0,Math.PI*2); bgCtx.fill();
+      }); bgCtx.globalAlpha=1;
+    }
+  }
+  if (cond!=='rain') {
+    maybeShoot();
+    const starAlpha = cond==='cloudy'?0.25:cond==='aurora'?0.4:0.9;
+    _stars.forEach(s=>{
+      s.a+=s.da; if(s.a>1||s.a<0.1) s.da*=-1;
+      bgCtx.globalAlpha=s.a*starAlpha;
+      bgCtx.fillStyle='#fff';
+      bgCtx.beginPath(); bgCtx.arc(s.x,s.y,s.r,0,Math.PI*2); bgCtx.fill();
+    });
+    _shootings=_shootings.filter(s=>{
+      s.x+=s.vx*3; s.y+=s.vy*3; s.life-=0.025;
+      if(s.life<=0) return false;
+      bgCtx.globalAlpha=s.life*0.9;
+      bgCtx.strokeStyle='#fff'; bgCtx.lineWidth=1.5;
+      bgCtx.beginPath(); bgCtx.moveTo(s.x,s.y);
+      bgCtx.lineTo(s.x-s.vx*30/Math.abs(s.vx),s.y-s.vy*30/Math.abs(s.vx)); bgCtx.stroke();
+      return true;
+    });
+    bgCtx.globalAlpha=1;
+  }
+  if (cond==='cloudy'||cond==='rain'||cond==='snow') {
+    const ca=cond==='cloudy'?1.8:cond==='rain'?1.4:0.9;
+    _clouds.forEach(c=>{
+      c.x+=c.spd; if(c.x>W+c.w*1.2) c.x=-c.w*1.2;
+      bgCtx.save(); bgCtx.globalAlpha=Math.min(1,c.a*ca);
+      drawRealCloud(bgCtx,c.x,c.y,c.w,c.h,cond); bgCtx.restore();
+    }); bgCtx.globalAlpha=1;
+  }
+  if (cond==='rain') {
+    _drops.forEach(d=>{
+      d.y+=d.spd; d.x+=1.5; if(d.y>H){d.y=0;d.x=Math.random()*W;}
+      bgCtx.globalAlpha=d.a; bgCtx.strokeStyle='rgba(140,170,210,0.8)'; bgCtx.lineWidth=1;
+      bgCtx.beginPath(); bgCtx.moveTo(d.x,d.y); bgCtx.lineTo(d.x+2,d.y+d.len); bgCtx.stroke();
+    }); bgCtx.globalAlpha=1;
+  }
+  if (cond==='snow') {
+    _flakes.forEach(f=>{
+      f.y+=f.spd; f.x+=f.drift; if(f.y>H){f.y=0;f.x=Math.random()*W;}
+      if(f.x>W)f.x=0; if(f.x<0)f.x=W;
+      bgCtx.globalAlpha=f.a; bgCtx.fillStyle='#ddeeff';
+      bgCtx.beginPath(); bgCtx.arc(f.x,f.y,f.r,0,Math.PI*2); bgCtx.fill();
+    }); bgCtx.globalAlpha=1;
+  }
 }
 function bgLoop(timestamp) {
-if (!_bgOn) return;
-if (timestamp - _bgLastFrame >= BG_FRAME_INTERVAL) { _bgLastFrame = timestamp; drawBg(); }
-_bgRaf = requestAnimationFrame(bgLoop);
+  if (!_bgOn) return;
+  if (timestamp - _bgLastFrame >= BG_FRAME_INTERVAL) { _bgLastFrame = timestamp; drawBg(); }
+  _bgRaf = requestAnimationFrame(bgLoop);
 }
 function startBgEffect() {
-if (!bgCv || !bgCtx) return;
-_bgCond = pickRandomCond();
-bgResize();
-initStars(200); initClouds(7); initRain(130); initSnow(90); initAuroras(5);
-bgCv.style.opacity = ‘0.93’;
-document.body.style.background = ‘transparent’;
-_bgLastFrame = 0;
-_bgRaf = requestAnimationFrame(bgLoop);
+  if (!bgCv || !bgCtx) return;
+  _bgCond = pickRandomCond();
+  bgResize();
+  initStars(200); initClouds(7); initRain(130); initSnow(90); initAuroras(5);
+  bgCv.style.opacity = '0.93';
+  document.body.style.background = 'transparent';
+  _bgLastFrame = 0;
+  _bgRaf = requestAnimationFrame(bgLoop);
 }
 function stopBgEffect() {
-if (_bgRaf) { cancelAnimationFrame(_bgRaf); _bgRaf=null; }
-if (bgCv) bgCv.style.opacity=‘0’;
-document.body.style.background=’#0a0908’;
+  if (_bgRaf) { cancelAnimationFrame(_bgRaf); _bgRaf=null; }
+  if (bgCv) bgCv.style.opacity='0';
+  document.body.style.background='#0a0908';
 }
 function toggleBgEffect() {
-_bgOn = !_bgOn;
-localStorage.setItem(‘yogatari_bg’, _bgOn?‘1’:‘0’);
-const btn=document.getElementById(‘bgToggleBtn’);
-const st=document.getElementById(‘bgStatusTxt’);
-if(btn){ btn.textContent=_bgOn?‘ON’:‘OFF’; btn.className=_bgOn?‘sett-btn sett-btn-save’:‘sett-btn’; }
-if(st) st.textContent = _bgOn ? ‘月齢・星・流れ星・オーロラ・ランダム天気’ : ‘’;
-if(_bgOn) startBgEffect(); else stopBgEffect();
+  _bgOn = !_bgOn;
+  localStorage.setItem('yogatari_bg', _bgOn?'1':'0');
+  const btn=document.getElementById('bgToggleBtn');
+  const st=document.getElementById('bgStatusTxt');
+  if(btn){ btn.textContent=_bgOn?'ON':'OFF'; btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn'; }
+  if(st) st.textContent = _bgOn ? '月齢・星・流れ星・オーロラ・ランダム天気' : '';
+  if(_bgOn) startBgEffect(); else stopBgEffect();
 }
-window.addEventListener(‘resize’, ()=>{ if(_bgOn){bgResize();initStars(200);initClouds(7);initAuroras(5);} });
+window.addEventListener('resize', ()=>{ if(_bgOn){bgResize();initStars(200);initClouds(7);initAuroras(5);} });
 setTimeout(()=>{
-const btn=document.getElementById(‘bgToggleBtn’);
-if(btn){ btn.textContent=_bgOn?‘ON’:‘OFF’; btn.className=_bgOn?‘sett-btn sett-btn-save’:‘sett-btn’; }
-const st=document.getElementById(‘bgStatusTxt’);
-if(st && _bgOn) st.textContent=‘月齢・星・流れ星・オーロラ・ランダム天気’;
-if(_bgOn) startBgEffect();
+  const btn=document.getElementById('bgToggleBtn');
+  if(btn){ btn.textContent=_bgOn?'ON':'OFF'; btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn'; }
+  const st=document.getElementById('bgStatusTxt');
+  if(st && _bgOn) st.textContent='月齢・星・流れ星・オーロラ・ランダム天気';
+  if(_bgOn) startBgEffect();
 }, 500);
 </script>
-
 </body>
 </html>
