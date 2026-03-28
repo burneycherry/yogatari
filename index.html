@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v108</title>
+<title>夜語り v110</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -202,6 +202,10 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .sleep-val.on{color:#e8be50}
 .sleep-btn{font-family:'Courier New',Consolas,monospace;font-size:10px;padding:5px 10px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;cursor:pointer}
 .sleep-btn.on{border-color:rgba(200,153,30,0.4);color:#c8991e;background:rgba(200,153,30,0.08)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.stats-card{background:#1e1a15;border:1px solid #302618;border-radius:10px;padding:12px 14px;text-align:center}
+.stats-num{font-family:'Courier New',Consolas,monospace;font-size:20px;color:#c8991e;font-weight:bold;margin-bottom:4px}
+.stats-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.08em}
 .toast{position:fixed;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(10px);background:#28221a;border:1px solid #564838;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#ede0c6;padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
@@ -210,7 +214,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v108</span></div>
+  <div class="app-name">夜語り <span class="ver">v110</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -276,6 +280,22 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     <div id="histList"></div>
   </div>
   <div class="panel" id="panel-sett">
+    <div class="sett-section">
+      <div class="sett-title">// 読書統計（アプリ内カウント）</div>
+      <div class="stats-grid" id="statsGrid">
+        <div class="stats-card"><div class="stats-num" id="statsDays">-</div><div class="stats-lbl">読書日数</div></div>
+        <div class="stats-card"><div class="stats-num" id="statsNovels">-</div><div class="stats-lbl">作品数</div></div>
+        <div class="stats-card"><div class="stats-num" id="statsEps">-</div><div class="stats-lbl">読んだ話数</div></div>
+        <div class="stats-card"><div class="stats-num" id="statsHours">-</div><div class="stats-lbl">読み上げ時間</div></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+        <button class="usage-reset-btn" onclick="resetStatItem('days')">読書日数</button>
+        <button class="usage-reset-btn" onclick="resetStatItem('novels')">作品数</button>
+        <button class="usage-reset-btn" onclick="resetStatItem('episodes')">話数</button>
+        <button class="usage-reset-btn" onclick="resetStatItem('seconds')">時間</button>
+        <button class="usage-reset-btn" style="color:#8b2020" onclick="resetStats()">全部</button>
+      </div>
+    </div>
     <div class="sett-section">
       <div class="sett-title">// 背景エフェクト</div>
       <div class="sett-row">
@@ -489,7 +509,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v108';
+const APP_VER = 'v110';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -578,6 +598,13 @@ setTimeout(() => {
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
 }, 300);
 setTimeout(() => { startupNewCheck(); }, 3000);
+(function recordToday(){
+  var st = loadStats();
+  if (!st.days) st.days = {};
+  var today = new Date().toISOString().slice(0,10);
+  st.days[today] = true;
+  saveStats(st);
+})();
 (function cleanLegacyCache() {
   try {
     Object.keys(sessionStorage)
@@ -1568,6 +1595,7 @@ function clearWatchdog() { if (watchdog) { clearTimeout(watchdog); watchdog = nu
 function startPlay() {
   if (playing) return;
   unlockAudio();
+  _playStartTime = Date.now();
   playing = true; _busy = false;
   updBtn(); setBadge(true);
   SS.cancel();
@@ -1582,6 +1610,7 @@ function startPlay() {
 function togglePlay() {
   if (!segs.length) return;
   if (playing) {
+    if (_playStartTime > 0) { recordTime(Math.floor((Date.now() - _playStartTime) / 1000)); _playStartTime = 0; }
     playing = false; _busy = false; clearWatchdog();
     SS.cancel(); stopGoogleAudio();
     updBtn(); setBadge(false);
@@ -1810,6 +1839,7 @@ async function _goNextImpl() {
       _nextAudioCache = [];
     }
     const prevUrlForNext = currentChapterUrl;
+    recordEpisode();
     displayPage(page, url, 0, prevUrlForNext);
     hideFetch();
     if(_actx && _actx.state==='suspended') await _actx.resume().catch(()=>{});
@@ -2065,6 +2095,64 @@ function cancelSleepTimer() {
   var el = document.getElementById('sleepVal');
   if (el) { el.textContent = '--:--'; el.className = 'sleep-val'; }
 }
+function statsKey() {
+  var d = new Date();
+  return 'yogatari_stats_' + d.getFullYear() + '_' + (d.getMonth()+1);
+}
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem('yogatari_stats') || '{}'); } catch(e) { return {}; }
+}
+function saveStats(data) {
+  try { localStorage.setItem('yogatari_stats', JSON.stringify(data)); } catch(e) {}
+}
+function recordEpisode() {
+  var st = loadStats();
+  if (!st.novels) st.novels = {};
+  if (currentNovelId) st.novels[currentNovelId] = true;
+  st.episodes = (st.episodes || 0) + 1;
+  saveStats(st);
+}
+function recordTime(seconds) {
+  if (seconds < 1) return;
+  var st = loadStats();
+  st.seconds = (st.seconds || 0) + seconds;
+  saveStats(st);
+}
+function updStatsDisplay() {
+  var st = loadStats();
+  var days = Object.keys(st.days || {}).length;
+  var novels = Object.keys(st.novels || {}).length;
+  var eps = st.episodes || 0;
+  var totalSec = st.seconds || 0;
+  var h = Math.floor(totalSec / 3600);
+  var m = Math.floor((totalSec % 3600) / 60);
+  var timeStr = h > 0 ? h + 'h' + (m > 0 ? m + 'm' : '') : (m > 0 ? m + 'm' : '0m');
+  var el;
+  el = document.getElementById('statsDays'); if(el) el.textContent = days;
+  el = document.getElementById('statsNovels'); if(el) el.textContent = novels;
+  el = document.getElementById('statsEps'); if(el) el.textContent = eps;
+  el = document.getElementById('statsHours'); if(el) el.textContent = timeStr;
+}
+function resetStatItem(key) {
+  var names = {days:'読書日数', novels:'作品数', episodes:'話数', seconds:'時間'};
+  openConfirm(names[key]+'をリセット', names[key]+'のカウントをリセットしますか？', function() {
+    var st = loadStats();
+    if (key === 'days') st.days = {};
+    else if (key === 'novels') st.novels = {};
+    else st[key] = 0;
+    saveStats(st);
+    updStatsDisplay();
+    toast(names[key]+'をリセットしました');
+  });
+}
+function resetStats() {
+  openConfirm('読書統計をリセット', '統計データをリセットします。本当にリセットしますか？', function() {
+    localStorage.removeItem('yogatari_stats');
+    updStatsDisplay();
+    toast('統計をリセットしました');
+  });
+}
+var _playStartTime = 0;
 const VOICE_LIMITS = {
   'Wavenet':  { free: 4000000, warn: 3600000 },
   'Standard': { free: 4000000, warn: 3600000 },
@@ -2155,7 +2243,7 @@ function switchTab(name) {
   document.getElementById('tab-'+name).classList.add('active');
   document.getElementById('panel-'+name).classList.add('active');
   if (name==='hist') renderHistList();
-  if (name==='sett') { initSettings(); updUsageDisplay(); }
+  if (name==='sett') { initSettings(); updUsageDisplay(); updStatsDisplay(); }
   setTimeout(() => { _tabSw = false; }, 600);
 }
 document.addEventListener('visibilitychange', ()=>{
