@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v111</title>
+<title>夜語り v113</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -208,13 +208,25 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .stats-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.08em}
 .toast{position:fixed;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(10px);background:#28221a;border:1px solid #564838;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#ede0c6;padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.filter-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #302618}
+.filter-item:last-child{border-bottom:none}
+.filter-desc{flex:1;min-width:0}
+.filter-label{font-size:13px;color:#ede0c6;margin-bottom:3px}
+.filter-note{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;line-height:1.6}
+.filter-toggle{font-family:‘Courier New’,Consolas,monospace;font-size:11px;padding:6px 14px;border-radius:8px;border:1px solid;cursor:pointer;flex-shrink:0;-webkit-appearance:none}
+.filter-toggle.on{background:rgba(200,153,30,0.15);border-color:rgba(200,153,30,0.4);color:#c8991e}
+.filter-toggle.off{background:#1e1a15;border-color:#302618;color:#564838}
+.filter-always{padding:8px 10px;background:#1e1a15;border:1px solid #302618;border-radius:8px;margin-bottom:12px}
+.filter-always-item{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;padding:3px 0;line-height:1.6}
 </style>
+
 </head>
 <body>
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v111</span></div>
+  <div class="app-name">夜語り <span class="ver">v113</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -295,6 +307,14 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         <button class="usage-reset-btn" onclick="resetStatItem('seconds')">時間</button>
         <button class="usage-reset-btn" style="color:#8b2020" onclick="resetStats()">全部</button>
       </div>
+    </div>
+    <div class="sett-section">
+      <div class="sett-title">// 省略設定</div>
+      <div class="sett-sub" style="margin-bottom:12px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">
+        📖 <b>省略をONにした項目</b>は、その言葉や形式を含む段落を<b>読み上げから自動でスキップ</b>します。<br>
+        <span style="color:#564838;font-size:11px">設定は次の話の読み込みから反映されます。</span>
+      </div>
+      <div id="skipFilterList"></div>
     </div>
     <div class="sett-section">
       <div class="sett-title">// 背景エフェクト</div>
@@ -509,7 +529,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v111';
+const APP_VER = 'v113';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -1300,16 +1320,80 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
     }, 1000);
   }
 }
+// group: 'basic'=基本フィルター, 'custom'=カスタムフィルター
+const CONFIGURABLE_FILTERS = [
+  { key:'pagenum',   group:'basic',  label:'ページ数行',
+    desc:'100/120、1248/1710 のような「数字/数字」形式の行',
+    pattern:/^\d+[\s　]*[\\/][\s　]*\d+$/ },
+  { key:'updatedate', group:'basic', label:'更新日時行',
+    desc:'「2026年1月1日 更新分」「2022.9/9 更新分」等の行',
+    pattern:/^\d{4}[.\/年]\d/ },
+  { key:'navi',      group:'basic',  label:'ナビゲーション行',
+    desc:'「前へ」「次へ」「目次」等のページ移動ボタン行',
+    pattern:/^(前へ|次へ|目次|<<|>>|＜＜|＞＞|PREV|NEXT|前の話|次の話|前のエピソード|次のエピソード)|^[←→◀▶].{0,8}$/ },
+  { key:'naroui',    group:'basic',  label:'なろうUI行',
+    desc:'「応援する」「ハートをクリック」「ギフトを贈る」「新規登録で」等',
+    pattern:/^(新規登録で充実|作者を応援|応援する|応援コメント|ハートをクリック|ギフトを贈る)/ },
+  { key:'bookmark',  group:'custom', label:'ブックマーク・お気に入り依頼',
+    desc:'「ブックマーク」「お気に入り」を含む段落',
+    pattern:/ブックマーク|お気に入り(?:登録|追加)/ },
+  { key:'review',    group:'custom', label:'感想・レビュー依頼',
+    desc:'「感想をお待ちしています」「コメントお待ちしており」等の段落',
+    pattern:/感想.*お待ち|レビュー.*お待ち|感想・レビュー|コメント.*お待ち|お待ちしており|ご感想/ },
+  { key:'rating',    group:'custom', label:'評価・応援依頼（☆→★）',
+    desc:'「☆☆☆→★★★」「続きが気になる」「応援していただけると」等',
+    pattern:/[☆★]{2,}|続きが気になる|思っていただけたら|応援していただけると|にして応援/ },
+  { key:'activity',  group:'custom', label:'活動報告',
+    desc:'「活動報告」を含む段落',
+    pattern:/活動報告/ },
+];
+function loadSkipFilters() {
+  try { return JSON.parse(localStorage.getItem('yogatari_skip_filters') || '{}'); } catch(e) { return {}; }
+}
+function saveSkipFilters(data) {
+  try { localStorage.setItem('yogatari_skip_filters', JSON.stringify(data)); } catch(e) {}
+}
+function isFilterOn(key) {
+  var f = loadSkipFilters();
+  return f[key] !== false;
+}
+function toggleSkipFilter(i) {
+  var def = CONFIGURABLE_FILTERS[i];
+  var f = loadSkipFilters();
+  var next = !isFilterOn(def.key);
+  f[def.key] = next;
+  saveSkipFilters(f);
+  renderSkipFilters();
+  toast((next ? 'ON: ' : 'OFF: ') + def.label);
+}
+function renderSkipFilters() {
+  var el = document.getElementById('skipFilterList');
+  if (!el) return;
+  var basicHtml = '<div class="sett-sub" style="font-size:10px;color:#564838;margin-bottom:6px">— 基本フィルター（ページ数・更新日・ナビ等）</div>';
+  var customHtml = '<div class="sett-sub" style="font-size:10px;color:#564838;margin:12px 0 6px">— 後書き・お願い系フィルター</div>';
+  CONFIGURABLE_FILTERS.forEach(function(def, i) {
+    var on = isFilterOn(def.key);
+    var row = '<div class="filter-item">' +
+      '<div class="filter-desc">' +
+        '<div class="filter-label">' + def.label + '</div>' +
+        '<div class="filter-note">' + def.desc + '</div>' +
+      '</div>' +
+      '<button class="filter-toggle ' + (on ? 'on' : 'off') + '" onclick="toggleSkipFilter(' + i + ')">' +
+        (on ? 'ON' : 'OFF') +
+      '</button>' +
+    '</div>';
+    if (def.group === 'basic') basicHtml += row;
+    else customHtml += row;
+  });
+  el.innerHTML = basicHtml + customHtml;
+}
 function splitText(t) {
   return t.replace(/\r\n/g,'\n').split(/\n+/).map(s=>s.trim()).filter(s=>{
     if (!s.length) return false;
-    if (/^\d{4}[.\/年]\d/.test(s)) return false;
-    if (/^\d+ \/ \d+$/.test(s)) return false;
-    if (/^\d+\/\d+$/.test(s)) return false;
-    if (s.length > 20) return true;
-    if (/^(前へ|次へ|目次|<<|>>|＜＜|＞＞|PREV|NEXT|前の話|次の話|前のエピソード|次のエピソード)/.test(s)) return false;
-    if (/^[←→◀▶]/.test(s) && s.length < 10) return false;
-    if (/^(新規登録で充実|作者を応援|応援する|応援コメント|ハートをクリック|ギフトを贈る)/.test(s)) return false;
+    for (var _fi = 0; _fi < CONFIGURABLE_FILTERS.length; _fi++) {
+      var _f = CONFIGURABLE_FILTERS[_fi];
+      if (isFilterOn(_f.key) && _f.pattern.test(s)) return false;
+    }
     return true;
   });
 }
@@ -1680,6 +1764,7 @@ function nextSeg() {
 function prevSegFull() { prevSeg(); }
 function nextSegFull() { nextSeg(); }
 function initSettings() {
+  renderSkipFilters();
   if (_gApiKey) {
     document.getElementById('apiKeyInput').value = _gApiKey;
     document.getElementById('googleVoiceSection').style.display = 'block';
