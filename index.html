@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v127</title>
+<title>夜語り v128</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -232,7 +232,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v127</span></div>
+  <div class="app-name">夜語り <span class="ver">v128</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -361,6 +361,43 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     <div class="sett-section" id="googleVoiceSection" style="display:none">
       <div class="sett-title">// Google音声を選ぶ</div>
       <select class="gv-select" id="googleVoiceSel" onchange="onGVoiceChange()">
+        <optgroup label="── Chirp 3 HD  月100万文字無料（最高品質）※速度無効 ──">
+          <option value="ja-JP-Chirp3-HD-Achernar">Chirp3-HD-Achernar（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Aoede">Chirp3-HD-Aoede（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Autonoe">Chirp3-HD-Autonoe（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Callirrhoe">Chirp3-HD-Callirrhoe（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Despina">Chirp3-HD-Despina（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Erinome">Chirp3-HD-Erinome（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Gacrux">Chirp3-HD-Gacrux（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Kore">Chirp3-HD-Kore（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Laomedeia">Chirp3-HD-Laomedeia（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Leda">Chirp3-HD-Leda（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Pulcherrima">Chirp3-HD-Pulcherrima（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Sulafat">Chirp3-HD-Sulafat（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Vindemiatrix">Chirp3-HD-Vindemiatrix（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Zephyr">Chirp3-HD-Zephyr（女性）</option>
+          <option value="ja-JP-Chirp3-HD-Achird">Chirp3-HD-Achird（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Algenib">Chirp3-HD-Algenib（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Algieba">Chirp3-HD-Algieba（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Alnilam">Chirp3-HD-Alnilam（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Charon">Chirp3-HD-Charon（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Enceladus">Chirp3-HD-Enceladus（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Fenrir">Chirp3-HD-Fenrir（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Iapetus">Chirp3-HD-Iapetus（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Orus">Chirp3-HD-Orus（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Puck">Chirp3-HD-Puck（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Rasalgethi">Chirp3-HD-Rasalgethi（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Sadachbia">Chirp3-HD-Sadachbia（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Sadaltager">Chirp3-HD-Sadaltager（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Schedar">Chirp3-HD-Schedar（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Umbriel">Chirp3-HD-Umbriel（男性）</option>
+          <option value="ja-JP-Chirp3-HD-Zubenelgenubi">Chirp3-HD-Zubenelgenubi（男性）</option>
+        </optgroup>
+        <optgroup label="── Neural2  月100万文字無料（高品質）──">
+          <option value="ja-JP-Neural2-B">Neural2-B（女性）</option>
+          <option value="ja-JP-Neural2-C">Neural2-C（男性）</option>
+          <option value="ja-JP-Neural2-D">Neural2-D（男性）</option>
+        </optgroup>
         <optgroup label="── WaveNet  月400万文字無料 ──">
           <option value="ja-JP-Wavenet-A">WaveNet-A ★おすすめ</option>
           <option value="ja-JP-Wavenet-B">WaveNet-B</option>
@@ -372,21 +409,6 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
           <option value="ja-JP-Standard-B">Standard-B</option>
           <option value="ja-JP-Standard-C">Standard-C</option>
           <option value="ja-JP-Standard-D">Standard-D</option>
-        </optgroup>
-        <optgroup label="── Neural2  月100万文字無料（高品質）──">
-          <option value="ja-JP-Neural2-B">Neural2-B</option>
-          <option value="ja-JP-Neural2-C">Neural2-C</option>
-          <option value="ja-JP-Neural2-D">Neural2-D</option>
-        </optgroup>
-        <optgroup label="── Chirp 3 HD  月100万文字無料（最高品質）⚠速度無効 ──">
-          <option value="ja-JP-Chirp3-HD-Aoede">Chirp3-HD-Aoede（女性）</option>
-          <option value="ja-JP-Chirp3-HD-Leda">Chirp3-HD-Leda（女性）</option>
-          <option value="ja-JP-Chirp3-HD-Zephyr">Chirp3-HD-Zephyr（女性）</option>
-          <option value="ja-JP-Chirp3-HD-Kore">Chirp3-HD-Kore（女性）</option>
-          <option value="ja-JP-Chirp3-HD-Charon">Chirp3-HD-Charon（男性）</option>
-          <option value="ja-JP-Chirp3-HD-Fenrir">Chirp3-HD-Fenrir（男性）</option>
-          <option value="ja-JP-Chirp3-HD-Puck">Chirp3-HD-Puck（男性）</option>
-          <option value="ja-JP-Chirp3-HD-Orus">Chirp3-HD-Orus（男性）</option>
         </optgroup>
       </select>
       <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
@@ -547,7 +569,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v127';
+const APP_VER = 'v128';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -2369,14 +2391,12 @@ const VOICE_LIMITS = {
   'Wavenet':  { free: 4000000, warn: 3600000 },
   'Standard': { free: 4000000, warn: 3600000 },
   'Neural2':  { free: 1000000, warn:  900000 },
-  'Studio':   { free: 1000000, warn:  900000 },
   'Chirp3':   { free: 1000000, warn:  900000 },
   'default':  { free: 1000000, warn:  900000 },
 };
 function getVoiceLimits() {
   const v = _gVoice || '';
   if (v.includes('Chirp3'))   return VOICE_LIMITS['Chirp3'];
-  if (v.includes('Studio'))   return VOICE_LIMITS['Studio'];
   if (v.includes('Wavenet'))  return VOICE_LIMITS['Wavenet'];
   if (v.includes('Standard')) return VOICE_LIMITS['Standard'];
   if (v.includes('Neural2'))  return VOICE_LIMITS['Neural2'];
@@ -2386,7 +2406,6 @@ function USAGE_WARN()  { return getVoiceLimits().warn; }
 function USAGE_LIMIT() { return getVoiceLimits().free; }
 function voiceCategory() {
   if (_gVoice.includes('Chirp3'))  return 'chirp3';
-  if (_gVoice.includes('Studio'))  return 'studio';
   if (_gVoice.includes('Neural2')) return 'neural2';
   if (_gVoice.includes('Wavenet') || _gVoice.includes('wavenet')) return 'wavenet';
   return 'standard';
@@ -2440,7 +2459,6 @@ function updUsageDisplay() {
     { key: 'standard', label: 'Standard', limit: 4000000, warn: 3600000 },
     { key: 'wavenet',  label: 'WaveNet',  limit: 4000000, warn: 3600000 },
     { key: 'neural2',  label: 'Neural2',    limit: 1000000, warn:  900000 },
-    { key: 'studio',   label: 'Studio',     limit: 1000000, warn:  900000 },
     { key: 'chirp3',   label: 'Chirp 3 HD', limit: 1000000, warn:  900000 },
   ];
   var wrap = document.getElementById('usageWrap');
