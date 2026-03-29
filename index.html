@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v132</title>
+<title>夜語り v133</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -236,7 +236,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v132</span></div>
+  <div class="app-name">夜語り <span class="ver">v133</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -293,10 +293,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <span class="next-cancel" onclick="cancelNext()">キャンセル</span>
     </div>
     <div class="queue-row" id="queueRow"></div>
-    <div class="bg-tip" id="bgTip">
-      ⚠ 画面ロック中も再生を続けるには「画面ロックしない」設定をONにしてください。<br>
-      止まった場合は画面をタップすると再開します。
-    </div>
+    <div class="bg-tip" id="bgTip"></div>
   </div>
   <div class="panel" id="panel-hist">
     <div id="histList"></div>
@@ -522,7 +519,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         <li>右上の <b>🌙</b> をタップするとタイマー行が表示される</li>
         <li><b>15分 / 30分 / 60分</b> を選ぶとカウントダウン開始</li>
         <li>時間になると自動で再生停止し、<b>画面が真っ黒</b>になる</li>
-        <li>iOSの自動ロック設定に従って画面が消灯し、<b>バッテリーを節約</b>する</li>
+        <li>自動ロックを設定している場合は画面が消灯し、<b>バッテリーを節約</b>できる</li>
         <li>復帰するには画面をタップ。再生は <b>▶</b> で再開</li>
         <li><b>✕</b> でキャンセル、🌙 を再タップで行を隠せる</li>
       </ul>
@@ -534,7 +531,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       </ul>
       <h3>// バックグラウンド再生（iPhone）</h3>
       <ul>
-        <li>設定 → 画面表示と明るさ → <b>自動ロックをオフ</b></li>
+        <li>再生中は画面が消えない仕様のため、自動ロック設定の変更は不要</li>
         <li>止まったら<b>▶ボタン</b>をタップすると再開</li>
         <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
       </ul>
@@ -576,7 +573,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <div class="sleep-overlay" id="sleepOverlay" onclick="dismissSleepOverlay()"><div class="sleep-overlay-txt">画面をタップして復帰</div></div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v132';
+const APP_VER = 'v133';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
