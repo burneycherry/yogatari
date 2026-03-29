@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v126</title>
+<title>夜語り v127</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -232,7 +232,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v126</span></div>
+  <div class="app-name">夜語り <span class="ver">v127</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -390,7 +390,6 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         </optgroup>
       </select>
       <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
-      <button class="test-voice-btn" id="voiceRefreshBtn" onclick="refreshVoiceList()" style="background:rgba(66,133,244,0.1);border-color:rgba(66,133,244,0.4);color:#7ab0f8;margin-top:0">[更新] 音声一覧を取得（Studio含む）</button>
       <div class="chirp-warn" id="chirpWarn">⚠ Chirp 3 HD は速度・ピッチ調整が非対応です。<br>コントロールバーの速度・ピッチスライダーは無効になります。</div>
       <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2 / Studio / Chirp 3 HD：月100万文字まで無料</div>
     </div>
@@ -548,7 +547,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v126';
+const APP_VER = 'v127';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -1825,6 +1824,53 @@ function saveApiKey() {
   updModeDisplay();
   updStepperState();
   toast('Google TTSを設定しました');
+  var _xhrKey = _gApiKey.trim();
+  var _xhr = new XMLHttpRequest();
+  _xhr.open('GET','https://texttospeech.googleapis.com/v1/voices?languageCode=ja-JP&key='+_xhrKey);
+  _xhr.onload = function(){
+    if(_xhr.status!==200) return;
+    var _d; try{_d=JSON.parse(_xhr.responseText);}catch(e){return;}
+    var _vs = (_d.voices||[]).filter(function(v){return v.name&&v.name.startsWith('ja-JP');});
+    _vs.sort(function(a,b){
+      var _o=['Studio','Chirp3','Neural2','Wavenet'];
+      var _ai=-1,_bi=-1;
+      for(var _i=0;_i<_o.length;_i++){if(a.name.includes(_o[_i]))_ai=_i;if(b.name.includes(_o[_i]))_bi=_i;}
+      if(_ai<0)_ai=99; if(_bi<0)_bi=99;
+      return _ai!==_bi?_ai-_bi:a.name.localeCompare(b.name);
+    });
+    var _grps={}, _gl=['Studio','Chirp3','Neural2','Wavenet','Standard'];
+    var _gn={'Studio':'Studio','Chirp3':'Chirp3 HD','Neural2':'Neural2','Wavenet':'WaveNet','Standard':'Standard'};
+    for(var _j=0;_j<_vs.length;_j++){
+      var _vn=_vs[_j].name;
+      var _gk='Standard';
+      if(_vn.includes('Studio'))_gk='Studio';
+      else if(_vn.includes('Chirp3'))_gk='Chirp3';
+      else if(_vn.includes('Neural2'))_gk='Neural2';
+      else if(_vn.includes('Wavenet'))_gk='Wavenet';
+      if(!_grps[_gk])_grps[_gk]=[];
+      _grps[_gk].push(_vs[_j]);
+    }
+    var _html='';
+    for(var _k=0;_k<_gl.length;_k++){
+      var _gid=_gl[_k];
+      if(!_grps[_gid]||!_grps[_gid].length) continue;
+      _html+='<optgroup label="'+_gn[_gid]+'">';
+      for(var _m=0;_m<_grps[_gid].length;_m++){
+        var _v=_grps[_gid][_m];
+        var _mt=_v.name.match(/ja-JP-(.+)/);
+        var _dn=_mt?_mt[1]:_v.name;
+        var _g=(_v.ssmlGender||'').indexOf('FEMALE')>=0?'(F)':'(M)';
+        _html+='<option value="'+_v.name+'">'+_dn+' '+_g+'</option>';
+      }
+      _html+='</optgroup>';
+    }
+    var _sel=document.getElementById('googleVoiceSel');
+    if(_sel&&_html){
+      _sel.innerHTML=_html;
+      for(var _n=0;_n<_sel.options.length;_n++){if(_sel.options[_n].value===_gVoice){_sel.value=_gVoice;break;}}
+    }
+  };
+  _xhr.send();
 }
 function clearApiKey() {
   _gApiKey = '';
@@ -2833,62 +2879,6 @@ setTimeout(()=>{
   if(st && _bgOn) st.textContent='月齢・星・流れ星・オーロラ・ランダム天気';
   if(_bgOn) startBgEffect();
 }, 500);
-
-function refreshVoiceList() {
-if (!_gApiKey) { toast(‘APIキーを先に保存してください’); return; }
-var btn = document.getElementById(‘voiceRefreshBtn’);
-if (btn) { btn.textContent = ‘取得中…’; btn.disabled = true; }
-fetch(‘https://texttospeech.googleapis.com/v1/voices?languageCode=ja-JP&key=’ + _gApiKey.trim())
-.then(function(res) {
-if (!res.ok) throw new Error(‘HTTP ’ + res.status);
-return res.json();
-})
-.then(function(data) {
-var voices = (data.voices || []).filter(function(v){ return v.name && v.name.startsWith(‘ja-JP’); });
-voices.sort(function(a,b){
-function rank(n){ return n.includes(‘Studio’)?0:n.includes(‘Chirp3’)?1:n.includes(‘Neural2’)?2:n.includes(‘Wavenet’)?3:4; }
-var ta=rank(a.name),tb=rank(b.name); return ta!==tb?ta-tb:a.name.localeCompare(b.name);
-});
-var groupLabels = {
-Studio:  ‘Studio 月100万無料’,
-Chirp3:  ‘Chirp3 HD 月100万無料 ※速度無効’,
-Neural2: ‘Neural2 月100万無料’,
-Wavenet: ‘WaveNet 月400万無料’,
-Standard:‘Standard 月400万無料’
-};
-function groupKey(n){ return n.includes(‘Studio’)?‘Studio’:n.includes(‘Chirp3’)?‘Chirp3’:n.includes(‘Neural2’)?‘Neural2’:n.includes(‘Wavenet’)?‘Wavenet’:‘Standard’; }
-var groups = {};
-voices.forEach(function(v){
-var k=groupKey(v.name);
-if(!groups[k]) groups[k]=[];
-groups[k].push(v);
-});
-var html = ‘’;
-[‘Studio’,‘Chirp3’,‘Neural2’,‘Wavenet’,‘Standard’].forEach(function(k){
-if(!groups[k]||!groups[k].length) return;
-html += ‘<optgroup label="' + groupLabels[k] + '">’;
-groups[k].forEach(function(v){
-var m=v.name.match(/ja-JP-(.+)/); var dn=m?m[1]:v.name;
-var g=(v.ssmlGender||’’).includes(‘FEMALE’)?’(女)’:’(男)’;
-html += ‘<option value="'+v.name+'">’+dn+’ ‘+g+’</option>’;
-});
-html += ‘</optgroup>’;
-});
-var sel=document.getElementById(‘googleVoiceSel’);
-if(sel && html){
-sel.innerHTML=html;
-var exists=Array.from(sel.options).some(function(o){return o.value===_gVoice;});
-if(exists) sel.value=_gVoice;
-}
-toast(voices.length+‘種類の音声を取得しました’);
-if(btn){btn.textContent=‘音声一覧を更新’;btn.disabled=false;}
-})
-.catch(function(e){
-toast(‘取得失敗: ‘+(e.message||’’).slice(0,30));
-if(btn){btn.textContent=‘音声一覧を更新’;btn.disabled=false;}
-});
-}
 </script>
-
 </body>
 </html>
