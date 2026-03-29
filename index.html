@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v128</title>
+<title>夜語り v129</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -232,7 +232,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v128</span></div>
+  <div class="app-name">夜語り <span class="ver">v129</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -342,7 +342,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
         <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
       </div>
-      <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：各400万文字、Neural2 / Studio / Chirp 3 HD：各100万文字。<br>各上限の90%で警告、上限到達でKyokoに自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
+      <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：各400万文字、Neural2 / Chirp 3 HD：各100万文字。合計1000万文字。<br>各上限の90%で警告、上限到達でKyokoに自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
       <div class="sett-title">// Google側での使用量・請求確認</div>
       <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">実際の使用量や請求額はGoogle Cloud Consoleで確認できます。</div>
       <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
@@ -413,7 +413,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       </select>
       <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
       <div class="chirp-warn" id="chirpWarn">⚠ Chirp 3 HD は速度・ピッチ調整が非対応です。<br>コントロールバーの速度・ピッチスライダーは無効になります。</div>
-      <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2 / Studio / Chirp 3 HD：月100万文字まで無料</div>
+      <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2 / Chirp 3 HD：月100万文字まで無料</div>
     </div>
   </div>
 </div>
@@ -569,7 +569,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v128';
+const APP_VER = 'v129';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -1392,6 +1392,12 @@ const CONFIGURABLE_FILTERS = [
   { key:'activity',  group:'custom', label:'活動報告',
     desc:'「活動報告」を含む段落',
     pattern:/活動報告/ },
+  { key:'chaphead',  group:'basic',  label:'章タイトル行（第○章○○）',
+    desc:'「第一章　旅立ち」等、章番号で始まる見出し行（短い行のみ）',
+    pattern:/^第[一二三四五六七八九十百千\d]+章/ },
+  { key:'errreport', group:'custom', label:'誤字脱字報告',
+    desc:'「誤字」「脱字」「修正」等の報告を含む段落',
+    pattern:/誤字|脱字|誤植|ご報告|修正しま|訂正/ },
   { key:'divider',   group:'basic', label:'区切り記号行（◇＊ーなど）',
     desc:'◇◇◇ や ＊＊＊ や ─── など記号だけの行',
     pattern:/^[\s\u3000\u25c7\u25c6\u25a1\u25a0\u25cb\u25cf\u00d7\uff0a\u203b\u25ef\u25b3\u25b2\u25bd\u25bc\u25ce\uff5e\u301c\u30fc\u2500\u2501\u003d\uff0d\uff3f\u30fb\u2026\u2020\u2021\u2666\u2662\u2663\u2660\u2665\u2661\u2605\u2606\u25b7\u25c1\*\-\=_~]+$/ },
@@ -1788,6 +1794,7 @@ function togglePlay() {
   }
 }
 function stop() {
+  if (_playStartTime > 0) { recordTime(Math.floor((Date.now() - _playStartTime) / 1000)); _playStartTime = 0; }
   playing = false; _busy = false;
   SS.cancel(); stopGoogleAudio();
   clearWatchdog(); clearPrefetchCache();
@@ -1795,6 +1802,7 @@ function stop() {
   msSetState('none');
 }
 function stopForChapterTransition() {
+  if (_playStartTime > 0) { recordTime(Math.floor((Date.now() - _playStartTime) / 1000)); _playStartTime = 0; }
   playing = false; _busy = false;
   SS.cancel(); stopGoogleAudio();
   clearWatchdog(); clearPrefetchCache();
