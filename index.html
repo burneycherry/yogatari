@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v130</title>
+<title>夜語り v132</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -225,6 +225,10 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .stepper-grid.disabled .st-label{opacity:0.25}
 .chirp-warn{display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(139,90,0,0.18);border:1px solid rgba(200,153,30,0.35);border-radius:8px;font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#c8991e;line-height:1.6;margin-bottom:8px}
 .chirp-warn.show{display:flex}
+
+.sleep-overlay{position:fixed;inset:0;background:#000;z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.sleep-overlay.show{display:flex}
+.sleep-overlay-txt{color:#333;font-family:‘Courier New’,Consolas,monospace;font-size:12px;letter-spacing:0.1em}
 </style>
 
 </head>
@@ -232,7 +236,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v130</span></div>
+  <div class="app-name">夜語り <span class="ver">v132</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -517,7 +521,9 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <ul>
         <li>右上の <b>🌙</b> をタップするとタイマー行が表示される</li>
         <li><b>15分 / 30分 / 60分</b> を選ぶとカウントダウン開始</li>
-        <li>時間になると自動で再生停止</li>
+        <li>時間になると自動で再生停止し、<b>画面が真っ黒</b>になる</li>
+        <li>iOSの自動ロック設定に従って画面が消灯し、<b>バッテリーを節約</b>する</li>
+        <li>復帰するには画面をタップ。再生は <b>▶</b> で再開</li>
         <li><b>✕</b> でキャンセル、🌙 を再タップで行を隠せる</li>
       </ul>
       <h3>// 画面タップで5秒スキップ（再生中のみ）</h3>
@@ -567,9 +573,10 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     <div class="chap-list-wrap" id="chapListWrap"></div>
   </div>
 </div>
+<div class="sleep-overlay" id="sleepOverlay" onclick="dismissSleepOverlay()"><div class="sleep-overlay-txt">画面をタップして復帰</div></div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v130';
+const APP_VER = 'v132';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -2331,7 +2338,10 @@ function setSleepTimer(mins) {
     if (rem <= 0) {
       clearInterval(_sleepTick); _sleepTick = null;
       if (playing) togglePlay();
-      toast('睡眠タイマー：再生を停止しました。');
+      stopSilentAudio();
+      msSetState('none');
+      var _ov = document.getElementById('sleepOverlay');
+      if (_ov) _ov.classList.add('show');
       var v = document.getElementById('sleepVal');
       if (v) { v.textContent = '--:--'; v.className = 'sleep-val'; }
       return;
@@ -2347,6 +2357,10 @@ function cancelSleepTimer() {
   _sleepEnd = 0;
   var el = document.getElementById('sleepVal');
   if (el) { el.textContent = '--:--'; el.className = 'sleep-val'; }
+}
+function dismissSleepOverlay() {
+  var _ov = document.getElementById('sleepOverlay');
+  if (_ov) _ov.classList.remove('show');
 }
 function statsKey() {
   var d = new Date();
