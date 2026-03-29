@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v124</title>
+<title>夜語り v125</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -232,7 +232,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v124</span></div>
+  <div class="app-name">夜語り <span class="ver">v125</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -390,7 +390,6 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         </optgroup>
       </select>
       <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
-      <button class="test-voice-btn" onclick="refreshVoiceList()" id="voiceRefreshBtn" style="margin-top:0;background:rgba(80,120,200,0.12);border-color:rgba(80,120,200,0.35);color:#7ab0f8;">🔄 音声一覧を更新（Studio/Chirp3含む）</button>
       <div class="chirp-warn" id="chirpWarn">⚠ Chirp 3 HD は速度・ピッチ調整が非対応です。<br>コントロールバーの速度・ピッチスライダーは無効になります。</div>
       <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2 / Studio / Chirp 3 HD：月100万文字まで無料</div>
     </div>
@@ -423,7 +422,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <div class="voice-remain-row">
     <div class="voice-row" id="voiceRowKyoko">
       <span class="voice-lbl">音声</span>
-      <select id="voiceSel" onchange="onVoice()"><option>Kyoko (ja-JP)</option></select>
+      <select id="voiceSel" onchange="onVoice()"><option>Kyoko</option></select>
     </div>
     <div class="voice-row" id="voiceRowGoogle" style="display:none">
       <span class="voice-lbl">音声</span>
@@ -548,7 +547,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v124';
+const APP_VER = 'v125';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (_actx) return;
@@ -620,7 +619,7 @@ function loadVoices() {
   const ja = voices.filter(v=>v.lang.startsWith('ja'));
   const all = [...ja, ...voices.filter(v=>!v.lang.startsWith('ja'))];
   sel.innerHTML = '';
-  if (!all.length) { sel.innerHTML='<option>Kyoko (ja-JP)</option>'; return; }
+  if (!all.length) { sel.innerHTML='<option>Kyoko</option>'; return; }
   all.forEach(v => {
     const o = document.createElement('option');
     o.value = voices.indexOf(v);
@@ -630,7 +629,7 @@ function loadVoices() {
   });
   if (!selVoice && voices.length) selVoice = voices[0];
   } catch(e) {
-    try { document.getElementById('voiceSel').innerHTML = '<option>Kyoko (ja-JP)</option>'; } catch(e2) {}
+    var _s=document.getElementById('voiceSel'); if(_s)_s.innerHTML='<option>Kyoko</option>';
   }
 }
 SS.addEventListener ? SS.addEventListener('voiceschanged', loadVoices) : (SS.onvoiceschanged = loadVoices);
@@ -2338,560 +2337,501 @@ function getVoiceLimits() {
 }
 function USAGE_WARN()  { return getVoiceLimits().warn; }
 function USAGE_LIMIT() { return getVoiceLimits().free; }
-
-// 動的ボイスリスト取得（手動ボタンから呼ぶのみ）
-const VOICE_CACHE_KEY = ‘yogatari_voices_cache’;
-async function refreshVoiceList() {
-if (!_gApiKey) { toast(‘APIキーを先に保存してください’); return; }
-var btn = document.getElementById(‘voiceRefreshBtn’);
-if (btn) { btn.textContent = ‘取得中…’; btn.disabled = true; }
-try {
-var res = await fetch(
-‘https://texttospeech.googleapis.com/v1/voices?languageCode=ja-JP&key=’ + _gApiKey.trim()
-);
-if (!res.ok) throw new Error(‘HTTP ’ + res.status);
-var data = await res.json();
-var voices = (data.voices || [])
-.filter(function(v){ return v.name && v.name.startsWith(‘ja-JP’); })
-.sort(function(a,b){ return a.name.localeCompare(b.name); });
-// optgroup作成
-var groups = { Studio:[], Chirp3:[], Neural2:[], Wavenet:[], Standard:[] };
-voices.forEach(function(v) {
-if (v.name.includes(‘Studio’))        groups.Studio.push(v);
-else if (v.name.includes(‘Chirp3’))   groups.Chirp3.push(v);
-else if (v.name.includes(‘Neural2’))  groups.Neural2.push(v);
-else if (v.name.includes(‘Wavenet’))  groups.Wavenet.push(v);
-else                                  groups.Standard.push(v);
-});
-var labels = {
-Studio:   ‘Studio  \u6708100\u4e07\u6587\u5b57\u7121\u6599\uff08\u30ca\u30ec\u30fc\u30b7\u30e7\u30f3\uff09’,
-Chirp3:   ‘Chirp 3 HD  \u6708100\u4e07\u6587\u5b57\u7121\u6599\uff08\u6700\u9ad8\u54c1\u8cea\uff09\u203b\u901f\u5ea6\u7121\u52b9’,
-Neural2:  ‘Neural2  \u6708100\u4e07\u6587\u5b57\u7121\u6599\uff08\u9ad8\u54c1\u8cea\uff09’,
-Wavenet:  ‘WaveNet  \u6708400\u4e07\u6587\u5b57\u7121\u6599’,
-Standard: ‘Standard  \u6708400\u4e07\u6587\u5b57\u7121\u6599’
-};
-var html = ‘’;
-[‘Studio’,‘Chirp3’,‘Neural2’,‘Wavenet’,‘Standard’].forEach(function(k) {
-if (!groups[k].length) return;
-html += ‘<optgroup label="\u2500\u2500 ' + labels[k] + ' \u2500\u2500">’;
-groups[k].forEach(function(v) {
-var m = v.name.match(/ja-JP-(.+)/);
-var dn = m ? m[1] : v.name;
-var g = (v.ssmlGender||’’).includes(‘FEMALE’) ? ‘\uff08\u5973\u6027\uff09’ : ‘\uff08\u7537\u6027\uff09’;
-html += ‘<option value="' + v.name + '">’ + dn + g + ‘</option>’;
-});
-html += ‘</optgroup>’;
-});
-var sel = document.getElementById(‘googleVoiceSel’);
-if (sel && html) {
-sel.innerHTML = html;
-var exists = Array.from(sel.options).some(function(o){ return o.value === _gVoice; });
-if (exists) sel.value = _gVoice;
-}
-try { localStorage.setItem(VOICE_CACHE_KEY, JSON.stringify({ ts: Date.now(), count: voices.length })); } catch(e) {}
-toast(voices.length + ‘\u7a2e\u985e\u306e\u97f3\u58f0\u3092\u53d6\u5f97\u3057\u307e\u3057\u305f’);
-if (btn) { btn.textContent = ‘\u97f3\u58f0\u4e00\u89a7\u3092\u66f4\u65b0’; btn.disabled = false; }
-} catch(e) {
-toast(’\u53d6\u5f97\u5931\u6557: ’ + (e.message||’’).slice(0,30));
-if (btn) { btn.textContent = ‘\u97f3\u58f0\u4e00\u89a7\u3092\u66f4\u65b0’; btn.disabled = false; }
-}
-}
 function voiceCategory() {
-if (_gVoice.includes(‘Chirp3’))  return ‘chirp3’;
-if (_gVoice.includes(‘Studio’))  return ‘studio’;
-if (_gVoice.includes(‘Neural2’)) return ‘neural2’;
-if (*gVoice.includes(‘Wavenet’) || *gVoice.includes(‘wavenet’)) return ‘wavenet’;
-return ‘standard’;
+  if (_gVoice.includes('Chirp3'))  return 'chirp3';
+  if (_gVoice.includes('Studio'))  return 'studio';
+  if (_gVoice.includes('Neural2')) return 'neural2';
+  if (_gVoice.includes('Wavenet') || _gVoice.includes('wavenet')) return 'wavenet';
+  return 'standard';
 }
-function isChirp3() { return *gVoice.includes(‘Chirp3’); }
+function isChirp3() { return _gVoice.includes('Chirp3'); }
 function updStepperState() {
-var grid = document.getElementById(‘stepperGrid’);
-var warn = document.getElementById(‘chirpWarnCtrl’);
-var warnSett = document.getElementById(‘chirpWarn’);
-var chirp = isChirp3();
-if (grid)     grid.classList.toggle(‘disabled’, chirp);
-if (warn)     warn.classList.toggle(‘show’, chirp);
-if (warnSett) warnSett.classList.toggle(‘show’, chirp);
+  var grid = document.getElementById('stepperGrid');
+  var warn = document.getElementById('chirpWarnCtrl');
+  var warnSett = document.getElementById('chirpWarn');
+  var chirp = isChirp3();
+  if (grid)     grid.classList.toggle('disabled', chirp);
+  if (warn)     warn.classList.toggle('show', chirp);
+  if (warnSett) warnSett.classList.toggle('show', chirp);
 }
 function usageKey(cat) {
-const d = new Date();
-const c = cat || voiceCategory();
-return ’yogatari_usage*’ + d.getFullYear() + ’*’ + (d.getMonth()+1) + ’*’ + c;
+  const d = new Date();
+  const c = cat || voiceCategory();
+  return 'yogatari_usage_' + d.getFullYear() + '_' + (d.getMonth()+1) + '_' + c;
 }
-function getUsage(cat) { return parseInt(localStorage.getItem(usageKey(cat)) || ‘0’); }
+function getUsage(cat) { return parseInt(localStorage.getItem(usageKey(cat)) || '0'); }
 function addUsage(chars) {
-const cur = getUsage() + chars;
-localStorage.setItem(usageKey(), cur);
-checkUsageAlert(cur);
-updUsageDisplay();
-return cur;
+  const cur = getUsage() + chars;
+  localStorage.setItem(usageKey(), cur);
+  checkUsageAlert(cur);
+  updUsageDisplay();
+  return cur;
 }
 function resetUsage() {
-openConfirm(
-‘使用量をリセット’,
-‘月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？’,
-() => {
-[‘standard’,‘wavenet’,‘neural2’].forEach(function(c){ localStorage.setItem(usageKey(c), ‘0’); });
-updUsageDisplay();
-toast(‘使用量をリセットしました’);
-}
-);
+  openConfirm(
+    '使用量をリセット',
+    '月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',
+    () => {
+      ['standard','wavenet','neural2'].forEach(function(c){ localStorage.setItem(usageKey(c), '0'); });
+      updUsageDisplay();
+      toast('使用量をリセットしました');
+    }
+  );
 }
 function checkUsageAlert(cur) {
-const lim = USAGE_LIMIT(), warn = USAGE_WARN();
-const limStr = (lim/10000).toFixed(0) + ‘万’;
-if (cur >= lim) {
-toast(‘⚠ 月間無料枠(’ + limStr + ‘文字)に達しました。Kyokoに切り替えます。’);
-} else if (cur >= warn) {
-toast(‘⚠ 使用量が’ + (warn/10000).toFixed(0) + ‘万文字を超えました。残り’ + Math.round((lim-cur)/10000) + ‘万文字’);
-}
+  const lim = USAGE_LIMIT(), warn = USAGE_WARN();
+  const limStr = (lim/10000).toFixed(0) + '万';
+  if (cur >= lim) {
+    toast('⚠ 月間無料枠(' + limStr + '文字)に達しました。Kyokoに切り替えます。');
+  } else if (cur >= warn) {
+    toast('⚠ 使用量が' + (warn/10000).toFixed(0) + '万文字を超えました。残り' + Math.round((lim-cur)/10000) + '万文字');
+  }
 }
 function isOverLimit() { return hasGoogleKey() && getUsage() >= USAGE_LIMIT(); }
 function updUsageDisplay() {
-var cats = [
-{ key: ‘standard’, label: ‘Standard’, limit: 4000000, warn: 3600000 },
-{ key: ‘wavenet’,  label: ‘WaveNet’,  limit: 4000000, warn: 3600000 },
-{ key: ‘neural2’,  label: ‘Neural2’,    limit: 1000000, warn:  900000 },
-{ key: ‘studio’,   label: ‘Studio’,     limit: 1000000, warn:  900000 },
-{ key: ‘chirp3’,   label: ‘Chirp 3 HD’, limit: 1000000, warn:  900000 },
-];
-var wrap = document.getElementById(‘usageWrap’);
-if (!wrap) return;
-var html2 = ‘’;
-var totalUsed = 0;
-cats.forEach(function(c) {
-var cur = getUsage(c.key);
-totalUsed += cur;
-var pct = Math.min(cur / c.limit * 100, 100);
-var cls = ‘usage-fill’ + (cur >= c.limit ? ’ over’ : cur >= c.warn ? ’ warn’ : ‘’);
-html2 += ‘<div class="usage-bar-header" style="margin-top:8px">’
-+ ‘<span class="usage-bar-label">’ + c.label + ‘</span>’
-+ ‘<span class="usage-bar-val">’ + cur.toLocaleString() + ’ / ’ + (c.limit/10000).toFixed(0) + ‘万</span>’
-+ ‘</div>’
-+ ‘<div class="usage-track"><div class="' + cls + '" style="width:' + pct + '%"></div></div>’;
-});
-html2 += ‘<div class="usage-bar-header" style="margin-top:10px;border-top:1px solid #302618;padding-top:8px">’
-+ ‘<span class="usage-bar-label" style="color:#9e8660">今月合計</span>’
-+ ‘<span class="usage-bar-val">’ + totalUsed.toLocaleString() + ‘文字</span>’
-+ ‘</div>’;
-var resetBtn = ‘<button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>’;
-wrap.innerHTML = html2 + resetBtn;
+  var cats = [
+    { key: 'standard', label: 'Standard', limit: 4000000, warn: 3600000 },
+    { key: 'wavenet',  label: 'WaveNet',  limit: 4000000, warn: 3600000 },
+    { key: 'neural2',  label: 'Neural2',    limit: 1000000, warn:  900000 },
+    { key: 'studio',   label: 'Studio',     limit: 1000000, warn:  900000 },
+    { key: 'chirp3',   label: 'Chirp 3 HD', limit: 1000000, warn:  900000 },
+  ];
+  var wrap = document.getElementById('usageWrap');
+  if (!wrap) return;
+  var html2 = '';
+  var totalUsed = 0;
+  cats.forEach(function(c) {
+    var cur = getUsage(c.key);
+    totalUsed += cur;
+    var pct = Math.min(cur / c.limit * 100, 100);
+    var cls = 'usage-fill' + (cur >= c.limit ? ' over' : cur >= c.warn ? ' warn' : '');
+    html2 += '<div class="usage-bar-header" style="margin-top:8px">'
+      + '<span class="usage-bar-label">' + c.label + '</span>'
+      + '<span class="usage-bar-val">' + cur.toLocaleString() + ' / ' + (c.limit/10000).toFixed(0) + '万</span>'
+      + '</div>'
+      + '<div class="usage-track"><div class="' + cls + '" style="width:' + pct + '%"></div></div>';
+  });
+  html2 += '<div class="usage-bar-header" style="margin-top:10px;border-top:1px solid #302618;padding-top:8px">'
+    + '<span class="usage-bar-label" style="color:#9e8660">今月合計</span>'
+    + '<span class="usage-bar-val">' + totalUsed.toLocaleString() + '文字</span>'
+    + '</div>';
+  var resetBtn = '<button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>';
+  wrap.innerHTML = html2 + resetBtn;
 }
 function switchTab(name) {
-_tabSw = true;
-document.querySelectorAll(’.tab’).forEach(t => t.classList.remove(‘active’));
-document.querySelectorAll(’.panel’).forEach(p => p.classList.remove(‘active’));
-document.getElementById(‘tab-’+name).classList.add(‘active’);
-document.getElementById(‘panel-’+name).classList.add(‘active’);
-if (name===‘hist’) renderHistList();
-if (name===‘sett’) { initSettings(); updUsageDisplay(); updStatsDisplay(); }
-setTimeout(() => { _tabSw = false; }, 600);
+  _tabSw = true;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+  if (name==='hist') renderHistList();
+  if (name==='sett') { initSettings(); updUsageDisplay(); updStatsDisplay(); }
+  setTimeout(() => { _tabSw = false; }, 600);
 }
-document.addEventListener(‘visibilitychange’, ()=>{
-if (document.visibilityState===‘visible’) {
-if(playing && !_busy) {
-if(hasGoogleKey()) {
-const _ael = getAudioEl();
-if(!_ael || _ael.paused || _ael.ended) {
-stopGoogleAudio(); _busy=false; setTimeout(()=>speakIdx(idx),400);
-}
-} else if(!SS.speaking && !SS.pending) {
-SS.cancel(); setTimeout(()=>speakIdx(idx),300);
-}
-}
-if(_actx&&_actx.state===‘suspended’) _actx.resume().catch(()=>{});
-}
+document.addEventListener('visibilitychange', ()=>{
+  if (document.visibilityState==='visible') {
+    if(playing && !_busy) {
+      if(hasGoogleKey()) {
+        const _ael = getAudioEl();
+        if(!_ael || _ael.paused || _ael.ended) {
+          stopGoogleAudio(); _busy=false; setTimeout(()=>speakIdx(idx),400);
+        }
+      } else if(!SS.speaking && !SS.pending) {
+        SS.cancel(); setTimeout(()=>speakIdx(idx),300);
+      }
+    }
+    if(_actx&&_actx.state==='suspended') _actx.resume().catch(()=>{});
+  }
 });
-document.addEventListener(‘touchstart’, (e)=>{
-if(_actx && _actx.state===‘suspended’) _actx.resume().catch(()=>{});
-const tag = e.target?.tagName || ‘’;
-const cl  = e.target?.className || ‘’;
-const skip = [‘BUTTON’,‘INPUT’,‘SELECT’,‘A’,‘LABEL’].includes(tag)
-|| cl.includes(‘cb’) || cl.includes(‘tab’) || cl.includes(‘seg’)
-|| cl.includes(‘step’) || cl.includes(‘chip’) || cl.includes(‘howto’)
-|| e.target?.closest?.(‘button, input, select, a, .cb, .tab, .stepper, .q-chip’);
-if (skip) return;
-if (!playing) return;
-if (hasGoogleKey()) {
-const _ael = getAudioEl(); if (_ael && _ael.src && !_ael.paused && !_ael.ended) return;
-if (!_busy) { stopGoogleAudio(); setTimeout(()=>speakIdx(idx), 300); }
-} else {
-if (!SS.speaking && !SS.pending) { SS.cancel(); setTimeout(()=>speakIdx(idx), 200); }
-}
+document.addEventListener('touchstart', (e)=>{
+  if(_actx && _actx.state==='suspended') _actx.resume().catch(()=>{});
+  const tag = e.target?.tagName || '';
+  const cl  = e.target?.className || '';
+  const skip = ['BUTTON','INPUT','SELECT','A','LABEL'].includes(tag)
+    || cl.includes('cb') || cl.includes('tab') || cl.includes('seg')
+    || cl.includes('step') || cl.includes('chip') || cl.includes('howto')
+    || e.target?.closest?.('button, input, select, a, .cb, .tab, .stepper, .q-chip');
+  if (skip) return;
+  if (!playing) return;
+  if (hasGoogleKey()) {
+    const _ael = getAudioEl(); if (_ael && _ael.src && !_ael.paused && !_ael.ended) return;
+    if (!_busy) { stopGoogleAudio(); setTimeout(()=>speakIdx(idx), 300); }
+  } else {
+    if (!SS.speaking && !SS.pending) { SS.cancel(); setTimeout(()=>speakIdx(idx), 200); }
+  }
 },{passive:true});
 let _userScrolling = false;
 let _scrollTimer   = null;
-document.addEventListener(‘scroll’, ()=>{
-_userScrolling = true;
-if(_scrollTimer) clearTimeout(_scrollTimer);
-_scrollTimer = setTimeout(()=>{ _userScrolling = false; }, 2000);
+document.addEventListener('scroll', ()=>{
+  _userScrolling = true;
+  if(_scrollTimer) clearTimeout(_scrollTimer);
+  _scrollTimer = setTimeout(()=>{ _userScrolling = false; }, 2000);
 }, {passive:true});
 function updHighlight(autoScroll=true) {
-document.querySelectorAll(’.seg’).forEach((el,i)=>{
-el.classList.remove(‘active’,‘past’);
-if(i===idx) el.classList.add(‘active’);
-else if(i<idx) el.classList.add(‘past’);
-});
-if(autoScroll && !_userScrolling) {
-const el=document.getElementById(‘s’+idx);
-if(el) el.scrollIntoView({behavior:‘smooth’,block:‘center’});
-}
+  document.querySelectorAll('.seg').forEach((el,i)=>{
+    el.classList.remove('active','past');
+    if(i===idx) el.classList.add('active');
+    else if(i<idx) el.classList.add('past');
+  });
+  if(autoScroll && !_userScrolling) {
+    const el=document.getElementById('s'+idx);
+    if(el) el.scrollIntoView({behavior:'smooth',block:'center'});
+  }
 }
 function updProg() {
-const total=segs.length, cur=Math.min(idx+1,total);
-document.getElementById(‘progNum’).textContent=cur+’ / ‘+total;
-document.getElementById(‘progFill’).style.width=(total?cur/total*100:0)+’%’;
-const remEl = document.getElementById(‘vRemain’);
-if (remEl && total > 0) {
-const remSegs = segs.slice(idx);
-const remChars = remSegs.reduce((a,s)=>a+s.length, 0);
-const baseRate = hasGoogleKey() ? 360 : 250;
-const cpm = baseRate * getRate() * 0.85;
-const remMin = remChars / cpm;
-if (remMin < 1) remEl.textContent = ‘1分未満’;
-else remEl.textContent = ‘約’ + Math.ceil(remMin) + ‘分’;
-}
+  const total=segs.length, cur=Math.min(idx+1,total);
+  document.getElementById('progNum').textContent=cur+' / '+total;
+  document.getElementById('progFill').style.width=(total?cur/total*100:0)+'%';
+  const remEl = document.getElementById('vRemain');
+  if (remEl && total > 0) {
+    const remSegs = segs.slice(idx);
+    const remChars = remSegs.reduce((a,s)=>a+s.length, 0);
+    const baseRate = hasGoogleKey() ? 360 : 250;
+    const cpm = baseRate * getRate() * 0.85;
+    const remMin = remChars / cpm;
+    if (remMin < 1) remEl.textContent = '1分未満';
+    else remEl.textContent = '約' + Math.ceil(remMin) + '分';
+  }
 }
 function updBtn() {
-const b=document.getElementById(‘bPlay’);
-b.textContent=playing?‘⏸’:‘▶’; b.classList.toggle(‘on’,playing);
+  const b=document.getElementById('bPlay');
+  b.textContent=playing?'⏸':'▶'; b.classList.toggle('on',playing);
 }
 function setBadge(on) {
-document.getElementById(‘badge’).classList.toggle(‘on’,on);
-document.getElementById(‘btext’).textContent=on?‘読み上げ中’:‘待機中’;
-const tz = document.getElementById(‘tapZones’);
-if (tz) {
-tz.style.display = on ? ‘block’ : ‘none’;
-tz.style.pointerEvents = ‘none’;
-const tl = document.getElementById(‘tapL’);
-const tr = document.getElementById(‘tapR’);
-if (tl) tl.style.pointerEvents = on ? ‘auto’ : ‘none’;
-if (tr) tr.style.pointerEvents = on ? ‘auto’ : ‘none’;
-}
+  document.getElementById('badge').classList.toggle('on',on);
+  document.getElementById('btext').textContent=on?'読み上げ中':'待機中';
+  const tz = document.getElementById('tapZones');
+  if (tz) {
+    tz.style.display = on ? 'block' : 'none';
+    tz.style.pointerEvents = 'none';
+    const tl = document.getElementById('tapL');
+    const tr = document.getElementById('tapR');
+    if (tl) tl.style.pointerEvents = on ? 'auto' : 'none';
+    if (tr) tr.style.pointerEvents = on ? 'auto' : 'none';
+  }
 }
 function ctrlEnable(on) {
-[‘bPlay’,‘bPrev’,‘bFwd’].forEach(id=>{ document.getElementById(id).disabled=!on; });
-document.getElementById(‘bNext’).disabled = !(on && nextUrl);
-document.getElementById(‘bPrev2’).disabled = !(on && prevUrl);
+  ['bPlay','bPrev','bFwd'].forEach(id=>{ document.getElementById(id).disabled=!on; });
+  document.getElementById('bNext').disabled = !(on && nextUrl);
+  document.getElementById('bPrev2').disabled = !(on && prevUrl);
 }
-function disable(on) { document.getElementById(‘btnGo’).disabled=on; }
+function disable(on) { document.getElementById('btnGo').disabled=on; }
 function showFetch(type,msg) {
-const b=document.getElementById(‘fetchBox’);
-document.getElementById(‘fetchMsg’).textContent=msg;
-b.classList.remove(‘err’);
-if(type===‘err’){b.classList.add(‘err’);document.getElementById(‘spin’).style.display=‘none’;}
-else{document.getElementById(‘spin’).style.display=’’;}
-b.classList.add(‘show’);
+  const b=document.getElementById('fetchBox');
+  document.getElementById('fetchMsg').textContent=msg;
+  b.classList.remove('err');
+  if(type==='err'){b.classList.add('err');document.getElementById('spin').style.display='none';}
+  else{document.getElementById('spin').style.display='';}
+  b.classList.add('show');
 }
-function hideFetch() { document.getElementById(‘fetchBox’).classList.remove(‘show’); }
+function hideFetch() { document.getElementById('fetchBox').classList.remove('show'); }
 function resetAll() {
-stop(); stopSilentAudio();
-document.getElementById(‘urlIn’).value=’’;
-hideFetch(); hideResumeBanner();
-document.getElementById(‘chapInfo’).classList.remove(‘show’);
-document.getElementById(‘progWrap’).classList.remove(‘show’);
-document.getElementById(‘novelText’).classList.remove(‘show’);
-document.getElementById(‘bgTip’).classList.remove(‘show’);
-queue=[]; qi=0; nextUrl=null; prevUrl=null;
-renderQueue(); ctrlEnable(false);
+  stop(); stopSilentAudio();
+  document.getElementById('urlIn').value='';
+  hideFetch(); hideResumeBanner();
+  document.getElementById('chapInfo').classList.remove('show');
+  document.getElementById('progWrap').classList.remove('show');
+  document.getElementById('novelText').classList.remove('show');
+  document.getElementById('bgTip').classList.remove('show');
+  queue=[]; qi=0; nextUrl=null; prevUrl=null;
+  renderQueue(); ctrlEnable(false);
 }
 function toast(msg) {
-const t=document.getElementById(‘toast’);
-t.textContent=msg; t.classList.add(‘show’);
-setTimeout(()=>t.classList.remove(‘show’),2600);
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2600);
 }
-let _rate  = parseFloat(localStorage.getItem(‘yogatari_rate’))  || 1.1;
-let _pitch = parseFloat(localStorage.getItem(‘yogatari_pitch’)) || 1.0;
+let _rate  = parseFloat(localStorage.getItem('yogatari_rate'))  || 1.1;
+let _pitch = parseFloat(localStorage.getItem('yogatari_pitch')) || 1.0;
 const RATE_MIN=0.5, RATE_MAX=2.5, RATE_STEP=0.1;
 const PITCH_MIN=0.5, PITCH_MAX=2.0, PITCH_STEP=0.1;
 function stepRate(dir) {
-_rate = Math.round(Math.min(RATE_MAX, Math.max(RATE_MIN, _rate + dir*RATE_STEP)) * 10) / 10;
-document.getElementById(‘vRate’).textContent = _rate.toFixed(1)+‘×’;
-localStorage.setItem(‘yogatari_rate’, _rate);
+  _rate = Math.round(Math.min(RATE_MAX, Math.max(RATE_MIN, _rate + dir*RATE_STEP)) * 10) / 10;
+  document.getElementById('vRate').textContent = _rate.toFixed(1)+'×';
+  localStorage.setItem('yogatari_rate', _rate);
 }
 function stepPitch(dir) {
-_pitch = Math.round(Math.min(PITCH_MAX, Math.max(PITCH_MIN, _pitch + dir*PITCH_STEP)) * 10) / 10;
-document.getElementById(‘vPitch’).textContent = _pitch.toFixed(1);
-localStorage.setItem(‘yogatari_pitch’, _pitch);
+  _pitch = Math.round(Math.min(PITCH_MAX, Math.max(PITCH_MIN, _pitch + dir*PITCH_STEP)) * 10) / 10;
+  document.getElementById('vPitch').textContent = _pitch.toFixed(1);
+  localStorage.setItem('yogatari_pitch', _pitch);
 }
 function getRate()  { return _rate; }
 function getPitch() { return _pitch; }
 function onGVoiceChange() {
-const sel = document.getElementById(‘googleVoiceSel’);
-if (sel && sel.value) {
-_gVoice = sel.value;
-localStorage.setItem(‘yogatari_gvoice’, _gVoice);
-}
-clearPrefetchCache();
-updStepperState();
-const note = document.getElementById(‘voiceLimitNote’);
-if (note) {
-const isWave = _gVoice.includes(‘Wavenet’) || _gVoice.includes(‘Standard’);
-note.innerHTML = isWave ? ‘WaveNet / Standard：月<b>400万文字</b>まで無料’ : ‘Neural2：月<b>100万文字</b>まで無料’;
-}
-updModeDisplay();
-updUsageDisplay();
+  const sel = document.getElementById('googleVoiceSel');
+  if (sel && sel.value) {
+    _gVoice = sel.value;
+    localStorage.setItem('yogatari_gvoice', _gVoice);
+  }
+  clearPrefetchCache();
+  updStepperState();
+  const note = document.getElementById('voiceLimitNote');
+  if (note) {
+    const isWave = _gVoice.includes('Wavenet') || _gVoice.includes('Standard');
+    note.innerHTML = isWave ? 'WaveNet / Standard：月<b>400万文字</b>まで無料' : 'Neural2：月<b>100万文字</b>まで無料';
+  }
+  updModeDisplay();
+  updUsageDisplay();
 }
 async function testVoice() {
-if (!hasGoogleKey()) { toast(‘APIキーを先に保存してください’); return; }
-const btn = document.getElementById(‘testVoiceBtn’);
-if (btn) btn.classList.add(‘testing’);
-const sel = document.getElementById(‘googleVoiceSel’);
-if (sel && sel.value) { _gVoice = sel.value; localStorage.setItem(‘yogatari_gvoice’, _gVoice); }
-try {
-const src = await fetchGoogleAudio(‘こんにちは。これは’ + friendlyVoiceName(_gVoice) + ‘の声です。いかがでしょうか。’);
-const a = new Audio(src);
-a.onended = () => { if(btn) btn.classList.remove(‘testing’); };
-a.onerror = () => { if(btn) btn.classList.remove(‘testing’); toast(‘再生エラー’); };
-a.play().catch(()=>{ if(btn) btn.classList.remove(‘testing’); toast(‘再生できませんでした’); });
-} catch(e) {
-if(btn) btn.classList.remove(‘testing’);
-toast(’⚠ ’ + (e.message||‘試聴エラー’).slice(0,40));
+  if (!hasGoogleKey()) { toast('APIキーを先に保存してください'); return; }
+  const btn = document.getElementById('testVoiceBtn');
+  if (btn) btn.classList.add('testing');
+  const sel = document.getElementById('googleVoiceSel');
+  if (sel && sel.value) { _gVoice = sel.value; localStorage.setItem('yogatari_gvoice', _gVoice); }
+  try {
+    const src = await fetchGoogleAudio('こんにちは。これは' + friendlyVoiceName(_gVoice) + 'の声です。いかがでしょうか。');
+    const a = new Audio(src);
+    a.onended = () => { if(btn) btn.classList.remove('testing'); };
+    a.onerror = () => { if(btn) btn.classList.remove('testing'); toast('再生エラー'); };
+    a.play().catch(()=>{ if(btn) btn.classList.remove('testing'); toast('再生できませんでした'); });
+  } catch(e) {
+    if(btn) btn.classList.remove('testing');
+    toast('⚠ ' + (e.message||'試聴エラー').slice(0,40));
+  }
 }
-}
-function onVoice() { const i=+document.getElementById(‘voiceSel’).value; if(!isNaN(i)) selVoice=voices[i]; }
-let _bgOn  = localStorage.getItem(‘yogatari_bg’) === ‘1’;
+function onVoice() { const i=+document.getElementById('voiceSel').value; if(!isNaN(i)) selVoice=voices[i]; }
+let _bgOn  = localStorage.getItem('yogatari_bg') === '1';
 let _bgRaf = null;
-let _bgCond= ‘clear’;
+let _bgCond= 'clear';
 let _bgCondTimer = 0;
 const BG_FRAME_INTERVAL = 1000 / 30;
 let _bgLastFrame = 0;
-const bgCv  = document.getElementById(‘bgCanvas’);
-const bgCtx = bgCv ? bgCv.getContext(‘2d’) : null;
+const bgCv  = document.getElementById('bgCanvas');
+const bgCtx = bgCv ? bgCv.getContext('2d') : null;
 let _stars=[], _clouds=[], _drops=[], _flakes=[], _shootings=[], _auroras=[];
 function bgResize() {
-if (!bgCv) return;
-bgCv.width = window.innerWidth;
-bgCv.height = window.innerHeight;
+  if (!bgCv) return;
+  bgCv.width = window.innerWidth;
+  bgCv.height = window.innerHeight;
 }
 function initStars(n) {
-_stars = Array.from({length:n}, () => ({
-x: Math.random() * bgCv.width,
-y: Math.random() * bgCv.height * 0.82,
-r: Math.random() * 1.5 + 0.3,
-a: Math.random(), da: (Math.random()-0.5)*0.007,
-}));
+  _stars = Array.from({length:n}, () => ({
+    x: Math.random() * bgCv.width,
+    y: Math.random() * bgCv.height * 0.82,
+    r: Math.random() * 1.5 + 0.3,
+    a: Math.random(), da: (Math.random()-0.5)*0.007,
+  }));
 }
 function initClouds(n) {
-_clouds = Array.from({length:n}, () => ({
-x: Math.random() * bgCv.width * 1.5,
-y: Math.random() * bgCv.height * 0.55,
-w: Math.random() * 200 + 80, h: Math.random() * 55 + 28,
-spd: Math.random() * 0.2 + 0.06, a: Math.random() * 0.3 + 0.1,
-}));
+  _clouds = Array.from({length:n}, () => ({
+    x: Math.random() * bgCv.width * 1.5,
+    y: Math.random() * bgCv.height * 0.55,
+    w: Math.random() * 200 + 80, h: Math.random() * 55 + 28,
+    spd: Math.random() * 0.2 + 0.06, a: Math.random() * 0.3 + 0.1,
+  }));
 }
 function initRain(n) {
-_drops = Array.from({length:n}, () => ({
-x: Math.random()*bgCv.width, y: Math.random()*bgCv.height,
-len: Math.random()*14+6, spd: Math.random()*7+7, a: Math.random()*0.4+0.15,
-}));
+  _drops = Array.from({length:n}, () => ({
+    x: Math.random()*bgCv.width, y: Math.random()*bgCv.height,
+    len: Math.random()*14+6, spd: Math.random()*7+7, a: Math.random()*0.4+0.15,
+  }));
 }
 function initSnow(n) {
-_flakes = Array.from({length:n}, () => ({
-x: Math.random()*bgCv.width, y: Math.random()*bgCv.height,
-r: Math.random()*3+1, spd: Math.random()*1.2+0.4,
-drift: (Math.random()-0.5)*0.5, a: Math.random()*0.6+0.3,
-}));
+  _flakes = Array.from({length:n}, () => ({
+    x: Math.random()*bgCv.width, y: Math.random()*bgCv.height,
+    r: Math.random()*3+1, spd: Math.random()*1.2+0.4,
+    drift: (Math.random()-0.5)*0.5, a: Math.random()*0.6+0.3,
+  }));
 }
 function initAuroras(n) {
-_auroras = Array.from({length:n}, () => ({
-x: Math.random()*bgCv.width, y: bgCv.height*0.05 + Math.random()*bgCv.height*0.25,
-w: Math.random()*180+120, h: Math.random()*140+80,
-hue: Math.random()*60+140,
-a: Math.random()*0.18+0.05, da: (Math.random()-0.5)*0.003,
-drift: (Math.random()-0.5)*0.15,
-}));
+  _auroras = Array.from({length:n}, () => ({
+    x: Math.random()*bgCv.width, y: bgCv.height*0.05 + Math.random()*bgCv.height*0.25,
+    w: Math.random()*180+120, h: Math.random()*140+80,
+    hue: Math.random()*60+140,
+    a: Math.random()*0.18+0.05, da: (Math.random()-0.5)*0.003,
+    drift: (Math.random()-0.5)*0.15,
+  }));
 }
-const WEATHER_LIST = [‘clear’,‘clear’,‘clear’,‘cloudy’,‘rain’,‘snow’,‘aurora’];
+const WEATHER_LIST = ['clear','clear','clear','cloudy','rain','snow','aurora'];
 function pickRandomCond() { return WEATHER_LIST[Math.floor(Math.random()*WEATHER_LIST.length)]; }
 function getMoonPhase() {
-const knownNew = new Date(2000,0,6,18,14,0);
-const lunarCycle = 29.53058867;
-const diff = (Date.now() - knownNew) / 86400000;
-return ((diff % lunarCycle) + lunarCycle) % lunarCycle / lunarCycle;
+  const knownNew = new Date(2000,0,6,18,14,0);
+  const lunarCycle = 29.53058867;
+  const diff = (Date.now() - knownNew) / 86400000;
+  return ((diff % lunarCycle) + lunarCycle) % lunarCycle / lunarCycle;
 }
 function getMoonPosition() {
-const h = new Date().getHours() + new Date().getMinutes()/60;
-const t = h < 6 ? h+24 : h;
-const progress = Math.max(0, Math.min(1, (t-20)/10));
-const angle = Math.PI * progress;
-return { x: 0.85 - Math.sin(angle)*0.65, y: 0.36 - Math.sin(angle)*0.22 };
+  const h = new Date().getHours() + new Date().getMinutes()/60;
+  const t = h < 6 ? h+24 : h;
+  const progress = Math.max(0, Math.min(1, (t-20)/10));
+  const angle = Math.PI * progress;
+  return { x: 0.85 - Math.sin(angle)*0.65, y: 0.36 - Math.sin(angle)*0.22 };
 }
 function drawMoonPhase(ctx, cx, cy, r, phase) {
-ctx.save();
-ctx.fillStyle = ‘#f0e8c0’;
-ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
-ctx.globalCompositeOperation = ‘source-atop’;
-const p = phase < 0.5 ? phase*2 : (phase-0.5)*2;
-const shadowX = phase < 0.5 ? cx+r*(1-p*2) : cx+r*(p*2-1);
-ctx.fillStyle = ‘#030710’;
-ctx.beginPath();
-if (phase < 0.5) {
-ctx.arc(cx,cy,r, Math.PI/2,-Math.PI/2);
-ctx.bezierCurveTo(shadowX,cy-r,shadowX,cy+r,cx,cy+r);
-} else {
-ctx.arc(cx,cy,r,-Math.PI/2,Math.PI/2);
-ctx.bezierCurveTo(shadowX,cy+r,shadowX,cy-r,cx,cy-r);
-}
-ctx.closePath(); ctx.fill();
-ctx.globalCompositeOperation = ‘source-over’;
-ctx.strokeStyle = ‘rgba(255,245,200,0.5)’;
-ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
-ctx.restore();
+  ctx.save();
+  ctx.fillStyle = '#f0e8c0';
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill();
+  ctx.globalCompositeOperation = 'source-atop';
+  const p = phase < 0.5 ? phase*2 : (phase-0.5)*2;
+  const shadowX = phase < 0.5 ? cx+r*(1-p*2) : cx+r*(p*2-1);
+  ctx.fillStyle = '#030710';
+  ctx.beginPath();
+  if (phase < 0.5) {
+    ctx.arc(cx,cy,r, Math.PI/2,-Math.PI/2);
+    ctx.bezierCurveTo(shadowX,cy-r,shadowX,cy+r,cx,cy+r);
+  } else {
+    ctx.arc(cx,cy,r,-Math.PI/2,Math.PI/2);
+    ctx.bezierCurveTo(shadowX,cy+r,shadowX,cy-r,cx,cy-r);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.strokeStyle = 'rgba(255,245,200,0.5)';
+  ctx.lineWidth=1; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+  ctx.restore();
 }
 function drawRealCloud(ctx, cx, cy, w, h, cond) {
-const isDark = cond===‘rain’;
-const baseL = isDark ? ‘rgba(55,60,75,’ : ‘rgba(75,85,115,’;
-const baseS = isDark ? ‘rgba(35,38,48,’ : ‘rgba(45,50,72,’;
-const bumps = [
-{dx:0,dy:0,rx:w*0.42,ry:h*0.55},{dx:-w*0.28,dy:h*0.18,rx:w*0.30,ry:h*0.45},
-{dx:w*0.28,dy:h*0.15,rx:w*0.32,ry:h*0.42},{dx:-w*0.50,dy:h*0.32,rx:w*0.22,ry:h*0.32},
-{dx:w*0.50,dy:h*0.28,rx:w*0.24,ry:h*0.30},{dx:-w*0.15,dy:-h*0.15,rx:w*0.28,ry:h*0.38},
-{dx:w*0.18,dy:-h*0.12,rx:w*0.26,ry:h*0.36},
-];
-ctx.fillStyle = baseS+‘0.65)’;
-bumps.forEach(b=>{ ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy+h*0.12,b.rx*0.95,b.ry*0.7,0,0,Math.PI*2); ctx.fill(); });
-bumps.forEach((b,i)=>{ ctx.fillStyle=baseL+(i===0?‘0.88)’:‘0.80)’); ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy,b.rx,b.ry,0,0,Math.PI*2); ctx.fill(); });
+  const isDark = cond==='rain';
+  const baseL = isDark ? 'rgba(55,60,75,' : 'rgba(75,85,115,';
+  const baseS = isDark ? 'rgba(35,38,48,' : 'rgba(45,50,72,';
+  const bumps = [
+    {dx:0,dy:0,rx:w*0.42,ry:h*0.55},{dx:-w*0.28,dy:h*0.18,rx:w*0.30,ry:h*0.45},
+    {dx:w*0.28,dy:h*0.15,rx:w*0.32,ry:h*0.42},{dx:-w*0.50,dy:h*0.32,rx:w*0.22,ry:h*0.32},
+    {dx:w*0.50,dy:h*0.28,rx:w*0.24,ry:h*0.30},{dx:-w*0.15,dy:-h*0.15,rx:w*0.28,ry:h*0.38},
+    {dx:w*0.18,dy:-h*0.12,rx:w*0.26,ry:h*0.36},
+  ];
+  ctx.fillStyle = baseS+'0.65)';
+  bumps.forEach(b=>{ ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy+h*0.12,b.rx*0.95,b.ry*0.7,0,0,Math.PI*2); ctx.fill(); });
+  bumps.forEach((b,i)=>{ ctx.fillStyle=baseL+(i===0?'0.88)':'0.80)'); ctx.beginPath(); ctx.ellipse(cx+b.dx,cy+b.dy,b.rx,b.ry,0,0,Math.PI*2); ctx.fill(); });
 }
 function maybeShoot() {
-if (Math.random()<0.004 && _shootings.length<3)
-_shootings.push({x:Math.random()*bgCv.width, y:Math.random()*bgCv.height*0.4,
-vx:(Math.random()*4+3)*(Math.random()<0.5?1:-1), vy:Math.random()*3+2, life:1.0});
+  if (Math.random()<0.004 && _shootings.length<3)
+    _shootings.push({x:Math.random()*bgCv.width, y:Math.random()*bgCv.height*0.4,
+      vx:(Math.random()*4+3)*(Math.random()<0.5?1:-1), vy:Math.random()*3+2, life:1.0});
 }
 function drawBg() {
-if (!bgCtx || !bgCv.width) return;
-const W=bgCv.width, H=bgCv.height;
-const cond = _bgCond;
-_bgCondTimer++;
-if (_bgCondTimer > 60 * (30 + Math.random()*60)) { _bgCond = pickRandomCond(); _bgCondTimer = 0; }
-const grad = bgCtx.createLinearGradient(0,0,0,H);
-if (cond===‘rain’) { grad.addColorStop(0,’#080d18’); grad.addColorStop(1,’#131e28’); }
-else if (cond===‘snow’) { grad.addColorStop(0,’#0e1220’); grad.addColorStop(1,’#1c202e’); }
-else if (cond===‘cloudy’) { grad.addColorStop(0,’#080c18’); grad.addColorStop(1,’#141828’); }
-else if (cond===‘aurora’) { grad.addColorStop(0,’#020408’); grad.addColorStop(0.5,’#021408’); grad.addColorStop(1,’#040a10’); }
-else { grad.addColorStop(0,’#020408’); grad.addColorStop(1,’#050810’); }
-bgCtx.fillStyle=grad; bgCtx.fillRect(0,0,W,H);
-if (cond===‘aurora’) {
-_auroras.forEach(au => {
-au.a += au.da; if(au.a>0.22||au.a<0.04) au.da*=-1;
-au.x += au.drift; if(au.x>W+au.w) au.x=-au.w; if(au.x<-au.w) au.x=W+au.w;
-const ag = bgCtx.createRadialGradient(au.x,au.y,0,au.x,au.y,au.w);
-ag.addColorStop(0, ‘hsla(’+au.hue+’,100%,55%,’+au.a+’)’);
-ag.addColorStop(0.4,‘hsla(’+(au.hue+20)+’,90%,45%,’+(au.a*0.6)+’)’);
-ag.addColorStop(1, ‘hsla(’+au.hue+’,80%,40%,0)’);
-bgCtx.fillStyle=ag;
-bgCtx.beginPath(); bgCtx.ellipse(au.x, au.y, au.w, au.h, 0, 0, Math.PI*2); bgCtx.fill();
-});
-_auroras.forEach(au => {
-for(let i=-3;i<=3;i++){
-const sx=au.x+i*au.w*0.15;
-const sg=bgCtx.createLinearGradient(sx,au.y-au.h,sx,au.y+au.h*1.5);
-sg.addColorStop(0,‘hsla(’+(au.hue+i*8)+’,100%,60%,0)’);
-sg.addColorStop(0.3,‘hsla(’+(au.hue+i*8)+’,100%,55%,’+(au.a*0.7)+’)’);
-sg.addColorStop(0.7,‘hsla(’+(au.hue+i*8+30)+’,90%,45%,’+(au.a*0.4)+’)’);
-sg.addColorStop(1,‘hsla(’+(au.hue)+’,80%,40%,0)’);
-bgCtx.fillStyle=sg;
-bgCtx.fillRect(sx-6, au.y-au.h, 12, au.h*2.5);
-}
-});
-}
-if (cond!==‘rain’) {
-const phase=getMoonPhase(), mpos=getMoonPosition(), mr=24;
-const mx=W*mpos.x, my=H*mpos.y;
-const mg=bgCtx.createRadialGradient(mx,my,mr*0.8,mx,my,mr*3.5);
-mg.addColorStop(0,‘rgba(255,245,200,0.18)’); mg.addColorStop(1,‘rgba(255,245,200,0)’);
-bgCtx.fillStyle=mg; bgCtx.beginPath(); bgCtx.arc(mx,my,mr*3.5,0,Math.PI*2); bgCtx.fill();
-drawMoonPhase(bgCtx,mx,my,mr,phase);
-const fullness=1-Math.abs(phase-0.5)*2;
-if(fullness>0.3){
-bgCtx.globalAlpha=fullness*0.22; bgCtx.fillStyle=‘rgba(180,160,90,1)’;
-[[mx-7,my+5,4.5],[mx+8,my-7,3.5],[mx-2,my-9,2.5],[mx+4,my+8,2]].forEach(([cx,cy,cr])=>{
-bgCtx.beginPath(); bgCtx.arc(cx,cy,cr,0,Math.PI*2); bgCtx.fill();
-}); bgCtx.globalAlpha=1;
-}
-}
-if (cond!==‘rain’) {
-maybeShoot();
-const starAlpha = cond===‘cloudy’?0.25:cond===‘aurora’?0.4:0.9;
-_stars.forEach(s=>{
-s.a+=s.da; if(s.a>1||s.a<0.1) s.da*=-1;
-bgCtx.globalAlpha=s.a*starAlpha;
-bgCtx.fillStyle=’#fff’;
-bgCtx.beginPath(); bgCtx.arc(s.x,s.y,s.r,0,Math.PI*2); bgCtx.fill();
-});
-_shootings=_shootings.filter(s=>{
-s.x+=s.vx*3; s.y+=s.vy*3; s.life-=0.025;
-if(s.life<=0) return false;
-bgCtx.globalAlpha=s.life*0.9;
-bgCtx.strokeStyle=’#fff’; bgCtx.lineWidth=1.5;
-bgCtx.beginPath(); bgCtx.moveTo(s.x,s.y);
-bgCtx.lineTo(s.x-s.vx*30/Math.abs(s.vx),s.y-s.vy*30/Math.abs(s.vx)); bgCtx.stroke();
-return true;
-});
-bgCtx.globalAlpha=1;
-}
-if (cond===‘cloudy’||cond===‘rain’||cond===‘snow’) {
-const ca=cond===‘cloudy’?1.8:cond===‘rain’?1.4:0.9;
-_clouds.forEach(c=>{
-c.x+=c.spd; if(c.x>W+c.w*1.2) c.x=-c.w*1.2;
-bgCtx.save(); bgCtx.globalAlpha=Math.min(1,c.a*ca);
-drawRealCloud(bgCtx,c.x,c.y,c.w,c.h,cond); bgCtx.restore();
-}); bgCtx.globalAlpha=1;
-}
-if (cond===‘rain’) {
-_drops.forEach(d=>{
-d.y+=d.spd; d.x+=1.5; if(d.y>H){d.y=0;d.x=Math.random()*W;}
-bgCtx.globalAlpha=d.a; bgCtx.strokeStyle=‘rgba(140,170,210,0.8)’; bgCtx.lineWidth=1;
-bgCtx.beginPath(); bgCtx.moveTo(d.x,d.y); bgCtx.lineTo(d.x+2,d.y+d.len); bgCtx.stroke();
-}); bgCtx.globalAlpha=1;
-}
-if (cond===‘snow’) {
-_flakes.forEach(f=>{
-f.y+=f.spd; f.x+=f.drift; if(f.y>H){f.y=0;f.x=Math.random()*W;}
-if(f.x>W)f.x=0; if(f.x<0)f.x=W;
-bgCtx.globalAlpha=f.a; bgCtx.fillStyle=’#ddeeff’;
-bgCtx.beginPath(); bgCtx.arc(f.x,f.y,f.r,0,Math.PI*2); bgCtx.fill();
-}); bgCtx.globalAlpha=1;
-}
+  if (!bgCtx || !bgCv.width) return;
+  const W=bgCv.width, H=bgCv.height;
+  const cond = _bgCond;
+  _bgCondTimer++;
+  if (_bgCondTimer > 60 * (30 + Math.random()*60)) { _bgCond = pickRandomCond(); _bgCondTimer = 0; }
+  const grad = bgCtx.createLinearGradient(0,0,0,H);
+  if (cond==='rain') { grad.addColorStop(0,'#080d18'); grad.addColorStop(1,'#131e28'); }
+  else if (cond==='snow') { grad.addColorStop(0,'#0e1220'); grad.addColorStop(1,'#1c202e'); }
+  else if (cond==='cloudy') { grad.addColorStop(0,'#080c18'); grad.addColorStop(1,'#141828'); }
+  else if (cond==='aurora') { grad.addColorStop(0,'#020408'); grad.addColorStop(0.5,'#021408'); grad.addColorStop(1,'#040a10'); }
+  else { grad.addColorStop(0,'#020408'); grad.addColorStop(1,'#050810'); }
+  bgCtx.fillStyle=grad; bgCtx.fillRect(0,0,W,H);
+  if (cond==='aurora') {
+    _auroras.forEach(au => {
+      au.a += au.da; if(au.a>0.22||au.a<0.04) au.da*=-1;
+      au.x += au.drift; if(au.x>W+au.w) au.x=-au.w; if(au.x<-au.w) au.x=W+au.w;
+      const ag = bgCtx.createRadialGradient(au.x,au.y,0,au.x,au.y,au.w);
+      ag.addColorStop(0, 'hsla('+au.hue+',100%,55%,'+au.a+')');
+      ag.addColorStop(0.4,'hsla('+(au.hue+20)+',90%,45%,'+(au.a*0.6)+')');
+      ag.addColorStop(1, 'hsla('+au.hue+',80%,40%,0)');
+      bgCtx.fillStyle=ag;
+      bgCtx.beginPath(); bgCtx.ellipse(au.x, au.y, au.w, au.h, 0, 0, Math.PI*2); bgCtx.fill();
+    });
+    _auroras.forEach(au => {
+      for(let i=-3;i<=3;i++){
+        const sx=au.x+i*au.w*0.15;
+        const sg=bgCtx.createLinearGradient(sx,au.y-au.h,sx,au.y+au.h*1.5);
+        sg.addColorStop(0,'hsla('+(au.hue+i*8)+',100%,60%,0)');
+        sg.addColorStop(0.3,'hsla('+(au.hue+i*8)+',100%,55%,'+(au.a*0.7)+')');
+        sg.addColorStop(0.7,'hsla('+(au.hue+i*8+30)+',90%,45%,'+(au.a*0.4)+')');
+        sg.addColorStop(1,'hsla('+(au.hue)+',80%,40%,0)');
+        bgCtx.fillStyle=sg;
+        bgCtx.fillRect(sx-6, au.y-au.h, 12, au.h*2.5);
+      }
+    });
+  }
+  if (cond!=='rain') {
+    const phase=getMoonPhase(), mpos=getMoonPosition(), mr=24;
+    const mx=W*mpos.x, my=H*mpos.y;
+    const mg=bgCtx.createRadialGradient(mx,my,mr*0.8,mx,my,mr*3.5);
+    mg.addColorStop(0,'rgba(255,245,200,0.18)'); mg.addColorStop(1,'rgba(255,245,200,0)');
+    bgCtx.fillStyle=mg; bgCtx.beginPath(); bgCtx.arc(mx,my,mr*3.5,0,Math.PI*2); bgCtx.fill();
+    drawMoonPhase(bgCtx,mx,my,mr,phase);
+    const fullness=1-Math.abs(phase-0.5)*2;
+    if(fullness>0.3){
+      bgCtx.globalAlpha=fullness*0.22; bgCtx.fillStyle='rgba(180,160,90,1)';
+      [[mx-7,my+5,4.5],[mx+8,my-7,3.5],[mx-2,my-9,2.5],[mx+4,my+8,2]].forEach(([cx,cy,cr])=>{
+        bgCtx.beginPath(); bgCtx.arc(cx,cy,cr,0,Math.PI*2); bgCtx.fill();
+      }); bgCtx.globalAlpha=1;
+    }
+  }
+  if (cond!=='rain') {
+    maybeShoot();
+    const starAlpha = cond==='cloudy'?0.25:cond==='aurora'?0.4:0.9;
+    _stars.forEach(s=>{
+      s.a+=s.da; if(s.a>1||s.a<0.1) s.da*=-1;
+      bgCtx.globalAlpha=s.a*starAlpha;
+      bgCtx.fillStyle='#fff';
+      bgCtx.beginPath(); bgCtx.arc(s.x,s.y,s.r,0,Math.PI*2); bgCtx.fill();
+    });
+    _shootings=_shootings.filter(s=>{
+      s.x+=s.vx*3; s.y+=s.vy*3; s.life-=0.025;
+      if(s.life<=0) return false;
+      bgCtx.globalAlpha=s.life*0.9;
+      bgCtx.strokeStyle='#fff'; bgCtx.lineWidth=1.5;
+      bgCtx.beginPath(); bgCtx.moveTo(s.x,s.y);
+      bgCtx.lineTo(s.x-s.vx*30/Math.abs(s.vx),s.y-s.vy*30/Math.abs(s.vx)); bgCtx.stroke();
+      return true;
+    });
+    bgCtx.globalAlpha=1;
+  }
+  if (cond==='cloudy'||cond==='rain'||cond==='snow') {
+    const ca=cond==='cloudy'?1.8:cond==='rain'?1.4:0.9;
+    _clouds.forEach(c=>{
+      c.x+=c.spd; if(c.x>W+c.w*1.2) c.x=-c.w*1.2;
+      bgCtx.save(); bgCtx.globalAlpha=Math.min(1,c.a*ca);
+      drawRealCloud(bgCtx,c.x,c.y,c.w,c.h,cond); bgCtx.restore();
+    }); bgCtx.globalAlpha=1;
+  }
+  if (cond==='rain') {
+    _drops.forEach(d=>{
+      d.y+=d.spd; d.x+=1.5; if(d.y>H){d.y=0;d.x=Math.random()*W;}
+      bgCtx.globalAlpha=d.a; bgCtx.strokeStyle='rgba(140,170,210,0.8)'; bgCtx.lineWidth=1;
+      bgCtx.beginPath(); bgCtx.moveTo(d.x,d.y); bgCtx.lineTo(d.x+2,d.y+d.len); bgCtx.stroke();
+    }); bgCtx.globalAlpha=1;
+  }
+  if (cond==='snow') {
+    _flakes.forEach(f=>{
+      f.y+=f.spd; f.x+=f.drift; if(f.y>H){f.y=0;f.x=Math.random()*W;}
+      if(f.x>W)f.x=0; if(f.x<0)f.x=W;
+      bgCtx.globalAlpha=f.a; bgCtx.fillStyle='#ddeeff';
+      bgCtx.beginPath(); bgCtx.arc(f.x,f.y,f.r,0,Math.PI*2); bgCtx.fill();
+    }); bgCtx.globalAlpha=1;
+  }
 }
 function bgLoop(timestamp) {
-if (!_bgOn) return;
-if (timestamp - _bgLastFrame >= BG_FRAME_INTERVAL) { _bgLastFrame = timestamp; drawBg(); }
-_bgRaf = requestAnimationFrame(bgLoop);
+  if (!_bgOn) return;
+  if (timestamp - _bgLastFrame >= BG_FRAME_INTERVAL) { _bgLastFrame = timestamp; drawBg(); }
+  _bgRaf = requestAnimationFrame(bgLoop);
 }
 function startBgEffect() {
-if (!bgCv || !bgCtx) return;
-_bgCond = pickRandomCond();
-bgResize();
-initStars(200); initClouds(7); initRain(130); initSnow(90); initAuroras(5);
-bgCv.style.opacity = ‘0.93’;
-document.body.style.background = ‘transparent’;
-_bgLastFrame = 0;
-_bgRaf = requestAnimationFrame(bgLoop);
+  if (!bgCv || !bgCtx) return;
+  _bgCond = pickRandomCond();
+  bgResize();
+  initStars(200); initClouds(7); initRain(130); initSnow(90); initAuroras(5);
+  bgCv.style.opacity = '0.93';
+  document.body.style.background = 'transparent';
+  _bgLastFrame = 0;
+  _bgRaf = requestAnimationFrame(bgLoop);
 }
 function stopBgEffect() {
-if (_bgRaf) { cancelAnimationFrame(_bgRaf); _bgRaf=null; }
-if (bgCv) bgCv.style.opacity=‘0’;
-document.body.style.background=’#0a0908’;
+  if (_bgRaf) { cancelAnimationFrame(_bgRaf); _bgRaf=null; }
+  if (bgCv) bgCv.style.opacity='0';
+  document.body.style.background='#0a0908';
 }
 function toggleBgEffect() {
-_bgOn = !_bgOn;
-localStorage.setItem(‘yogatari_bg’, _bgOn?‘1’:‘0’);
-const btn=document.getElementById(‘bgToggleBtn’);
-const st=document.getElementById(‘bgStatusTxt’);
-if(btn){ btn.textContent=_bgOn?‘ON’:‘OFF’; btn.className=_bgOn?‘sett-btn sett-btn-save’:‘sett-btn’; }
-if(st) st.textContent = _bgOn ? ‘月齢・星・流れ星・オーロラ・ランダム天気’ : ‘’;
-if(_bgOn) startBgEffect(); else stopBgEffect();
+  _bgOn = !_bgOn;
+  localStorage.setItem('yogatari_bg', _bgOn?'1':'0');
+  const btn=document.getElementById('bgToggleBtn');
+  const st=document.getElementById('bgStatusTxt');
+  if(btn){ btn.textContent=_bgOn?'ON':'OFF'; btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn'; }
+  if(st) st.textContent = _bgOn ? '月齢・星・流れ星・オーロラ・ランダム天気' : '';
+  if(_bgOn) startBgEffect(); else stopBgEffect();
 }
-window.addEventListener(‘resize’, ()=>{ if(_bgOn){bgResize();initStars(200);initClouds(7);initAuroras(5);} });
+window.addEventListener('resize', ()=>{ if(_bgOn){bgResize();initStars(200);initClouds(7);initAuroras(5);} });
 setTimeout(()=>{
-const btn=document.getElementById(‘bgToggleBtn’);
-if(btn){ btn.textContent=_bgOn?‘ON’:‘OFF’; btn.className=_bgOn?‘sett-btn sett-btn-save’:‘sett-btn’; }
-const st=document.getElementById(‘bgStatusTxt’);
-if(st && _bgOn) st.textContent=‘月齢・星・流れ星・オーロラ・ランダム天気’;
-if(_bgOn) startBgEffect();
+  const btn=document.getElementById('bgToggleBtn');
+  if(btn){ btn.textContent=_bgOn?'ON':'OFF'; btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn'; }
+  const st=document.getElementById('bgStatusTxt');
+  if(st && _bgOn) st.textContent='月齢・星・流れ星・オーロラ・ランダム天気';
+  if(_bgOn) startBgEffect();
 }, 500);
 </script>
-
 </body>
 </html>
