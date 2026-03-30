@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v134</title>
+<title>夜語り v135</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -105,35 +105,35 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .hist-new{background:#c8340c;color:#fff;font-size:10px;font-weight:bold;font-family:'Courier New',Consolas,monospace;padding:2px 7px;border-radius:8px;margin-right:4px;vertical-align:middle;animation:newpulse 2s ease-in-out infinite}
 @keyframes newpulse{0%,100%{opacity:1}50%{opacity:0.55}}
 .hist-del:active{color:#e05050}
-.bg-tip{display:none;margin-top:10px;padding:10px 14px;background:rgba(139,32,32,0.15);border:1px solid rgba(139,32,32,0.3);border-radius:10px;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#d07070;line-height:1.7}
+
 .bg-tip.show{display:block}
 .ctrl-bar{flex-shrink:0;background:rgba(20,18,16,0.90);border-top:1px solid #302618;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));position:relative;z-index:20}
 .stepper-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-bottom:8px}
 .stepper-row{display:flex;align-items:center;gap:6px}
-.st-label{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
-.st-val{font-family:'Courier New',Consolas,monospace;font-size:13px;color:#c8991e;width:34px;text-align:center;flex-shrink:0;font-weight:bold}
+.st-label{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
+.st-val{font-family:‘Courier New’,Consolas,monospace;font-size:13px;color:#c8991e;width:34px;text-align:center;flex-shrink:0;font-weight:bold}
 .st-btn{width:32px;height:32px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;user-select:none;-webkit-appearance:none;transition:all 0.12s}
 .st-btn:active{background:rgba(200,153,30,0.12);border-color:#c8991e;color:#c8991e}
 .voice-remain-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .voice-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .remain-box{display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
-.voice-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
-select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
+.voice-lbl{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
+select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
 .btn-row{display:flex;align-items:center;justify-content:center;gap:8px}
 .cb{width:44px;height:44px;border-radius:50%;background:none;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-appearance:none;appearance:none;transition:all 0.15s;user-select:none;-webkit-appearance:none}
 .cb:active:not(:disabled){border-color:#c8991e;color:#c8991e;background:rgba(200,153,30,0.12)}
 .cb:disabled{opacity:0.2;pointer-events:none}
 .cb-play{width:54px;height:54px;font-size:20px;border-color:#c8991e;color:#c8991e}
 .cb-play.on{background:rgba(200,153,30,0.12);box-shadow:0 0 18px rgba(200,153,30,0.2)}
-.cb-nxt{width:auto;padding:0 12px;border-radius:10px;font-family:'Courier New',Consolas,monospace;font-size:11px;letter-spacing:0.05em}
+.cb-nxt{width:auto;padding:0 12px;border-radius:10px;font-family:‘Courier New’,Consolas,monospace;font-size:11px;letter-spacing:0.05em}
 .cb-nxt:not(:disabled){border-color:#c8991e;color:#c8991e}
 .cfm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:600;display:none;align-items:center;justify-content:center;padding:24px}
 .cfm-overlay.show{display:flex}
 .cfm-box{background:#141210;border:1px solid #564838;border-radius:16px;width:100%;max-width:320px;padding:24px 20px 16px;display:flex;flex-direction:column;gap:0}
-.cfm-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:17px;color:#e8be50;letter-spacing:0.08em;margin-bottom:12px;text-align:center}
+.cfm-title{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:17px;color:#e8be50;letter-spacing:0.08em;margin-bottom:12px;text-align:center}
 .cfm-msg{font-size:13px;color:#9e8660;line-height:1.85;text-align:center;white-space:pre-line;margin-bottom:20px}
 .cfm-btns{display:flex;gap:10px}
-.cfm-btn{flex:1;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:14px;padding:13px 0;border-radius:10px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s;text-align:center}
+.cfm-btn{flex:1;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:14px;padding:13px 0;border-radius:10px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s;text-align:center}
 .cfm-btn-ok{background:#c8991e;border-color:#c8991e;color:#0a0908;font-weight:700}
 .cfm-btn-ok:active{background:#e8be50}
 .cfm-btn-cancel{background:none;border-color:#302618;color:#9e8660}
@@ -144,69 +144,69 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .rdm-overlay.show{display:flex}
 .rdm-sheet{background:#141210;border-radius:16px 16px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
 .rdm-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid #302618;flex-shrink:0}
-.rdm-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:18px;color:#e8be50;letter-spacing:0.1em}
+.rdm-title{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:18px;color:#e8be50;letter-spacing:0.1em}
 .rdm-close{font-size:20px;color:#9e8660;cursor:pointer;padding:4px 8px;background:none;border:none}
 .rdm-body{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px 24px}
-.rdm-body h3{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;letter-spacing:0.04em;color:#c8991e;margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid #302618}
+.rdm-body h3{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:11px;letter-spacing:0.04em;color:#c8991e;margin:18px 0 8px;padding-bottom:5px;border-bottom:1px solid #302618}
 .rdm-body h3:first-child{margin-top:0}
 .rdm-body p{font-size:13px;line-height:1.9;color:#9e8660;margin-bottom:8px}
 .rdm-body ul{padding-left:0;list-style:none}
 .rdm-body ul li{font-size:13px;line-height:1.9;color:#9e8660;padding:2px 0;padding-left:14px;position:relative}
-.rdm-body ul li::before{content:'›';position:absolute;left:0;color:#c8991e}
+.rdm-body ul li::before{content:’›’;position:absolute;left:0;color:#c8991e}
 .rdm-step{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start}
-.rdm-step-num{width:22px;height:22px;border-radius:50%;background:#c8991e;color:#0a0908;font-family:'Courier New',Consolas,monospace;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rdm-step-num{width:22px;height:22px;border-radius:50%;background:#c8991e;color:#0a0908;font-family:‘Courier New’,Consolas,monospace;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .rdm-step-txt{font-size:13px;line-height:1.8;color:#9e8660;flex:1}
-.rdm-note{background:#1e1a15;border:1px solid #302618;border-radius:8px;padding:10px 14px;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#564838;line-height:1.7;margin-top:8px}
+.rdm-note{background:#1e1a15;border:1px solid #302618;border-radius:8px;padding:10px 14px;font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#564838;line-height:1.7;margin-top:8px}
 .usage-bar-wrap{background:#1e1a15;border:1px solid #302618;border-radius:10px;padding:12px 14px;margin-bottom:10px}
 .usage-bar-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
-.usage-bar-label{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.1em}
-.usage-bar-val{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#c8991e}
+.usage-bar-label{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.1em}
+.usage-bar-val{font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#c8991e}
 .usage-track{height:6px;background:#28221a;border-radius:3px;overflow:hidden}
 .usage-fill{height:100%;background:linear-gradient(90deg,#4a9,#c8991e);border-radius:3px;transition:width 0.5s}
 .usage-fill.warn{background:linear-gradient(90deg,#c8991e,#e07030)}
 .usage-fill.over{background:linear-gradient(90deg,#e05050,#c02020)}
-.usage-reset-btn{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;margin-top:6px;display:block}
+.usage-reset-btn{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;background:none;border:none;cursor:pointer;padding:4px 0;text-decoration:underline;margin-top:6px;display:block}
 .usage-reset-btn:active{color:#9e8660}
-.test-voice-btn{width:100%;padding:10px;margin:6px 0 8px;background:rgba(200,153,30,0.15);border:1px solid rgba(200,153,30,0.4);color:#c8991e;border-radius:10px;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:13px;cursor:pointer;letter-spacing:.05em}
+.test-voice-btn{width:100%;padding:10px;margin:6px 0 8px;background:rgba(200,153,30,0.15);border:1px solid rgba(200,153,30,0.4);color:#c8991e;border-radius:10px;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:13px;cursor:pointer;letter-spacing:.05em}
 .test-voice-btn:active{background:rgba(200,153,30,0.3)}
 .test-voice-btn.testing{opacity:0.6;pointer-events:none}
 .ios-hint{font-size:11px;color:#564838;background:rgba(200,153,30,0.06);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:8px 12px;margin:8px 0 0;line-height:1.7;text-align:center;transition:opacity 0.5s}
 .ios-hint.hidden{opacity:0;pointer-events:none}
 .sett-section{margin-bottom:20px}
-.sett-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;letter-spacing:0.04em;color:#564838;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #302618}
+.sett-title{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:11px;letter-spacing:0.04em;color:#564838;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #302618}
 .sett-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .sett-label{font-size:13px;color:#ede0c6;flex:1}
-.sett-sub{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;color:#564838;margin-top:3px;line-height:1.7}
-.api-input{width:100%;background:#1e1a15;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:'Courier New',Consolas,monospace;font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
+.sett-sub{font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:11px;color:#564838;margin-top:3px;line-height:1.7}
+.api-input{width:100%;background:#1e1a15;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:‘Courier New’,Consolas,monospace;font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
 .api-input:focus{border-color:#c8991e}
 .api-input::placeholder{color:#564838}
 .api-btns{display:flex;gap:8px}
-.sett-btn{font-family:'Courier New',Consolas,monospace;font-size:12px;padding:9px 16px;border-radius:8px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s}
+.sett-btn{font-family:‘Courier New’,Consolas,monospace;font-size:12px;padding:9px 16px;border-radius:8px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s}
 .sett-btn-save{background:#c8991e;border-color:#c8991e;color:#0a0908;font-weight:bold}
 .sett-btn-save:active{background:#e8be50}
 .sett-btn-clear{background:none;border-color:#302618;color:#9e8660}
 .sett-btn-clear:active{border-color:#8b2020;color:#e05050}
-.api-status{display:none;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;font-family:'Courier New',Consolas,monospace;font-size:11px;margin-bottom:8px}
+.api-status{display:none;align-items:center;gap:8px;padding:9px 14px;border-radius:10px;font-family:‘Courier New’,Consolas,monospace;font-size:11px;margin-bottom:8px}
 .api-status.show{display:flex}
 .api-status.ok{background:rgba(42,92,58,0.2);border:1px solid rgba(42,200,80,0.2);color:#7abf8a}
 .api-status.ng{background:rgba(139,32,32,0.15);border:1px solid rgba(139,32,32,0.3);color:#e07070}
-.gv-select{width:100%;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:13px;padding:9px 12px;border-radius:10px;outline:none;-webkit-appearance:none;margin-bottom:8px}
-.howto-link{display:block;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#9e8660;text-decoration:none;padding:8px 0}
+.gv-select{width:100%;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:‘Hiragino Mincho ProN’,‘YuMincho’,serif;font-size:13px;padding:9px 12px;border-radius:10px;outline:none;-webkit-appearance:none;margin-bottom:8px}
+.howto-link{display:block;font-family:‘Courier New’,Consolas,monospace;font-size:11px;color:#9e8660;text-decoration:none;padding:8px 0}
 .howto-link:active{color:#c8991e}
-.mode-badge{display:inline-flex;align-items:center;gap:5px;font-family:'Courier New',Consolas,monospace;font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid #302618;color:#564838;background:#1e1a15}
+.mode-badge{display:inline-flex;align-items:center;gap:5px;font-family:‘Courier New’,Consolas,monospace;font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid #302618;color:#564838;background:#1e1a15}
 .mode-badge.google{border-color:rgba(66,133,244,0.4);color:#74a8f8;background:rgba(66,133,244,0.08)}
 .sleep-row{display:none;align-items:center;gap:8px;margin-bottom:8px}
 .sleep-row.show{display:flex}
-.sleep-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
-.sleep-val{font-family:'Courier New',Consolas,monospace;font-size:13px;color:#9e8660;min-width:54px;text-align:center}
+.sleep-lbl{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
+.sleep-val{font-family:‘Courier New’,Consolas,monospace;font-size:13px;color:#9e8660;min-width:54px;text-align:center}
 .sleep-val.on{color:#e8be50}
-.sleep-btn{font-family:'Courier New',Consolas,monospace;font-size:10px;padding:5px 10px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;cursor:pointer}
+.sleep-btn{font-family:‘Courier New’,Consolas,monospace;font-size:10px;padding:5px 10px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;cursor:pointer}
 .sleep-btn.on{border-color:rgba(200,153,30,0.4);color:#c8991e;background:rgba(200,153,30,0.08)}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
 .stats-card{background:#1e1a15;border:1px solid #302618;border-radius:10px;padding:12px 14px;text-align:center}
-.stats-num{font-family:'Courier New',Consolas,monospace;font-size:20px;color:#c8991e;font-weight:bold;margin-bottom:4px}
-.stats-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.08em}
-.toast{position:fixed;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(10px);background:#28221a;border:1px solid #564838;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#ede0c6;padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
+.stats-num{font-family:‘Courier New’,Consolas,monospace;font-size:20px;color:#c8991e;font-weight:bold;margin-bottom:4px}
+.stats-lbl{font-family:‘Courier New’,Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.08em}
+.toast{position:fixed;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(10px);background:#28221a;border:1px solid #564838;font-family:‘Courier New’,Consolas,monospace;font-size:12px;color:#ede0c6;padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 .filter-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #302618}
@@ -234,10 +234,9 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </head>
 <body>
 <audio id="gAudioEl" playsinline webkit-playsinline style="display:none"></audio>
-<audio id="silentLoopEl" loop playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v134</span></div>
+  <div class="app-name">夜語り <span class="ver">v135</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -294,7 +293,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <span class="next-cancel" onclick="cancelNext()">キャンセル</span>
     </div>
     <div class="queue-row" id="queueRow"></div>
-    <div class="bg-tip" id="bgTip"></div>
+
   </div>
   <div class="panel" id="panel-hist">
     <div id="histList"></div>
@@ -574,34 +573,25 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <div class="sleep-overlay" id="sleepOverlay" onclick="dismissSleepOverlay()"><div class="sleep-overlay-txt">画面をタップして復帰</div></div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v134';
+const APP_VER = 'v135';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
-  // AudioContextはバックグラウンド復帰のresume()用に初期化のみ
-  if (!_actx) {
-    try {
-      _actx = new (window.AudioContext || window.webkitAudioContext)();
-    } catch(e) {}
-  }
-  // セッション維持は<audio>要素のループで行う（画面消灯を妨げない）
-  if (_silentOn) return;
+  if (_actx) return;
   try {
-    var _sl = document.getElementById('silentLoopEl');
-    if (_sl) {
-      _sl.src = SILENT_MP3;
-      _sl.volume = 0.001;
-      _sl.play().catch(function(){});
-      _silentOn = true;
+    _actx = new (window.AudioContext || window.webkitAudioContext)();
+    const buf = _actx.createBuffer(1, _actx.sampleRate * 0.5, _actx.sampleRate);
+    function loop() {
+      if (!_silentOn) return;
+      const s = _actx.createBufferSource(); s.buffer = buf;
+      s.connect(_actx.destination); s.start();
+      s.onended = loop;
     }
+    _silentOn = true; loop();
   } catch(e) {}
 }
 function stopSilentAudio() {
   _silentOn = false;
-  try {
-    var _sl = document.getElementById('silentLoopEl');
-    if (_sl) { _sl.pause(); _sl.src = ''; }
-  } catch(e) {}
-  // AudioContextはresume()用に保持（closeしない）
+  if (_actx) { _actx.close().catch(()=>{}); _actx = null; }
 }
 const _msSupported = ('mediaSession' in navigator);
 function msSetMetadata() {
@@ -1262,7 +1252,6 @@ async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNum
     startSilentAudio();
     startPlay();
     hideFetch();
-    document.getElementById('bgTip').classList.add('show');
     hideResumeBanner();
   } catch(e) {
     showFetch('err', e.message);
@@ -2272,7 +2261,6 @@ async function resumeFrom(novelId) {
     displayPage(page, bk.chapterUrl, bk.segIdx||0, null);
     startSilentAudio();
     hideFetch();
-    document.getElementById('bgTip').classList.add('show');
   } catch(e) { showFetch('err', e.message); }
   disable(false);
 }
@@ -2637,7 +2625,6 @@ function resetAll() {
   document.getElementById('chapInfo').classList.remove('show');
   document.getElementById('progWrap').classList.remove('show');
   document.getElementById('novelText').classList.remove('show');
-  document.getElementById('bgTip').classList.remove('show');
   queue=[]; qi=0; nextUrl=null; prevUrl=null;
   renderQueue(); ctrlEnable(false);
 }
