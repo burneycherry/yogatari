@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v136</title>
+<title>夜語り v139</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -237,7 +237,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="silentLoopEl" loop playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v136</span></div>
+  <div class="app-name">夜語り <span class="ver">v139</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -574,7 +574,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <div class="sleep-overlay" id="sleepOverlay" onclick="dismissSleepOverlay()"><div class="sleep-overlay-txt">画面をタップして復帰</div></div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v136';
+const APP_VER = 'v139';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   // AudioContextはバックグラウンド復帰のresume()用に初期化のみ
@@ -1352,6 +1352,10 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
     }
     document.getElementById('chapTitle').textContent = currentChapterTitle;
   }
+  if (_pendingEpTitle && _pendingEpTitle !== currentChapterTitle) {
+    currentChapterTitle = _pendingEpTitle;
+    document.getElementById('chapTitle').textContent = currentChapterTitle;
+  }
   renderText();
   updProg();
   ctrlEnable(true);
@@ -1405,9 +1409,12 @@ const CONFIGURABLE_FILTERS = [
   { key:'activity',  group:'custom', label:'活動報告',
     desc:'「活動報告」を含む段落',
     pattern:/活動報告/ },
-  { key:'chaphead',  group:'basic',  label:'章タイトル行（第○章○○）',
-    desc:'「第X章」で始まる行を省略。同行に「話」があれば話以降を残します。',
+  { key:'chaphead',  group:'basic',  label:'章・話タイトル行',
+    desc:'第X章行を省略（話タイトルが同行なら話以降を読み上げ）。第X話/閑話/幕間/番外はサブタイトルに反映',
     pattern:/^第[一二三四五六七八九十百千\d]+章/ },
+  { key:'postmsg',   group:'basic',  label:'投稿・更新のあいさつ文',
+    desc:'「久しぶりの投稿」「更新が遅れ」「お久しぶりです」等の冒頭・末尾あいさつ',
+    pattern:/久しぶりの投稿|お久しぶりです|更新が遅れ|投稿が遅|遅筆で申し訳|しばらく間が|ご無沙汰|遅くなりまし/ },
   { key:'errreport', group:'custom', label:'誤字脱字報告',
     desc:'「誤字」「脱字」「修正」等の報告を含む段落',
     pattern:/誤字|脱字|誤植|ご報告|修正しま|訂正/ },
@@ -1455,15 +1462,24 @@ function renderSkipFilters() {
   });
   el.innerHTML = basicHtml + customHtml;
 }
+var _pendingEpTitle = null;
 function splitText(t) {
+  _pendingEpTitle = null;
   var _chapRe = /^(?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u7ae0/;
   var _epRe   = /((?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71.*)/;
+  var _epHeadRe = /^(?:(?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71|\u9592\u8a71|\u5e55\u9593|\u756a\u5916)/;
   return t.replace(/\r\n/g,'\n').split(/\n+/).map(function(s){
     s = s.trim();
     if (!s.length) return null;
     if (isFilterOn('chaphead') && _chapRe.test(s)) {
       var _m = _epRe.exec(s);
-      return _m ? _m[1] : null;
+      var _extracted = _m ? _m[1] : null;
+      if (_extracted && !_pendingEpTitle) _pendingEpTitle = _extracted;
+      return _extracted || null;
+    }
+    if (isFilterOn('chaphead') && _epHeadRe.test(s) && s.length <= 60) {
+      if (!_pendingEpTitle) _pendingEpTitle = s;
+      return s;
     }
     return s;
   }).filter(function(s){
