@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v156</title>
+<title>夜語り v157</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -241,7 +241,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="silentLoopEl" loop playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v156</span></div>
+  <div class="app-name">夜語り <span class="ver">v157</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -590,7 +590,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v156';
+const APP_VER = 'v157';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (!_actx) {
@@ -671,7 +671,6 @@ setTimeout(() => {
   document.getElementById('vRate').textContent  = _rate.toFixed(1)  + '×';
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
 }, 300);
-// [FIX v140] startupNewCheck に .catch() 追加（unhandled rejection 防止）
 setTimeout(() => { startupNewCheck().catch(function(){}); }, 3000);
 (function recordToday(){
   var st = loadStats();
@@ -770,7 +769,6 @@ const PROXIES = [
   { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u), isJson:false, ms:7000 },
   { build: u=>'https://thingproxy.freeboard.io/fetch/'+u, isJson:false, ms:7000 },
 ];
-// [FIX v140] AbortSignal.timeout に typeof チェック追加（Safari旧版対応）
 async function tryProxy(p, url) {
   const r = await fetch(p.build(url), { signal: typeof AbortSignal.timeout==='function' ? AbortSignal.timeout(p.ms || 8000) : undefined });
   if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1534,7 +1532,6 @@ function renderHistList(){
 async function checkNewChapter(bk){
   const tocUrl=bk.tocUrl||inferTocUrl(bk.chapterUrl);if(!tocUrl)return;
   const isKakuyomuBk=bk.chapterUrl&&bk.chapterUrl.includes('kakuyomu.jp');
-  // [FIX v156] なろうはAPIで正確な総話数を取得する
   if(!isKakuyomuBk){
     var _ncm=tocUrl.match(/syosetu\.com\/([^/]+)/);
     if(_ncm){
@@ -1656,7 +1653,6 @@ function updStepperState(){var grid=document.getElementById('stepperGrid');var w
 function usageKey(cat){const d=new Date();const c=cat||voiceCategory();return 'yogatari_usage_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+c;}
 function getUsage(cat){return parseInt(localStorage.getItem(usageKey(cat))||'0');}
 function addUsage(chars){const cur=getUsage()+chars;localStorage.setItem(usageKey(),cur);checkUsageAlert(cur);updUsageDisplay();return cur;}
-// [FIX v140] resetUsage に chirp3 追加
 function resetUsage(){
   openConfirm('使用量をリセット','月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',()=>{
     ['standard','wavenet','neural2','chirp3'].forEach(function(c){localStorage.setItem(usageKey(c),'0');});
@@ -1726,7 +1722,6 @@ function stepRate(dir){_rate=Math.round(Math.min(RATE_MAX,Math.max(RATE_MIN,_rat
 function stepPitch(dir){_pitch=Math.round(Math.min(PITCH_MAX,Math.max(PITCH_MIN,_pitch+dir*PITCH_STEP))*10)/10;document.getElementById('vPitch').textContent=_pitch.toFixed(1);localStorage.setItem('yogatari_pitch',_pitch);}
 function getRate(){return _rate;}
 function getPitch(){return _pitch;}
-// [FIX v140] voiceLimitNote で Chirp3 時も正しいラベルを表示
 function onGVoiceChange(){
   const sel=document.getElementById('googleVoiceSel');if(sel&&sel.value){_gVoice=sel.value;localStorage.setItem('yogatari_gvoice',_gVoice);}
   clearPrefetchCache();updStepperState();
