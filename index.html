@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v153</title>
+<title>夜語り v154</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -241,7 +241,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="silentLoopEl" loop playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v153</span></div>
+  <div class="app-name">夜語り <span class="ver">v154</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -590,7 +590,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v153';
+const APP_VER = 'v154';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (!_actx) {
@@ -1155,13 +1155,8 @@ const CONFIGURABLE_FILTERS = [
   { key:'updatedate', group:'basic', label:'更新日時行', desc:'「2026年1月1日 更新分」「2022.9/9 更新分」等の行', pattern:/^\d{4}[\/]\d{1,2}([\/]\d{1,2})?(\s|$)|^\d{4}\u5e74|^\d{4}\.\d{1,2}[\/]|^(\u66f4\u65b0\u5206|\u66f4\u65b0\u65e5)/ },
   { key:'navi',      group:'basic',  label:'ナビゲーション行', desc:'「前へ」「次へ」「目次」等のページ移動ボタン行', pattern:/^(前へ|次へ|目次|<<|>>|＜＜|＞＞|PREV|NEXT|前の話|次の話|前のエピソード|次のエピソード)|^[←→◀▶].{0,8}$/ },
   { key:'naroui',    group:'basic',  label:'なろうUI行', desc:'「応援する」「ハートをクリック」「ギフトを贈る」「新規登録で」等', pattern:/^(新規登録で充実|作者を応援|応援する|応援コメント|ハートをクリック|ギフトを贈る)/ },
-  { key:'bookmark',  group:'custom', label:'ブックマーク・お気に入り依頼', desc:'「ブックマーク」「お気に入り」を含む段落', pattern:/ブックマーク|お気に入り(?:登録|追加)/ },
-  { key:'review',    group:'custom', label:'感想・レビュー依頼', desc:'「感想をお待ちしています」「コメントお待ちしており」等の段落', pattern:/感想.*お待ち|レビュー.*お待ち|感想・レビュー|コメント.*お待ち|お待ちしており|ご感想/ },
-  { key:'rating',    group:'custom', label:'評価・応援依頼（☆→★）', desc:'「☆☆☆→★★★」「続きが気になる」「応援していただけると」等', pattern:/[☆★]{2,}|続きが気になる|思っていただけたら|応援していただけると|にして応援/ },
-  { key:'activity',  group:'custom', label:'活動報告', desc:'「活動報告」を含む段落', pattern:/活動報告/ },
   { key:'chaphead',  group:'basic',  label:'章・話タイトル行', desc:'第X章行を省略（話タイトルが同行なら話以降を読み上げ）。第X話/閑話/幕間/番外はサブタイトルに反映', pattern:/^第[一二三四五六七八九十百千\d]+章/ },
   { key:'postmsg',   group:'basic',  label:'投稿・更新のあいさつ文', desc:'「久しぶりの投稿」「更新が遅れ」「お久しぶりです」等の冒頭・末尾あいさつ', pattern:/久しぶりの投稿|お久しぶりです|更新が遅れ|投稿が遅|遅筆で申し訳|しばらく間が|ご無沙汰|遅くなりまし|ご覧いただき|ご覧くださり|連載|よろしくお願いいたします|評価.*よろしく|応援.*よろしく/ },
-  { key:'errreport', group:'custom', label:'誤字脱字報告', desc:'「誤字」「脱字」「修正」等の報告を含む段落', pattern:/誤字|脱字|誤植|ご報告|修正しま|訂正/ },
   { key:'divider',   group:'basic', label:'区切り記号行（◇＊ーなど）', desc:'◇◇◇ や ＊＊＊ や ─── など記号だけの行', pattern:/^[\s\u3000\u25c7\u25c6\u25a1\u25a0\u25cb\u25cf\u00d7\uff0a\u203b\u25ef\u25b3\u25b2\u25bd\u25bc\u25ce\uff5e\u301c\u30fc\u2500\u2501\u003d\uff0d\uff3f\u30fb\u2026\u2020\u2021\u2666\u2662\u2663\u2660\u2665\u2661\u2605\u2606\u25b7\u25c1\*\-\=_~]+$/ },
   { key:'ruby', group:'basic', label:'ルビ（ふりがな）', desc:'漢字のふりがなを除去して読み上げ（スライムコア等を省略）。次話読み込みから反映', pattern:null },
 ];
@@ -1175,7 +1170,7 @@ function toggleSkipFilter(i) {
 function renderSkipFilters() {
   var el=document.getElementById('skipFilterList'); if(!el)return;
   var basicHtml='<div class="sett-sub" style="font-size:10px;color:#564838;margin-bottom:6px">— 基本フィルター（ページ数・更新日・ナビ等）</div>';
-  var customHtml='<div class="sett-sub" style="font-size:10px;color:#564838;margin:12px 0 6px">— 後書き・お願い系フィルター</div>';
+  var customHtml='';
   CONFIGURABLE_FILTERS.forEach(function(def,i){
     var on=isFilterOn(def.key);
     var row='<div class="filter-item"><div class="filter-desc"><div class="filter-label">'+def.label+'</div><div class="filter-note">'+def.desc+'</div></div><button class="filter-toggle '+(on?'on':'off')+'" onclick="toggleSkipFilter('+i+')">'+(on?'ON':'OFF')+'</button></div>';
