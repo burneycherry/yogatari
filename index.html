@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v144</title>
+<title>夜語り v153</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -225,6 +225,15 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .sleep-overlay{position:fixed;inset:0;background:#000;z-index:9999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
 .sleep-overlay.show{display:flex}
 .sleep-overlay-txt{color:#333;font-family:'Courier New',Consolas,monospace;font-size:12px;letter-spacing:0.1em}
+.custom-word-input-row{display:flex;gap:8px;margin-bottom:10px}
+.custom-word-input{flex:1;background:#1e1a15;border:1px solid #302618;border-radius:8px;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:14px;padding:9px 12px;outline:none;-webkit-appearance:none;transition:border-color 0.2s}
+.custom-word-input:focus{border-color:#c8991e}
+.custom-word-input::placeholder{color:#564838}
+.custom-word-tag{display:inline-flex;align-items:center;gap:6px;background:#28221a;border:1px solid #302618;border-radius:16px;padding:5px 10px 5px 12px;font-size:13px;color:#ede0c6}
+.custom-word-del{background:none;border:none;color:#564838;cursor:pointer;font-size:14px;padding:0;line-height:1}
+.custom-word-del:active{color:#e05050}
+.custom-word-list{display:flex;flex-wrap:wrap;gap:8px;min-height:28px}
+.custom-word-empty{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#564838}
 </style>
 </head>
 <body>
@@ -232,7 +241,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="silentLoopEl" loop playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v144</span></div>
+  <div class="app-name">夜語り <span class="ver">v153</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -317,6 +326,16 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         <span style="color:#564838;font-size:11px">設定は次の話の読み込みから反映されます。</span>
       </div>
       <div id="skipFilterList"></div>
+    </div>
+    <div class="sett-sub" style="font-size:10px;color:#564838;margin:12px 0 6px">— カスタムフィルター</div>
+    <div class="filter-item" style="flex-direction:column;align-items:stretch;gap:8px">
+      <div class="filter-label">省略単語</div>
+      <div class="filter-note">省略したい単語を登録。段落に含まれていたらスキップ（次話読み込みから反映）</div>
+      <div class="custom-word-input-row">
+        <input class="custom-word-input" id="customWordInput" type="text" placeholder="例: ブックマーク、感想" maxlength="30">
+        <button class="sett-btn sett-btn-save" id="customWordAddBtn" style="white-space:nowrap;font-size:13px;padding:9px 14px">追加</button>
+      </div>
+      <div class="custom-word-list" id="customWordList"></div>
     </div>
     <div class="sett-section">
       <div class="sett-title">// 背景エフェクト</div>
@@ -571,7 +590,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v144';
+const APP_VER = 'v153';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (!_actx) {
@@ -730,13 +749,13 @@ function trimQueue() {
   const newQueue = [];
   let newQi = qi;
   for (let i = 0; i < queue.length; i++) {
-    if (removed < target && queue[i].done && i !== qi) { removed++; if (i < qi) newQi--; } else { newQueue.push(queue[i]); }
+    if (removed < target && queue[i].done && i !== qi) { removed += 1; if (i < qi) newQi -= 1; } else { newQueue.push(queue[i]); }
   }
   while (newQueue.length > QUEUE_MAX) {
     const delIdx = newQueue.findIndex((q, i) => i !== newQi);
     if (delIdx < 0) break;
     newQueue.splice(delIdx, 1);
-    if (delIdx < newQi) newQi--;
+    if (delIdx < newQi) newQi -= 1;
   }
   queue = newQueue; qi = Math.max(0, Math.min(newQi, queue.length - 1));
 }
@@ -797,7 +816,7 @@ async function fetchHtml(url) {
         }).catch(e => {
           errors.push(label + ': ' + e.message);
           if (i === cachedIdx) clearProxyCacheIdx(hostKey);
-          failCount++;
+          failCount += 1;
           if (failCount === PROXIES.length && !settled) {
             settled = true;
             const isKakuyomu = url.includes('kakuyomu.jp');
@@ -832,14 +851,14 @@ function parseSyosetuToc(html, baseUrl) {
   doc.querySelectorAll('.novel_sublist2 dd a, .novel_sublist2 a').forEach(a => {
     const href = a.getAttribute('href'); if (!href) return;
     const url = resolveUrl(href, baseUrl); if (!url) return;
-    num++; items.push({ title: a.textContent.trim(), url, num });
+    num += 1; items.push({ title: a.textContent.trim(), url, num });
   });
   if (!items.length) {
     const seen = new Set();
     doc.querySelectorAll('a[href]').forEach(a => {
       const href = a.getAttribute('href'); if (!href || !/\/\d+\/?$/.test(href)) return;
       const url = resolveUrl(href, baseUrl); if (!url || seen.has(url)) return;
-      seen.add(url); num++; items.push({ title: a.textContent.trim() || '第'+num+'話', url, num });
+      seen.add(url); num += 1; items.push({ title: a.textContent.trim() || '第'+num+'話', url, num });
     });
   }
   return items;
@@ -859,7 +878,7 @@ function parseKakuyomuToc(html, baseUrl) {
           if (!epId) return;
           const wm = new URL(baseUrl).pathname.match(/\/works\/([^/]+)/); if (!wm) return;
           const epUrl = new URL('/works/' + wm[1] + '/episodes/' + epId, baseUrl).href;
-          if (seen.has(epUrl)) return; seen.add(epUrl); num++;
+          if (seen.has(epUrl)) return; seen.add(epUrl); num += 1;
           items.push({ title: epTitle.trim(), url: epUrl, num });
         });
         if (items.length > 0) return items;
@@ -872,7 +891,7 @@ function parseKakuyomuToc(html, baseUrl) {
     if (wm && !href.includes('/works/' + wm[1] + '/episodes/')) return;
     const url = resolveUrl(href, baseUrl); if (!url || seen.has(url)) return;
     const txt = a.textContent.trim(); if (!txt || txt.length > 80) return;
-    seen.add(url); num++; items.push({ title: txt, url, num });
+    seen.add(url); num += 1; items.push({ title: txt, url, num });
   });
   return items;
 }
@@ -958,7 +977,7 @@ function extractPage(html, pageUrl) {
   if (!bodyEl) { let max=0; doc.querySelectorAll('div,section,article').forEach(el=>{const l=el.textContent.trim().length;if(l>max&&l<80000){max=l;bodyEl=el;}}); }
   function domToText(el) {
     if (!el) return '';
-    if (isFilterOn('ruby')) { el.querySelectorAll('ruby').forEach(function(rb){ var rt=rb.querySelector('rt'); var reading=rt?rt.textContent.trim():rb.textContent; rb.replaceWith(document.createTextNode(reading)); }); }
+    if (isFilterOn('ruby')) { el.querySelectorAll('ruby').forEach(function(rb){ var _rt=rb.querySelector('rt'); var _rd=_rt?_rt.textContent.trim():rb.textContent; rb.replaceWith(document.createTextNode(_rd)); }); }
     el.querySelectorAll('br').forEach(br => br.replaceWith(document.createTextNode('\n')));
     el.querySelectorAll('p').forEach(p => { if(p.textContent.trim()) p.insertAdjacentText('afterend','\n'); });
     return el.textContent || '';
@@ -1144,7 +1163,7 @@ const CONFIGURABLE_FILTERS = [
   { key:'postmsg',   group:'basic',  label:'投稿・更新のあいさつ文', desc:'「久しぶりの投稿」「更新が遅れ」「お久しぶりです」等の冒頭・末尾あいさつ', pattern:/久しぶりの投稿|お久しぶりです|更新が遅れ|投稿が遅|遅筆で申し訳|しばらく間が|ご無沙汰|遅くなりまし|ご覧いただき|ご覧くださり|連載|よろしくお願いいたします|評価.*よろしく|応援.*よろしく/ },
   { key:'errreport', group:'custom', label:'誤字脱字報告', desc:'「誤字」「脱字」「修正」等の報告を含む段落', pattern:/誤字|脱字|誤植|ご報告|修正しま|訂正/ },
   { key:'divider',   group:'basic', label:'区切り記号行（◇＊ーなど）', desc:'◇◇◇ や ＊＊＊ や ─── など記号だけの行', pattern:/^[\s\u3000\u25c7\u25c6\u25a1\u25a0\u25cb\u25cf\u00d7\uff0a\u203b\u25ef\u25b3\u25b2\u25bd\u25bc\u25ce\uff5e\u301c\u30fc\u2500\u2501\u003d\uff0d\uff3f\u30fb\u2026\u2020\u2021\u2666\u2662\u2663\u2660\u2665\u2661\u2605\u2606\u25b7\u25c1\*\-\=_~]+$/ },
-  { key:'ruby', group:'basic', label:'ルビ（ふりがな）', desc:'ふりがながある漢字をふりがなで読み上げ（粘魔核→スライムコアと読む）。次話読み込みから反映', pattern:null },
+  { key:'ruby', group:'basic', label:'ルビ（ふりがな）', desc:'漢字のふりがなを除去して読み上げ（スライムコア等を省略）。次話読み込みから反映', pattern:null },
 ];
 function loadSkipFilters() { try{return JSON.parse(localStorage.getItem('yogatari_skip_filters')||'{}');}catch(e){return{};} }
 function saveSkipFilters(data) { try{localStorage.setItem('yogatari_skip_filters',JSON.stringify(data));}catch(e){} }
@@ -1167,6 +1186,7 @@ function renderSkipFilters() {
 var _pendingEpTitle = null;
 function splitText(t) {
   _pendingEpTitle = null;
+  var _cw; try { _cw = JSON.parse(localStorage.getItem('yogatari_custom_words') || '[]'); } catch(_ce) { _cw = []; }
   var _chapRe = /^(?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u7ae0/;
   var _epRe   = /((?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71.*)/;
   var _epHeadRe = /^(?:(?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71|\u9592\u8a71|\u5e55\u9593|\u756a\u5916)/;
@@ -1178,6 +1198,7 @@ function splitText(t) {
   }).filter(function(s){
     if(!s||!s.length)return false;
     for(var _fi=0;_fi<CONFIGURABLE_FILTERS.length;_fi++){var _f=CONFIGURABLE_FILTERS[_fi];if(_f.key==='chaphead')continue;if(isFilterOn(_f.key)&&_f.pattern&&_f.pattern.test(s))return false;}
+    for (var _ci = 0; _ci < _cw.length; _ci++) { if (s.indexOf(_cw[_ci]) >= 0) return false; }
     return true;
   });
 }
@@ -1205,7 +1226,7 @@ let _nextHtmlCache=null, _nextPageCache=null, _prefetchGeneration=0;
 function prefetchNextChapter(url){
   if(!url)return;
   if(_nextHtmlCache&&_nextHtmlCache.url===url)return;
-  const myGeneration=++_prefetchGeneration;
+  const myGeneration=(_prefetchGeneration = _prefetchGeneration + 1);
   _nextHtmlCache={url,promise:fetchHtml(url).then(html=>{
     if(myGeneration!==_prefetchGeneration)return null;
     const page=extractPage(html,url);
@@ -1216,7 +1237,7 @@ function prefetchNextChapter(url){
   }).catch(()=>null)};
 }
 let _nextAudioCache=[];
-function clearNextChapterCache(){_prefetchGeneration++;_nextHtmlCache=null;_nextPageCache=null;_nextAudioCache=[];}
+function clearNextChapterCache(){_prefetchGeneration += 1;_nextHtmlCache=null;_nextPageCache=null;_nextAudioCache=[];}
 function hasGoogleKey(){return _gApiKey.trim().length>10;}
 function currentGVoice(){return _gVoice;}
 async function fetchGoogleAudio(text){
@@ -1262,8 +1283,8 @@ function nextSent(){if(!segs.length||!playing)return;const sents=splitSentences(
 function playSentence(si){
   const sents=splitSentences(segs[idx]);if(!sents[si])return;
   _busy=false;clearWatchdog();SS.cancel();stopGoogleAudio();
-  if(hasGoogleKey()){_busy=true;const el=getAudioEl();fetchGoogleAudio(sents[si]).then(src=>{_busy=false;if(!playing)return;el.onended=()=>{clearWatchdog();if(!playing)return;_sentIdx++;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};el.src=src;el.play().catch(()=>{_busy=false;});}).catch(()=>{_busy=false;});}
-  else{const utt=new SpeechSynthesisUtterance(sents[si]);if(selVoice)utt.voice=selVoice;utt.rate=getRate();utt.pitch=getPitch();utt.lang='ja-JP';utt.onend=()=>{if(!playing)return;_sentIdx++;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};SS.speak(utt);}
+  if(hasGoogleKey()){_busy=true;const el=getAudioEl();fetchGoogleAudio(sents[si]).then(src=>{_busy=false;if(!playing)return;el.onended=()=>{clearWatchdog();if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};el.src=src;el.play().catch(()=>{_busy=false;});}).catch(()=>{_busy=false;});}
+  else{const utt=new SpeechSynthesisUtterance(sents[si]);if(selVoice)utt.voice=selVoice;utt.rate=getRate();utt.pitch=getPitch();utt.lang='ja-JP';utt.onend=()=>{if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};SS.speak(utt);}
 }
 function speakIdx(i){
   if(_busy)return;_sentIdx=-1;clearWatchdog();
@@ -1332,6 +1353,32 @@ function prevSegFull(){prevSeg();}
 function nextSegFull(){nextSeg();}
 function initSettings(){
   renderSkipFilters();
+  (function(){
+    var _lcw=function(){try{return JSON.parse(localStorage.getItem('yogatari_custom_words')||'[]');}catch(e){return[];}};
+    var _scw=function(a){try{localStorage.setItem('yogatari_custom_words',JSON.stringify(a));}catch(e){}};
+    var _rcw=function(){
+      var _el=document.getElementById('customWordList');if(!_el)return;
+      var _arr=_lcw();
+      if(!_arr.length){_el.innerHTML='<span class="custom-word-empty">まだ登録されていません</span>';return;}
+      _el.innerHTML=_arr.map(function(w,i){return '<span class="custom-word-tag">'+esc(w)+'<button class="custom-word-del" data-idx="'+i+'">×</button></span>';}).join('');
+    };
+    var _doAdd=function(){
+      var _inp=document.getElementById('customWordInput');if(!_inp)return;
+      var _w=_inp.value.trim();if(!_w){toast('単語を入力してください');return;}
+      var _arr=_lcw();if(_arr.indexOf(_w)>=0){toast('すでに登録済みです');return;}
+      _arr.push(_w);_scw(_arr);_inp.value='';_rcw();toast('「'+_w+'」を登録しました');
+    };
+    var _aBtn=document.getElementById('customWordAddBtn');
+    var _wInp=document.getElementById('customWordInput');
+    var _lEl=document.getElementById('customWordList');
+    if(_aBtn)_aBtn.onclick=_doAdd;
+    if(_wInp)_wInp.onkeydown=function(e){if(e.key==='Enter'){_wInp.blur();_doAdd();}};
+    if(_lEl)_lEl.onclick=function(e){
+      var _t=e.target;
+      if(_t&&_t.className==='custom-word-del'){var _idx=parseInt(_t.getAttribute('data-idx'),10);var _arr=_lcw();_arr.splice(_idx,1);_scw(_arr);_rcw();}
+    };
+    _rcw();
+  })();
   if(_gApiKey){document.getElementById('apiKeyInput').value=_gApiKey;document.getElementById('googleVoiceSection').style.display='block';}
   syncVoiceSelect();updModeDisplay();updStepperState();updUsageDisplay();
 }
@@ -1391,7 +1438,7 @@ function saveBookmarkCurrent(segIdx){
 }
 function startNextCd(){
   nextCount=3;document.getElementById('nextNotice').classList.add('show');document.getElementById('nextCd').textContent=nextCount;
-  nextTimer=setInterval(()=>{nextCount--;document.getElementById('nextCd').textContent=nextCount;if(nextCount<=0){cancelNext();goNext();}},1000);
+  nextTimer=setInterval(()=>{nextCount -= 1;document.getElementById('nextCd').textContent=nextCount;if(nextCount<=0){cancelNext();goNext();}},1000);
 }
 function cancelNext(){if(nextTimer){clearInterval(nextTimer);nextTimer=null;}document.getElementById('nextNotice').classList.remove('show');}
 async function goPrev(){
@@ -1688,7 +1735,7 @@ function drawMoonPhase(ctx,cx,cy,r,phase){ctx.save();ctx.fillStyle='#f0e8c0';ctx
 function drawRealCloud(ctx,cx,cy,w,h,cond){const isDark=cond==='rain';const baseL=isDark?'rgba(55,60,75,':'rgba(75,85,115,';const baseS=isDark?'rgba(35,38,48,':'rgba(45,50,72,';const bumps=[{dx:0,dy:0,rx:w*0.42,ry:h*0.55},{dx:-w*0.28,dy:h*0.18,rx:w*0.30,ry:h*0.45},{dx:w*0.28,dy:h*0.15,rx:w*0.32,ry:h*0.42},{dx:-w*0.50,dy:h*0.32,rx:w*0.22,ry:h*0.32},{dx:w*0.50,dy:h*0.28,rx:w*0.24,ry:h*0.30},{dx:-w*0.15,dy:-h*0.15,rx:w*0.28,ry:h*0.38},{dx:w*0.18,dy:-h*0.12,rx:w*0.26,ry:h*0.36}];ctx.fillStyle=baseS+'0.65)';bumps.forEach(b=>{ctx.beginPath();ctx.ellipse(cx+b.dx,cy+b.dy+h*0.12,b.rx*0.95,b.ry*0.7,0,0,Math.PI*2);ctx.fill();});bumps.forEach((b,i)=>{ctx.fillStyle=baseL+(i===0?'0.88)':'0.80)');ctx.beginPath();ctx.ellipse(cx+b.dx,cy+b.dy,b.rx,b.ry,0,0,Math.PI*2);ctx.fill();});}
 function maybeShoot(){if(Math.random()<0.004&&_shootings.length<3)_shootings.push({x:Math.random()*bgCv.width,y:Math.random()*bgCv.height*0.4,vx:(Math.random()*4+3)*(Math.random()<0.5?1:-1),vy:Math.random()*3+2,life:1.0});}
 function drawBg(){
-  if(!bgCtx||!bgCv.width)return;const W=bgCv.width,H=bgCv.height;const cond=_bgCond;_bgCondTimer++;
+  if(!bgCtx||!bgCv.width)return;const W=bgCv.width,H=bgCv.height;const cond=_bgCond;_bgCondTimer += 1;
   if(_bgCondTimer>60*(30+Math.random()*60)){_bgCond=pickRandomCond();_bgCondTimer=0;}
   const grad=bgCtx.createLinearGradient(0,0,0,H);
   if(cond==='rain'){grad.addColorStop(0,'#080d18');grad.addColorStop(1,'#131e28');}
