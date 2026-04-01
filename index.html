@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v157</title>
+<title>夜語り v158</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -95,7 +95,7 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .hist-empty{text-align:center;padding:40px 0;color:#564838;font-size:13px;font-family:'Courier New',Consolas,monospace}
 .hist-item{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid #302618;cursor:pointer}
 .hist-item:active .hist-main{color:#c8991e}
-.hist-thumb{width:36px;height:36px;border-radius:8px;background:#28221a;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.hist-thumb{width:36px;display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}.hist-thumb-icon{width:36px;height:36px;border-radius:8px;background:#28221a;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:18px}.hist-thumb-link{width:36px;height:28px;border-radius:8px;background:#1e1a15;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;transition:all 0.15s}.hist-thumb-link:active{border-color:#c8991e;background:rgba(200,153,30,0.12)}
 .hist-main{flex:1;min-width:0}
 .hist-title{font-size:14px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hist-chap-title{font-size:11px;color:#9e8660;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Hiragino Mincho ProN','YuMincho',serif}
@@ -241,7 +241,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="silentLoopEl" loop playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v157</span></div>
+  <div class="app-name">夜語り <span class="ver">v158</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -513,7 +513,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <ul>
         <li>読み上げ中は5段落ごとに<b>自動でしおり保存</b></li>
         <li>次回同じURLを入力すると「🔖 読みかけ」バナーが出る</li>
-        <li>「履歴」タブから過去に読んだ小説を再開できる（<b>▶で再生開始</b>）</li>
+        <li>「履歴」タブから過去に読んだ小説を再開できる（<b>▶で再生開始</b>）</li><li>🔗 ボタンでその作品の<b>目次ページ</b>をブラウザで開く</li>
       </ul>
       <h3>// 新着話の自動検出</h3>
       <ul>
@@ -590,7 +590,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v157';
+const APP_VER = 'v158';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (!_actx) {
@@ -1515,7 +1515,7 @@ function renderHistList(){
     const newInfo=_newChapCache[bk.novelId];const diff=newInfo?.diff||(bk.hasNew?bk.newDiff:0)||0;
     const newBadge=diff>0?'<span class="hist-new">NEW +'+diff+'話</span>':'';
     return '<div class="hist-item" id="hi-'+esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_')+'" onclick="resumeFrom(\''+esc(bk.novelId)+'\')">' +
-      '<div class="hist-thumb">📖</div>' +
+      '<div class="hist-thumb"><div class="hist-thumb-icon">📖</div><a class="hist-thumb-link" href="'+(bk.tocUrl||bk.novelId||bk.chapterUrl)+'" target="_blank" onclick="event.stopPropagation()" title="目次ページを開く">🔗</a></div>' +
       '<div class="hist-main"><div class="hist-title">'+esc(bk.novelTitle||bk.chapterTitle)+'</div>' +
       (function(){var ct=bk.chapterTitle||'',nt=bk.novelTitle||'';if(!ct||ct===nt||/^第\d+話?$/.test(ct.trim()))return '';return '<div class="hist-chap-title">'+esc(ct)+'</div>';})() +
       '<div class="hist-meta">'+(newBadge?newBadge+' ':'')+
