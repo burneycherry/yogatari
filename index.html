@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0908">
-<title>夜語り v160</title>
+<title>夜語り v161</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -241,7 +241,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="silentLoopEl" loop playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v160</span></div>
+  <div class="app-name">夜語り <span class="ver">v161</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -590,7 +590,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 </div>
 <div class="toast" id="toast"></div>
 <script>
-const APP_VER = 'v160';
+const APP_VER = 'v161';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (!_actx) {
@@ -1536,7 +1536,7 @@ async function checkNewChapter(bk){
     var _ncm=tocUrl.match(/syosetu\.com\/([^/]+)/);
     if(_ncm){
       var _ncode=_ncm[1];
-      var _apiUrl='https://api.syosetu.com/novelapi/api/?ncode='+_ncode+'&of=ga&out=json';
+      var _apiUrl='https://api.syosetu.com/novelapi/api/?ncode='+_ncode+'&out=json';
       try{
         var _rawJson=await fetchHtml(_apiUrl);
         var _apiTotal=0;
