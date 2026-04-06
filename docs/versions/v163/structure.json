@@ -1,0 +1,118 @@
+{
+  "version": "v163",
+  "date": "2026-04-06",
+  "files": [
+    {
+      "path": "index.html",
+      "description": "UIおよびメインロジック（英語記述）。CSS・HTML・JavaScript全体を1ファイルに収録。",
+      "status": "implemented"
+    },
+    {
+      "path": "manifest.json",
+      "description": "PWAマニフェスト設定（name・display・icons等）",
+      "status": "implemented"
+    },
+    {
+      "path": "icon-192.png",
+      "description": "PWAホーム画面アイコン（192x192）",
+      "status": "implemented"
+    },
+    {
+      "path": "icon-512.png",
+      "description": "PWAスプラッシュ・ストア向けアイコン（512x512）",
+      "status": "implemented"
+    },
+    {
+      "path": "CLAUDE.md",
+      "description": "Claude Code向けプロジェクト作業指針。",
+      "status": "implemented"
+    },
+    {
+      "path": "sw.js",
+      "description": "Service Worker（オフラインキャッシュ制御）",
+      "status": "not_implemented"
+    }
+  ],
+  "features": [
+    {
+      "name": "Web Speech API 読み上げ",
+      "status": "implemented",
+      "details": "speechSynthesisを使用。日本語音声を優先選択し、speakIdx()で文単位再生。"
+    },
+    {
+      "name": "Google Cloud TTS 読み上げ",
+      "status": "implemented",
+      "details": "APIキー必須。fetchGoogleAudio()で音声取得、_prefetchCacheにキャッシュ、<audio id=\"gAudioEl\">で再生。"
+    },
+    {
+      "name": "小説家になろう 対応",
+      "status": "implemented",
+      "details": "parseSyosetuToc()で目次解析。ncode.syosetu.comのURLに対応。"
+    },
+    {
+      "name": "カクヨム 対応",
+      "status": "implemented",
+      "details": "parseKakuyomuToc()で目次解析。kakuyomu.jpのURLに対応。"
+    },
+    {
+      "name": "CORSプロキシ フォールバック",
+      "status": "implemented",
+      "details": "PROXIES配列に7サービスを定義。fetchHtml()がローテーションしながらsessionStorageにキャッシュ。"
+    },
+    {
+      "name": "しおり・履歴保存",
+      "status": "implemented",
+      "details": "localStorageキー yogatari_bk に小説・章・セグメントインデックスを保存。5段落ごとに自動保存。"
+    },
+    {
+      "name": "読書統計",
+      "status": "implemented",
+      "details": "localStorageキー yogatari_stat_* に読書日数・作品数・話数・秒数を記録。"
+    },
+    {
+      "name": "スキップフィルター",
+      "status": "implemented",
+      "details": "yogatari_skip_filters および yogatari_custom_words に基づき、条件一致段落を読み上げからスキップ。"
+    },
+    {
+      "name": "スリープタイマー",
+      "status": "implemented",
+      "details": "15・30・60分の選択式。タイマー終了時に再生停止・画面フェード。"
+    },
+    {
+      "name": "バックグラウンド再生（iOS）",
+      "status": "implemented",
+      "details": "silentLoopElによるAudioContext維持。Media Session APIでロック画面コントロールに対応。"
+    },
+    {
+      "name": "章キュー再生",
+      "status": "implemented",
+      "details": "queue配列に章URLを積み、章末に3秒カウントダウン後自動進行。"
+    },
+    {
+      "name": "音声プリフェッチ",
+      "status": "implemented",
+      "details": "prefetchNext()が次セグメントのGoogle TTS音声をバックグラウンドで事前取得。"
+    },
+    {
+      "name": "PWA manifest",
+      "status": "implemented",
+      "details": "manifest.jsonを追加。<link rel=\"manifest\">をindex.htmlに追記。display: standalone、アイコン2種（192・512px）。"
+    },
+    {
+      "name": "PWA アイコン",
+      "status": "implemented",
+      "details": "icon-192.png・icon-512.png を生成。apple-touch-iconリンクをindex.htmlに追記。purpose: any maskable。"
+    },
+    {
+      "name": "PWA ホーム画面追加",
+      "status": "partial",
+      "details": "manifest.json・アイコン・メタタグが揃い、インストール要件を満たす。Service Worker未実装のためオフライン非対応。"
+    },
+    {
+      "name": "オフライン動作",
+      "status": "not_implemented",
+      "details": "Service Worker未実装。ウェブからのリアルタイム取得が前提のため、対応予定なし。"
+    }
+  ]
+}
