@@ -14,7 +14,7 @@
 
 ## プロジェクト概要
 
-**夜語り (Yogatari)** は日本語Web小説のテキスト読み上げPWA。小説家になろう・カクヨムなどのプラットフォームからCORSプロキシ経由でコンテンツを取得し、Web Speech APIまたはGoogle Cloud TTSで読み上げる。
+**夜語り (Yogatari)** は日本語Web小説のテキスト読み上げアプリ。小説家になろう・カクヨムなどのプラットフォームからCORSプロキシ経由でコンテンツを取得し、Web Speech APIまたはGoogle Cloud TTSで読み上げる。
 
 ---
 
