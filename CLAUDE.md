@@ -92,28 +92,27 @@
 
 ## PWA対応状況
 
-現在のPWA実装は**メタタグのみ**による簡易対応で、`manifest.json` および Service Worker は**未実装**。
-
-### 実装済みのPWA要素（`index.html` ヘッド部）
+### 実装済みのPWA要素
 
 ```html
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#0a0908">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
 ```
 
-- iOS Safari でホーム画面追加した場合、全画面アプリとして動作する（`apple-mobile-web-app-capable`）
-- ステータスバーは半透明黒（`black-translucent`）
+- `manifest.json` を導入済み（`display: standalone`・アイコン2種・テーマカラー `#0a0908`）
+- `icon-192.png` / `icon-512.png` を用意済み（`purpose: any maskable`）
+- iOS Safari でホーム画面追加した場合、全画面アプリとして動作する
 - `viewport-fit=cover` でノッチ・セーフエリアに対応。CSS で `env(safe-area-inset-top)` / `env(safe-area-inset-bottom)` を使用
 
 ### 未実装の要素
 
 | 要素 | 状況 | 備考 |
 |------|------|------|
-| `manifest.json` | 未実装 | アイコン・ショートカット名・display等を定義するファイル |
-| Service Worker | 未実装 | オフラインキャッシュ・バックグラウンド同期が不可 |
-| Web App Manifest `<link>` | 未実装 | `<link rel="manifest" href="manifest.json">` タグなし |
+| Service Worker | 対応予定なし | 本アプリはリアルタイム取得が前提のためオフライン対応は不要 |
 
 音声キャッシュは `_prefetchCache`（Map）と `sessionStorage` で実装されているが、Service Workerによるオフライン対応はない。
 
