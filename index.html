@@ -1251,11 +1251,13 @@ function hasGoogleKey(){return _gApiKey.trim().length>10;}
 function currentGVoice(){return _gVoice;}
 async function fetchGoogleAudio(text){
   if(isOverLimit())throw new Error('月間無料枠('+( USAGE_LIMIT()/10000).toFixed(0)+'万文字)に達しました。設定タブでリセットを。');
-  const body={input:{text},voice:{languageCode:'ja-JP',name:currentGVoice()},audioConfig:Object.assign({audioEncoding:'MP3'},currentGVoice().includes('Chirp3')?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
-  const res=await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key='+_gApiKey.trim(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(15000):undefined});
+  const cat=voiceCategory();
+  const voice=currentGVoice();
+  const body={input:{text},voice:{languageCode:'ja-JP',name:voice},audioConfig:Object.assign({audioEncoding:'MP3'},voice.includes('Chirp3')?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
+  const res=await fetch('https://texttospeech.googleapis.com/v1/text:synthesize',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':_gApiKey.trim()},body:JSON.stringify(body),signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(15000):undefined});
   if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||'HTTP '+res.status);}
   const data=await res.json();
-  addUsage(text.length);
+  addUsage(text.length,cat);
   return 'data:audio/mp3;base64,'+data.audioContent;
 }
 function getAudioCached(i){if(!_prefetchCache.has(i)){if(i<segs.length)_prefetchCache.set(i,fetchGoogleAudio(segs[i]));}return _prefetchCache.get(i);}
@@ -1425,7 +1427,7 @@ function clearApiKey(){
   document.getElementById('googleVoiceSection').style.display='none';showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();toast('Kyokoに戻しました');
 }
 function showApiStatus(type,msg){const el=document.getElementById('apiStatus');el.textContent=msg;el.className='api-status show '+type;}
-function friendlyVoiceName(v){const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
+function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if(mc)return 'Chirp3-'+mc[1];const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
 function updModeDisplay(){
   const el=document.getElementById('modeDisplay');if(!el)return;
   const row=document.getElementById('voiceRowKyoko');const rowG=document.getElementById('voiceRowGoogle');const badge=document.getElementById('googleBadge');
@@ -1655,7 +1657,7 @@ function isChirp3(){return _gVoice.includes('Chirp3');}
 function updStepperState(){var grid=document.getElementById('stepperGrid');var warn=document.getElementById('chirpWarnCtrl');var warnSett=document.getElementById('chirpWarn');var chirp=isChirp3();if(grid)grid.classList.toggle('disabled',chirp);if(warn)warn.classList.toggle('show',chirp);if(warnSett)warnSett.classList.toggle('show',chirp);}
 function usageKey(cat){const d=new Date();const c=cat||voiceCategory();return 'yogatari_usage_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+c;}
 function getUsage(cat){return parseInt(localStorage.getItem(usageKey(cat))||'0');}
-function addUsage(chars){const cur=getUsage()+chars;localStorage.setItem(usageKey(),cur);checkUsageAlert(cur);updUsageDisplay();return cur;}
+function addUsage(chars,cat){const c=cat||voiceCategory();const cur=getUsage(c)+chars;localStorage.setItem(usageKey(c),cur);checkUsageAlert(cur);updUsageDisplay();return cur;}
 function resetUsage(){
   openConfirm('使用量をリセット','月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',()=>{
     ['standard','wavenet','neural2','chirp3'].forEach(function(c){localStorage.setItem(usageKey(c),'0');});
