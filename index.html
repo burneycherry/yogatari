@@ -771,8 +771,12 @@ const PROXIES = [
   { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u), isJson:false, ms:7000 },
   { build: u=>'https://thingproxy.freeboard.io/fetch/'+u, isJson:false, ms:7000 },
 ];
-async function tryProxy(p, url) {
-  const r = await fetch(p.build(url), { signal: typeof AbortSignal.timeout==='function' ? AbortSignal.timeout(p.ms || 8000) : undefined });
+async function tryProxy(p, url, cancelSignal) {
+  const hasTimeout = typeof AbortSignal.timeout === 'function';
+  const hasAny = typeof AbortSignal.any === 'function';
+  const timeoutSig = hasTimeout ? AbortSignal.timeout(p.ms || 8000) : null;
+  const signal = cancelSignal && timeoutSig && hasAny ? AbortSignal.any([timeoutSig, cancelSignal]) : timeoutSig || cancelSignal || undefined;
+  const r = await fetch(p.build(url), { signal });
   if (!r.ok) throw new Error('HTTP ' + r.status);
   const raw = await r.text();
   if (!raw || raw.length < 200) throw new Error('レスポンス短すぎ');
@@ -804,6 +808,7 @@ async function fetchHtml(url) {
   return new Promise((resolve, reject) => {
     let settled = false, failCount = 0;
     const errors = [];
+    const abortCtrl = new AbortController();
     PROXIES.forEach((p, i) => {
       const wave = Math.floor(i / 2);
       const normalDelay = wave * 400;
@@ -811,9 +816,10 @@ async function fetchHtml(url) {
       setTimeout(() => {
         if (settled) return;
         const label = p.build(url).replace(/https?:\/\/([^/]+).*/, '$1');
-        tryProxy(p, url).then(html => {
-          if (!settled) { settled = true; setProxyCacheIdx(hostKey, i); resolve(html); }
+        tryProxy(p, url, abortCtrl.signal).then(html => {
+          if (!settled) { settled = true; abortCtrl.abort(); setProxyCacheIdx(hostKey, i); resolve(html); }
         }).catch(e => {
+          if (e.name === 'AbortError') return;
           errors.push(label + ': ' + e.message);
           if (i === cachedIdx) clearProxyCacheIdx(hostKey);
           failCount += 1;
@@ -1600,7 +1606,7 @@ const SS_PAGE_CACHE_MAX_BYTES=600000;
 function safeSessionSet(key,data){
   if(!data||data.length>SS_PAGE_CACHE_MAX_BYTES)return;
   try{const existing=Object.keys(sessionStorage).filter(k=>k.startsWith(SS_PAGE_CACHE_PREFIX));if(existing.length>=SS_PAGE_CACHE_MAX_ENTRIES)sessionStorage.removeItem(existing[0]);sessionStorage.setItem(key,data);}
-  catch(e){try{Object.keys(sessionStorage).filter(k=>k.startsWith(SS_PAGE_CACHE_PREFIX)).forEach(k=>sessionStorage.removeItem(k));sessionStorage.setItem(key,data);}catch(e2){}}
+  catch(e){try{Object.keys(sessionStorage).filter(k=>k.startsWith(SS_PAGE_CACHE_PREFIX)).forEach(k=>sessionStorage.removeItem(k));sessionStorage.setItem(key,data);}catch(e2){toast('⚠ キャッシュ保存に失敗しました');}}
 }
 let _cfmCallback=null;
 function openConfirm(title,msg,onOk){_cfmCallback=onOk;document.getElementById('cfmTitle').textContent=title;document.getElementById('cfmMsg').textContent=msg;document.getElementById('cfmOkBtn').onclick=()=>{closeConfirm();if(_cfmCallback)_cfmCallback();};document.getElementById('cfmOverlay').classList.add('show');}
@@ -1773,6 +1779,8 @@ function startBgEffect(){if(!bgCv||!bgCtx)return;_bgCond=pickRandomCond();bgResi
 function stopBgEffect(){if(_bgRaf){cancelAnimationFrame(_bgRaf);_bgRaf=null;}if(bgCv)bgCv.style.opacity='0';document.body.style.background='#0a0908';}
 function toggleBgEffect(){_bgOn=!_bgOn;localStorage.setItem('yogatari_bg',_bgOn?'1':'0');const btn=document.getElementById('bgToggleBtn');const st=document.getElementById('bgStatusTxt');if(btn){btn.textContent=_bgOn?'ON':'OFF';btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn';}if(st)st.textContent=_bgOn?'月齢・星・流れ星・オーロラ・ランダム天気':'';if(_bgOn)startBgEffect();else stopBgEffect();}
 window.addEventListener('resize',()=>{if(_bgOn){bgResize();initStars(200);initClouds(7);initAuroras(5);}});
+window.addEventListener('offline', () => { toast('⚠ オフラインになりました'); });
+window.addEventListener('online', () => { toast('ネットワーク接続が回復しました'); });
 setTimeout(()=>{const btn=document.getElementById('bgToggleBtn');if(btn){btn.textContent=_bgOn?'ON':'OFF';btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn';}const st=document.getElementById('bgStatusTxt');if(st&&_bgOn)st.textContent='月齢・星・流れ星・オーロラ・ランダム天気';if(_bgOn)startBgEffect();},500);
 </script>
 </body>
