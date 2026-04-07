@@ -687,12 +687,18 @@ setTimeout(() => { startupNewCheck().catch(function(){}); }, 3000);
   } catch(e) {}
 })();
 async function startupNewCheck() {
-  const items = bkAll();
-  for (const bk of items) {
-    const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
-    if (Date.now() - lastCheck < 3600000) continue;
-    await checkNewChapter(bk);
-    await new Promise(r => setTimeout(r, 1500));
+  if (_startupCheckRunning) return;
+  _startupCheckRunning = true;
+  try {
+    const items = bkAll();
+    for (const bk of items) {
+      const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
+      if (Date.now() - lastCheck < 3600000) continue;
+      await checkNewChapter(bk);
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  } finally {
+    _startupCheckRunning = false;
   }
 }
 function bkLoad() {
@@ -762,6 +768,8 @@ function trimQueue() {
 }
 let watchdog=null;
 let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentChapterNum=1, currentChapterUrl=null;
+let _navGeneration=0;
+let _startupCheckRunning=false;
 const PROXIES = [
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
@@ -1243,11 +1251,13 @@ function hasGoogleKey(){return _gApiKey.trim().length>10;}
 function currentGVoice(){return _gVoice;}
 async function fetchGoogleAudio(text){
   if(isOverLimit())throw new Error('月間無料枠('+( USAGE_LIMIT()/10000).toFixed(0)+'万文字)に達しました。設定タブでリセットを。');
-  const body={input:{text},voice:{languageCode:'ja-JP',name:currentGVoice()},audioConfig:Object.assign({audioEncoding:'MP3'},currentGVoice().includes('Chirp3')?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
-  const res=await fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key='+_gApiKey.trim(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(15000):undefined});
+  const cat=voiceCategory();
+  const voice=currentGVoice();
+  const body={input:{text},voice:{languageCode:'ja-JP',name:voice},audioConfig:Object.assign({audioEncoding:'MP3'},voice.includes('Chirp3')?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
+  const res=await fetch('https://texttospeech.googleapis.com/v1/text:synthesize',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':_gApiKey.trim()},body:JSON.stringify(body),signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(15000):undefined});
   if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||'HTTP '+res.status);}
   const data=await res.json();
-  addUsage(text.length);
+  addUsage(text.length,cat);
   return 'data:audio/mp3;base64,'+data.audioContent;
 }
 function getAudioCached(i){if(!_prefetchCache.has(i)){if(i<segs.length)_prefetchCache.set(i,fetchGoogleAudio(segs[i]));}return _prefetchCache.get(i);}
@@ -1303,7 +1313,7 @@ function speakIdx(i){
     SS.cancel();_busy=true;evictCache(i);
     getAudioCached(i).then(audioSrc=>{
       _busy=false;if(!playing)return;stopGoogleAudio();const el=getAudioEl();
-      el.onended=()=>{clearWatchdog();if(playing&&!_tabSw){msSetState('playing');keepAudioSessionAlive();speakIdx(idx+1);}};
+      el.onended=()=>{if(el.duration>0.3&&segs[idx]&&segs[idx].length>3){const segCpm=segs[idx].length/el.duration*60;_liveCpm=_liveCpm>0?_liveCpm*0.7+segCpm*0.3:segCpm;}clearWatchdog();if(playing&&!_tabSw){msSetState('playing');keepAudioSessionAlive();speakIdx(idx+1);}};
       el.onerror=()=>{clearWatchdog();_busy=false;_prefetchCache.delete(i);if(playing&&!_tabSw)setTimeout(()=>speakIdx(idx),800);};
       el.src=audioSrc;
       el.play().catch(e=>{console.warn('play() failed:',e.name,e.message);clearWatchdog();_busy=false;_prefetchCache.delete(i);if(playing&&!_tabSw)setTimeout(()=>speakIdx(idx),600);});
@@ -1333,7 +1343,7 @@ function startWatchdog(rate,isGoogle=false){
 }
 function clearWatchdog(){if(watchdog){clearTimeout(watchdog);watchdog=null;}}
 function startPlay(){
-  if(playing)return;unlockAudio();_playStartTime=Date.now();playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudio();clearPrefetchCache();if(hasGoogleKey())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
+  if(playing)return;unlockAudio();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudio();clearPrefetchCache();if(hasGoogleKey())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
 }
 function togglePlay(){
   if(!segs.length)return;
@@ -1417,7 +1427,7 @@ function clearApiKey(){
   document.getElementById('googleVoiceSection').style.display='none';showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();toast('Kyokoに戻しました');
 }
 function showApiStatus(type,msg){const el=document.getElementById('apiStatus');el.textContent=msg;el.className='api-status show '+type;}
-function friendlyVoiceName(v){const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
+function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if(mc)return 'Chirp3-'+mc[1];const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
 function updModeDisplay(){
   const el=document.getElementById('modeDisplay');if(!el)return;
   const row=document.getElementById('voiceRowKyoko');const rowG=document.getElementById('voiceRowGoogle');const badge=document.getElementById('googleBadge');
@@ -1460,16 +1470,18 @@ async function goPrev(){
 }
 async function goNext(){if(_goNextRunning)return;_goNextRunning=true;try{await _goNextImpl();}finally{_goNextRunning=false;}}
 async function _goNextImpl(){
+  const myGen=_navGeneration;
   if(!nextUrl&&currentChapterUrl&&currentChapterUrl.includes('kakuyomu.jp')){
     if(_nextHtmlCache&&_nextHtmlCache.url){nextUrl=_nextHtmlCache.url;document.getElementById('bNext').disabled=false;}
     if(!nextUrl){
       showFetch('load','次話URLを取得中…');disable(true);
-      try{const curHtml=await fetchHtml(currentChapterUrl);const curPage=extractPage(curHtml,currentChapterUrl);if(curPage.nextUrl){nextUrl=curPage.nextUrl;document.getElementById('bNext').disabled=false;}}catch(e){}
-      if(!nextUrl){try{const tocUrl=inferTocUrl(currentChapterUrl);if(tocUrl){const html=await fetchHtml(tocUrl);const items=parseKakuyomuToc(html,tocUrl);const curIdx=items.findIndex(it=>it.url===currentChapterUrl);if(curIdx>=0&&curIdx<items.length-1){nextUrl=items[curIdx+1].url;document.getElementById('bNext').disabled=false;}}}catch(e){}}
+      try{const curHtml=await fetchHtml(currentChapterUrl);if(_navGeneration!==myGen)return;const curPage=extractPage(curHtml,currentChapterUrl);if(curPage.nextUrl){nextUrl=curPage.nextUrl;document.getElementById('bNext').disabled=false;}}catch(e){}
+      if(!nextUrl){try{const tocUrl=inferTocUrl(currentChapterUrl);if(tocUrl){const html=await fetchHtml(tocUrl);if(_navGeneration!==myGen)return;const items=parseKakuyomuToc(html,tocUrl);const curIdx=items.findIndex(it=>it.url===currentChapterUrl);if(curIdx>=0&&curIdx<items.length-1){nextUrl=items[curIdx+1].url;document.getElementById('bNext').disabled=false;}}}catch(e){}}
       disable(false);if(!nextUrl){toast('次のページが見つかりませんでした');hideFetch();return;}
     }
   }
   if(!nextUrl){toast('次のページなし');return;}
+  if(_navGeneration!==myGen)return;
   const url=nextUrl;document.getElementById('urlIn').value=url;
   stopForChapterTransition();disable(true);showFetch('load','次のページ取得中…');
   if(!queue.find(q=>q.url===url)){queue.push({url,title:'読込中…',done:false});qi=queue.length-1;trimQueue();}
@@ -1478,6 +1490,7 @@ async function _goNextImpl(){
     let page=null;
     if(_nextPageCache&&_nextPageCache.url===url){page=_nextPageCache.page;showFetch('load','✓ 先読み済み — 即開始');await new Promise(r=>setTimeout(r,300));}
     else{if(_nextHtmlCache&&_nextHtmlCache.url===url){showFetch('load','先読み中… しばらくお待ちください');page=await _nextHtmlCache.promise;}if(!page){page=await fetchHtml(url).then(html=>extractPage(html,url));}}
+    if(_navGeneration!==myGen)return;
     if(!page)throw new Error('ページ取得失敗');
     if(queue[qi])queue[qi].title=page.title;currentChapterTitle=page.title;
     const nextTitleNum=(page.title||'').match(/^第(\d+)話/);
@@ -1525,12 +1538,8 @@ function renderHistList(){
       '<span>第'+(bk.chapterNum||'?')+'話</span><span>段落'+(bk.segIdx+1)+'</span><span>'+dateStr+'</span></div></div>' +
       '<button class="hist-del" onclick="event.stopPropagation();delHist(\''+esc(bk.novelId)+'\')">✕</button></div>';
   }).join('');
-  items.forEach(bk=>{
-    if(!bk.tocUrl||!bk.totalChap)return;
-    const lastCheck=_newChapCache[bk.novelId]?.checkedAt||0;
-    if(Date.now()-lastCheck<3600000)return;
-    checkNewChapter(bk);
-  });
+  const hasUnchecked=items.some(bk=>bk.tocUrl&&bk.totalChap&&(Date.now()-(_newChapCache[bk.novelId]?.checkedAt||0))>=3600000);
+  if(hasUnchecked)startupNewCheck().catch(function(){});
 }
 async function checkNewChapter(bk){
   const tocUrl=bk.tocUrl||inferTocUrl(bk.chapterUrl);if(!tocUrl)return;
@@ -1570,6 +1579,7 @@ async function checkNewChapter(bk){
   }catch(e){}
 }
 async function resumeFrom(novelId){
+  _navGeneration++;
   const bk=bkGet(novelId);if(!bk){toast('しおりが見つかりません');return;}
   const all=bkLoad();if(all[novelId]){delete all[novelId].hasNew;delete all[novelId].newDiff;bkSave(all);}
   delete _newChapCache[novelId];switchTab('read');document.getElementById('urlIn').value=bk.novelId;
@@ -1600,7 +1610,7 @@ const SS_PAGE_CACHE_MAX_BYTES=600000;
 function safeSessionSet(key,data){
   if(!data||data.length>SS_PAGE_CACHE_MAX_BYTES)return;
   try{const existing=Object.keys(sessionStorage).filter(k=>k.startsWith(SS_PAGE_CACHE_PREFIX));if(existing.length>=SS_PAGE_CACHE_MAX_ENTRIES)sessionStorage.removeItem(existing[0]);sessionStorage.setItem(key,data);}
-  catch(e){try{Object.keys(sessionStorage).filter(k=>k.startsWith(SS_PAGE_CACHE_PREFIX)).forEach(k=>sessionStorage.removeItem(k));sessionStorage.setItem(key,data);}catch(e2){}}
+  catch(e){try{Object.keys(sessionStorage).filter(k=>k.startsWith(SS_PAGE_CACHE_PREFIX)).forEach(k=>sessionStorage.removeItem(k));sessionStorage.setItem(key,data);}catch(e2){toast('⚠ キャッシュ保存に失敗しました');}}
 }
 let _cfmCallback=null;
 function openConfirm(title,msg,onOk){_cfmCallback=onOk;document.getElementById('cfmTitle').textContent=title;document.getElementById('cfmMsg').textContent=msg;document.getElementById('cfmOkBtn').onclick=()=>{closeConfirm();if(_cfmCallback)_cfmCallback();};document.getElementById('cfmOverlay').classList.add('show');}
@@ -1637,6 +1647,7 @@ function resetStatItem(key){
 }
 function resetStats(){openConfirm('読書統計をリセット','統計データをリセットします。本当にリセットしますか？',function(){localStorage.removeItem('yogatari_stats');updStatsDisplay();toast('統計をリセットしました');});}
 var _playStartTime=0;
+let _liveCpm=0;
 const VOICE_LIMITS={'Wavenet':{free:4000000,warn:3600000},'Standard':{free:4000000,warn:3600000},'Neural2':{free:1000000,warn:900000},'Chirp3':{free:1000000,warn:900000},'default':{free:1000000,warn:900000}};
 function getVoiceLimits(){const v=_gVoice||'';if(v.includes('Chirp3'))return VOICE_LIMITS['Chirp3'];if(v.includes('Wavenet'))return VOICE_LIMITS['Wavenet'];if(v.includes('Standard'))return VOICE_LIMITS['Standard'];if(v.includes('Neural2'))return VOICE_LIMITS['Neural2'];return VOICE_LIMITS['default'];}
 function USAGE_WARN(){return getVoiceLimits().warn;}
@@ -1646,7 +1657,7 @@ function isChirp3(){return _gVoice.includes('Chirp3');}
 function updStepperState(){var grid=document.getElementById('stepperGrid');var warn=document.getElementById('chirpWarnCtrl');var warnSett=document.getElementById('chirpWarn');var chirp=isChirp3();if(grid)grid.classList.toggle('disabled',chirp);if(warn)warn.classList.toggle('show',chirp);if(warnSett)warnSett.classList.toggle('show',chirp);}
 function usageKey(cat){const d=new Date();const c=cat||voiceCategory();return 'yogatari_usage_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+c;}
 function getUsage(cat){return parseInt(localStorage.getItem(usageKey(cat))||'0');}
-function addUsage(chars){const cur=getUsage()+chars;localStorage.setItem(usageKey(),cur);checkUsageAlert(cur);updUsageDisplay();return cur;}
+function addUsage(chars,cat){const c=cat||voiceCategory();const cur=getUsage(c)+chars;localStorage.setItem(usageKey(c),cur);checkUsageAlert(cur);updUsageDisplay();return cur;}
 function resetUsage(){
   openConfirm('使用量をリセット','月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',()=>{
     ['standard','wavenet','neural2','chirp3'].forEach(function(c){localStorage.setItem(usageKey(c),'0');});
@@ -1694,7 +1705,7 @@ function updProg(){
   document.getElementById('progNum').textContent=cur+' / '+total;
   document.getElementById('progFill').style.width=(total?cur/total*100:0)+'%';
   const remEl=document.getElementById('vRemain');
-  if(remEl&&total>0){const remSegs=segs.slice(idx);const remChars=remSegs.reduce((a,s)=>a+s.length,0);const baseRate=hasGoogleKey()?360:250;const cpm=baseRate*getRate()*0.85;const remMin=remChars/cpm;if(remMin<1)remEl.textContent='1分未満';else remEl.textContent='約'+Math.ceil(remMin)+'分';}
+  if(remEl&&total>0){const remSegs=segs.slice(idx);const remChars=remSegs.reduce((a,s)=>a+s.length,0);const baseRate=hasGoogleKey()?360:250;const cpm=(_liveCpm>0&&hasGoogleKey())?_liveCpm:baseRate*getRate()*0.85;const remMin=remChars/cpm;if(remMin<1)remEl.textContent='1分未満';else remEl.textContent='約'+Math.ceil(remMin)+'分';}
 }
 function updBtn(){const b=document.getElementById('bPlay');b.textContent=playing?'⏸':'▶';b.classList.toggle('on',playing);}
 function setBadge(on){
@@ -1738,21 +1749,22 @@ let _bgLastFrame=0;
 const bgCv=document.getElementById('bgCanvas');
 const bgCtx=bgCv?bgCv.getContext('2d'):null;
 let _stars=[],_clouds=[],_drops=[],_flakes=[],_shootings=[],_auroras=[];
-function bgResize(){if(!bgCv)return;bgCv.width=window.innerWidth;bgCv.height=window.innerHeight;}
-function initStars(n){_stars=Array.from({length:n},()=>({x:Math.random()*bgCv.width,y:Math.random()*bgCv.height*0.82,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.007}));}
-function initClouds(n){_clouds=Array.from({length:n},()=>({x:Math.random()*bgCv.width*1.5,y:Math.random()*bgCv.height*0.55,w:Math.random()*200+80,h:Math.random()*55+28,spd:Math.random()*0.2+0.06,a:Math.random()*0.3+0.1}));}
-function initRain(n){_drops=Array.from({length:n},()=>({x:Math.random()*bgCv.width,y:Math.random()*bgCv.height,len:Math.random()*14+6,spd:Math.random()*7+7,a:Math.random()*0.4+0.15}));}
-function initSnow(n){_flakes=Array.from({length:n},()=>({x:Math.random()*bgCv.width,y:Math.random()*bgCv.height,r:Math.random()*3+1,spd:Math.random()*1.2+0.4,drift:(Math.random()-0.5)*0.5,a:Math.random()*0.6+0.3}));}
-function initAuroras(n){_auroras=Array.from({length:n},()=>({x:Math.random()*bgCv.width,y:bgCv.height*0.05+Math.random()*bgCv.height*0.25,w:Math.random()*180+120,h:Math.random()*140+80,hue:Math.random()*60+140,a:Math.random()*0.18+0.05,da:(Math.random()-0.5)*0.003,drift:(Math.random()-0.5)*0.15}));}
+let _bgW=0,_bgH=0;
+function bgResize(){if(!bgCv)return;const dpr=window.devicePixelRatio||1;_bgW=window.innerWidth;_bgH=window.innerHeight;bgCv.width=_bgW*dpr;bgCv.height=_bgH*dpr;bgCtx.setTransform(dpr,0,0,dpr,0,0);}
+function initStars(n){_stars=Array.from({length:n},()=>({x:Math.random()*_bgW,y:Math.random()*_bgH*0.82,r:Math.random()*1.5+0.3,a:Math.random(),da:(Math.random()-0.5)*0.007}));}
+function initClouds(n){_clouds=Array.from({length:n},()=>({x:Math.random()*_bgW*1.5,y:Math.random()*_bgH*0.55,w:Math.random()*200+80,h:Math.random()*55+28,spd:Math.random()*0.2+0.06,a:Math.random()*0.3+0.1}));}
+function initRain(n){_drops=Array.from({length:n},()=>({x:Math.random()*_bgW,y:Math.random()*_bgH,len:Math.random()*14+6,spd:Math.random()*7+7,a:Math.random()*0.4+0.15}));}
+function initSnow(n){_flakes=Array.from({length:n},()=>({x:Math.random()*_bgW,y:Math.random()*_bgH,r:Math.random()*3+1,spd:Math.random()*1.2+0.4,drift:(Math.random()-0.5)*0.5,a:Math.random()*0.6+0.3}));}
+function initAuroras(n){_auroras=Array.from({length:n},()=>({x:Math.random()*_bgW,y:_bgH*0.05+Math.random()*_bgH*0.25,w:Math.random()*180+120,h:Math.random()*140+80,hue:Math.random()*60+140,a:Math.random()*0.18+0.05,da:(Math.random()-0.5)*0.003,drift:(Math.random()-0.5)*0.15}));}
 const WEATHER_LIST=['clear','clear','clear','cloudy','rain','snow','aurora'];
 function pickRandomCond(){return WEATHER_LIST[Math.floor(Math.random()*WEATHER_LIST.length)];}
 function getMoonPhase(){const knownNew=new Date(2000,0,6,18,14,0);const lunarCycle=29.53058867;const diff=(Date.now()-knownNew)/86400000;return((diff%lunarCycle)+lunarCycle)%lunarCycle/lunarCycle;}
 function getMoonPosition(){const h=new Date().getHours()+new Date().getMinutes()/60;const t=h<6?h+24:h;const progress=Math.max(0,Math.min(1,(t-20)/10));const angle=Math.PI*progress;return{x:0.85-Math.sin(angle)*0.65,y:0.36-Math.sin(angle)*0.22};}
 function drawMoonPhase(ctx,cx,cy,r,phase){ctx.save();ctx.fillStyle='#f0e8c0';ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.globalCompositeOperation='source-atop';const p=phase<0.5?phase*2:(phase-0.5)*2;const shadowX=phase<0.5?cx+r*(1-p*2):cx+r*(p*2-1);ctx.fillStyle='#030710';ctx.beginPath();if(phase<0.5){ctx.arc(cx,cy,r,Math.PI/2,-Math.PI/2);ctx.bezierCurveTo(shadowX,cy-r,shadowX,cy+r,cx,cy+r);}else{ctx.arc(cx,cy,r,-Math.PI/2,Math.PI/2);ctx.bezierCurveTo(shadowX,cy+r,shadowX,cy-r,cx,cy-r);}ctx.closePath();ctx.fill();ctx.globalCompositeOperation='source-over';ctx.strokeStyle='rgba(255,245,200,0.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();ctx.restore();}
 function drawRealCloud(ctx,cx,cy,w,h,cond){const isDark=cond==='rain';const baseL=isDark?'rgba(55,60,75,':'rgba(75,85,115,';const baseS=isDark?'rgba(35,38,48,':'rgba(45,50,72,';const bumps=[{dx:0,dy:0,rx:w*0.42,ry:h*0.55},{dx:-w*0.28,dy:h*0.18,rx:w*0.30,ry:h*0.45},{dx:w*0.28,dy:h*0.15,rx:w*0.32,ry:h*0.42},{dx:-w*0.50,dy:h*0.32,rx:w*0.22,ry:h*0.32},{dx:w*0.50,dy:h*0.28,rx:w*0.24,ry:h*0.30},{dx:-w*0.15,dy:-h*0.15,rx:w*0.28,ry:h*0.38},{dx:w*0.18,dy:-h*0.12,rx:w*0.26,ry:h*0.36}];ctx.fillStyle=baseS+'0.65)';bumps.forEach(b=>{ctx.beginPath();ctx.ellipse(cx+b.dx,cy+b.dy+h*0.12,b.rx*0.95,b.ry*0.7,0,0,Math.PI*2);ctx.fill();});bumps.forEach((b,i)=>{ctx.fillStyle=baseL+(i===0?'0.88)':'0.80)');ctx.beginPath();ctx.ellipse(cx+b.dx,cy+b.dy,b.rx,b.ry,0,0,Math.PI*2);ctx.fill();});}
-function maybeShoot(){if(Math.random()<0.004&&_shootings.length<3)_shootings.push({x:Math.random()*bgCv.width,y:Math.random()*bgCv.height*0.4,vx:(Math.random()*4+3)*(Math.random()<0.5?1:-1),vy:Math.random()*3+2,life:1.0});}
+function maybeShoot(){if(Math.random()<0.004&&_shootings.length<3)_shootings.push({x:Math.random()*_bgW,y:Math.random()*_bgH*0.4,vx:(Math.random()*4+3)*(Math.random()<0.5?1:-1),vy:Math.random()*3+2,life:1.0});}
 function drawBg(){
-  if(!bgCtx||!bgCv.width)return;const W=bgCv.width,H=bgCv.height;const cond=_bgCond;_bgCondTimer += 1;
+  if(!bgCtx||!_bgW)return;const W=_bgW,H=_bgH;const cond=_bgCond;_bgCondTimer += 1;
   if(_bgCondTimer>60*(30+Math.random()*60)){_bgCond=pickRandomCond();_bgCondTimer=0;}
   const grad=bgCtx.createLinearGradient(0,0,0,H);
   if(cond==='rain'){grad.addColorStop(0,'#080d18');grad.addColorStop(1,'#131e28');}
@@ -1773,6 +1785,8 @@ function startBgEffect(){if(!bgCv||!bgCtx)return;_bgCond=pickRandomCond();bgResi
 function stopBgEffect(){if(_bgRaf){cancelAnimationFrame(_bgRaf);_bgRaf=null;}if(bgCv)bgCv.style.opacity='0';document.body.style.background='#0a0908';}
 function toggleBgEffect(){_bgOn=!_bgOn;localStorage.setItem('yogatari_bg',_bgOn?'1':'0');const btn=document.getElementById('bgToggleBtn');const st=document.getElementById('bgStatusTxt');if(btn){btn.textContent=_bgOn?'ON':'OFF';btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn';}if(st)st.textContent=_bgOn?'月齢・星・流れ星・オーロラ・ランダム天気':'';if(_bgOn)startBgEffect();else stopBgEffect();}
 window.addEventListener('resize',()=>{if(_bgOn){bgResize();initStars(200);initClouds(7);initAuroras(5);}});
+window.addEventListener('offline', () => { toast('⚠ オフラインになりました'); });
+window.addEventListener('online', () => { toast('ネットワーク接続が回復しました'); });
 setTimeout(()=>{const btn=document.getElementById('bgToggleBtn');if(btn){btn.textContent=_bgOn?'ON':'OFF';btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn';}const st=document.getElementById('bgStatusTxt');if(st&&_bgOn)st.textContent='月齢・星・流れ星・オーロラ・ランダム天気';if(_bgOn)startBgEffect();},500);
 </script>
 </body>
