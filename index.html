@@ -1407,7 +1407,8 @@ function saveApiKey(){
   document.getElementById('googleVoiceSection').style.display='block';
   showApiStatus('ok','✓ 保存しました — Google TTS が有効です');updModeDisplay();updStepperState();toast('Google TTSを設定しました');
   var _xhrKey=_gApiKey.trim();var _xhr=new XMLHttpRequest();
-  _xhr.open('GET','https://texttospeech.googleapis.com/v1/voices?languageCode=ja-JP&key='+_xhrKey);
+  _xhr.open('GET','https://texttospeech.googleapis.com/v1/voices?languageCode=ja-JP');
+  _xhr.setRequestHeader('x-goog-api-key',_xhrKey);
   _xhr.onload=function(){
     if(_xhr.status!==200)return;
     var _d;try{_d=JSON.parse(_xhr.responseText);}catch(e){return;}
