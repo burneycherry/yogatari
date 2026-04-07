@@ -771,12 +771,8 @@ const PROXIES = [
   { build: u=>'https://corsproxy.io/?url='+encodeURIComponent(u), isJson:false, ms:7000 },
   { build: u=>'https://thingproxy.freeboard.io/fetch/'+u, isJson:false, ms:7000 },
 ];
-async function tryProxy(p, url, cancelSignal) {
-  const hasTimeout = typeof AbortSignal.timeout === 'function';
-  const hasAny = typeof AbortSignal.any === 'function';
-  const timeoutSig = hasTimeout ? AbortSignal.timeout(p.ms || 8000) : null;
-  const signal = cancelSignal && timeoutSig && hasAny ? AbortSignal.any([timeoutSig, cancelSignal]) : timeoutSig || cancelSignal || undefined;
-  const r = await fetch(p.build(url), { signal });
+async function tryProxy(p, url) {
+  const r = await fetch(p.build(url), { signal: typeof AbortSignal.timeout==='function' ? AbortSignal.timeout(p.ms || 8000) : undefined });
   if (!r.ok) throw new Error('HTTP ' + r.status);
   const raw = await r.text();
   if (!raw || raw.length < 200) throw new Error('レスポンス短すぎ');
@@ -808,7 +804,6 @@ async function fetchHtml(url) {
   return new Promise((resolve, reject) => {
     let settled = false, failCount = 0;
     const errors = [];
-    const abortCtrl = new AbortController();
     PROXIES.forEach((p, i) => {
       const wave = Math.floor(i / 2);
       const normalDelay = wave * 400;
@@ -816,10 +811,9 @@ async function fetchHtml(url) {
       setTimeout(() => {
         if (settled) return;
         const label = p.build(url).replace(/https?:\/\/([^/]+).*/, '$1');
-        tryProxy(p, url, abortCtrl.signal).then(html => {
-          if (!settled) { settled = true; abortCtrl.abort(); setProxyCacheIdx(hostKey, i); resolve(html); }
+        tryProxy(p, url).then(html => {
+          if (!settled) { settled = true; setProxyCacheIdx(hostKey, i); resolve(html); }
         }).catch(e => {
-          if (e.name === 'AbortError') return;
           errors.push(label + ': ' + e.message);
           if (i === cachedIdx) clearProxyCacheIdx(hostKey);
           failCount += 1;
