@@ -687,12 +687,18 @@ setTimeout(() => { startupNewCheck().catch(function(){}); }, 3000);
   } catch(e) {}
 })();
 async function startupNewCheck() {
-  const items = bkAll();
-  for (const bk of items) {
-    const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
-    if (Date.now() - lastCheck < 3600000) continue;
-    await checkNewChapter(bk);
-    await new Promise(r => setTimeout(r, 1500));
+  if (_startupCheckRunning) return;
+  _startupCheckRunning = true;
+  try {
+    const items = bkAll();
+    for (const bk of items) {
+      const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
+      if (Date.now() - lastCheck < 3600000) continue;
+      await checkNewChapter(bk);
+      await new Promise(r => setTimeout(r, 1500));
+    }
+  } finally {
+    _startupCheckRunning = false;
   }
 }
 function bkLoad() {
@@ -762,6 +768,8 @@ function trimQueue() {
 }
 let watchdog=null;
 let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentChapterNum=1, currentChapterUrl=null;
+let _navGeneration=0;
+let _startupCheckRunning=false;
 const PROXIES = [
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
@@ -1460,16 +1468,18 @@ async function goPrev(){
 }
 async function goNext(){if(_goNextRunning)return;_goNextRunning=true;try{await _goNextImpl();}finally{_goNextRunning=false;}}
 async function _goNextImpl(){
+  const myGen=_navGeneration;
   if(!nextUrl&&currentChapterUrl&&currentChapterUrl.includes('kakuyomu.jp')){
     if(_nextHtmlCache&&_nextHtmlCache.url){nextUrl=_nextHtmlCache.url;document.getElementById('bNext').disabled=false;}
     if(!nextUrl){
       showFetch('load','次話URLを取得中…');disable(true);
-      try{const curHtml=await fetchHtml(currentChapterUrl);const curPage=extractPage(curHtml,currentChapterUrl);if(curPage.nextUrl){nextUrl=curPage.nextUrl;document.getElementById('bNext').disabled=false;}}catch(e){}
-      if(!nextUrl){try{const tocUrl=inferTocUrl(currentChapterUrl);if(tocUrl){const html=await fetchHtml(tocUrl);const items=parseKakuyomuToc(html,tocUrl);const curIdx=items.findIndex(it=>it.url===currentChapterUrl);if(curIdx>=0&&curIdx<items.length-1){nextUrl=items[curIdx+1].url;document.getElementById('bNext').disabled=false;}}}catch(e){}}
+      try{const curHtml=await fetchHtml(currentChapterUrl);if(_navGeneration!==myGen)return;const curPage=extractPage(curHtml,currentChapterUrl);if(curPage.nextUrl){nextUrl=curPage.nextUrl;document.getElementById('bNext').disabled=false;}}catch(e){}
+      if(!nextUrl){try{const tocUrl=inferTocUrl(currentChapterUrl);if(tocUrl){const html=await fetchHtml(tocUrl);if(_navGeneration!==myGen)return;const items=parseKakuyomuToc(html,tocUrl);const curIdx=items.findIndex(it=>it.url===currentChapterUrl);if(curIdx>=0&&curIdx<items.length-1){nextUrl=items[curIdx+1].url;document.getElementById('bNext').disabled=false;}}}catch(e){}}
       disable(false);if(!nextUrl){toast('次のページが見つかりませんでした');hideFetch();return;}
     }
   }
   if(!nextUrl){toast('次のページなし');return;}
+  if(_navGeneration!==myGen)return;
   const url=nextUrl;document.getElementById('urlIn').value=url;
   stopForChapterTransition();disable(true);showFetch('load','次のページ取得中…');
   if(!queue.find(q=>q.url===url)){queue.push({url,title:'読込中…',done:false});qi=queue.length-1;trimQueue();}
@@ -1478,6 +1488,7 @@ async function _goNextImpl(){
     let page=null;
     if(_nextPageCache&&_nextPageCache.url===url){page=_nextPageCache.page;showFetch('load','✓ 先読み済み — 即開始');await new Promise(r=>setTimeout(r,300));}
     else{if(_nextHtmlCache&&_nextHtmlCache.url===url){showFetch('load','先読み中… しばらくお待ちください');page=await _nextHtmlCache.promise;}if(!page){page=await fetchHtml(url).then(html=>extractPage(html,url));}}
+    if(_navGeneration!==myGen)return;
     if(!page)throw new Error('ページ取得失敗');
     if(queue[qi])queue[qi].title=page.title;currentChapterTitle=page.title;
     const nextTitleNum=(page.title||'').match(/^第(\d+)話/);
@@ -1525,12 +1536,8 @@ function renderHistList(){
       '<span>第'+(bk.chapterNum||'?')+'話</span><span>段落'+(bk.segIdx+1)+'</span><span>'+dateStr+'</span></div></div>' +
       '<button class="hist-del" onclick="event.stopPropagation();delHist(\''+esc(bk.novelId)+'\')">✕</button></div>';
   }).join('');
-  items.forEach(bk=>{
-    if(!bk.tocUrl||!bk.totalChap)return;
-    const lastCheck=_newChapCache[bk.novelId]?.checkedAt||0;
-    if(Date.now()-lastCheck<3600000)return;
-    checkNewChapter(bk);
-  });
+  const hasUnchecked=items.some(bk=>bk.tocUrl&&bk.totalChap&&(Date.now()-(_newChapCache[bk.novelId]?.checkedAt||0))>=3600000);
+  if(hasUnchecked)startupNewCheck().catch(function(){});
 }
 async function checkNewChapter(bk){
   const tocUrl=bk.tocUrl||inferTocUrl(bk.chapterUrl);if(!tocUrl)return;
@@ -1570,6 +1577,7 @@ async function checkNewChapter(bk){
   }catch(e){}
 }
 async function resumeFrom(novelId){
+  _navGeneration++;
   const bk=bkGet(novelId);if(!bk){toast('しおりが見つかりません');return;}
   const all=bkLoad();if(all[novelId]){delete all[novelId].hasNew;delete all[novelId].newDiff;bkSave(all);}
   delete _newChapCache[novelId];switchTab('read');document.getElementById('urlIn').value=bk.novelId;
