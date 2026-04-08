@@ -65,7 +65,7 @@
 | `_prefetchCache` | Google TTS音声BLOBのキャッシュMap |
 | `currentChapterTitle` / `currentNovelTitle` | 表示中のメタデータ |
 | `nextUrl` / `prevUrl` | 章間ナビゲーション |
-| `APP_VER` | アプリバージョン文字列。`<title>` と同期。バージョン管理プロトコル実行時のみ更新する |
+| `APP_VER` | アプリバージョン文字列。`<title>`と `<span class="ver">` に同期。バージョン管理プロトコル実行時のみ更新する |
 | `DATA_VERSION` | localStorageデータ構造のバージョン番号。起動時のマイグレーション判定に使用する |
 
 ### 音声パイプライン
