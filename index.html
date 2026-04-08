@@ -432,6 +432,14 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <div class="chirp-warn" id="chirpWarn">⚠ Chirp 3 HD は速度・ピッチ調整が非対応です。<br>コントロールバーの速度・ピッチスライダーは無効になります。</div>
       <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2 / Chirp 3 HD：月100万文字まで無料</div>
     </div>
+    <div class="sett-section">
+      <div class="sett-title">// データ管理</div>
+      <div class="sett-sub" style="margin-bottom:12px;line-height:1.8">しおり・設定・統計をファイルに書き出し／読み込みできます。<br><span style="font-size:11px;color:#564838">※ APIキーはセキュリティ上バックアップに含まれません。リストア後に再入力してください。</span></div>
+      <div class="api-btns">
+        <button class="sett-btn sett-btn-save" onclick="backupData()" style="flex:1">バックアップ</button>
+        <button class="sett-btn sett-btn-clear" onclick="restoreData()" style="flex:1">リストア</button>
+      </div>
+    </div>
   </div>
 </div>
 <div class="ctrl-bar">
@@ -1666,6 +1674,42 @@ function resetUsage(){
     ['standard','wavenet','neural2','chirp3'].forEach(function(c){localStorage.setItem(usageKey(c),'0');});
     updUsageDisplay();toast('使用量をリセットしました');
   });
+}
+function backupData(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith('yogatari_')&&key!=='yogatari_gkey') data[key]=localStorage.getItem(key);
+  }
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='yogatari_backup_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('バックアップを保存しました');
+}
+function restoreData(){
+  const input=document.createElement('input');
+  input.type='file';input.accept='.json,application/json';
+  input.onchange=function(e){
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        const data=JSON.parse(ev.target.result);
+        let count=0;
+        for(const key of Object.keys(data)){
+          if(key.startsWith('yogatari_')&&key!=='yogatari_gkey'){localStorage.setItem(key,data[key]);count++;}
+        }
+        toast('リストア完了（'+count+'件）');
+        setTimeout(()=>location.reload(),1200);
+      }catch(e){toast('ファイルの読み込みに失敗しました');}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
 }
 function checkUsageAlert(cur){const lim=USAGE_LIMIT(),warn=USAGE_WARN();const limStr=(lim/10000).toFixed(0)+'万';if(cur>=lim)toast('⚠ 月間無料枠('+limStr+'文字)に達しました。Kyokoに切り替えます。');else if(cur>=warn)toast('⚠ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字');}
 function isOverLimit(){return hasGoogleKey()&&getUsage()>=USAGE_LIMIT();}
