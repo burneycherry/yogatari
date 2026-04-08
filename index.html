@@ -609,7 +609,7 @@ function startSilentAudio() {
   if (_silentOn) return;
   try {
     var _sl = document.getElementById('silentLoopEl');
-    if (_sl) { _sl.src = SILENT_MP3; _sl.volume = 0.001; _sl.play().catch(function(){}); _silentOn = true; }
+    if (_sl) { _sl.src = SILENT_MP3; _sl.volume = 0.01; _sl.play().catch(function(){}); _silentOn = true; }
   } catch(e) {}
 }
 function stopSilentAudio() {
@@ -754,6 +754,10 @@ let _goNextRunning = false;
 const SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e////////////////////////////////////////////////////////////////AAAAAExhdmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//sQRAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE==';
 function keepAudioSessionAlive() {
   if (!playing) return;
+  try {
+    const sl = document.getElementById('silentLoopEl');
+    if (sl && (sl.paused || sl.ended)) { sl.src = SILENT_MP3; sl.play().catch(()=>{}); }
+  } catch(e) {}
   try { const el = getAudioEl(); if (el && el.paused) { el.src = SILENT_MP3; el.play().catch(() => {}); } } catch(e) {}
 }
 let queue=[], qi=0;
@@ -1274,7 +1278,8 @@ function getAudioCached(i){if(!_prefetchCache.has(i)){if(i<segs.length)_prefetch
 function evictCache(currentIdx){for(const key of _prefetchCache.keys()){if(key<currentIdx-1||key>currentIdx+2)_prefetchCache.delete(key);}}
 function prefetchNext(i){if(!hasGoogleKey())return;if(i+1<segs.length&&!_prefetchCache.has(i+1))getAudioCached(i+1);}
 function clearPrefetchCache(){_prefetchCache.clear();}
-function stopGoogleAudio(){const el=getAudioEl();if(el){el.onended=null;el.onerror=null;el.pause();el.src='';}}
+function stopGoogleAudio(){const el=getAudioEl();if(el){el.onended=null;el.onerror=null;el.pause();}}
+function stopGoogleAudioFull(){const el=getAudioEl();if(el){el.onended=null;el.onerror=null;el.pause();el.src='';}}
 let _skipLabel=null;
 function skipSec(sec){
   if(!playing||!segs.length)return;
@@ -1353,23 +1358,23 @@ function startWatchdog(rate,isGoogle=false){
 }
 function clearWatchdog(){if(watchdog){clearTimeout(watchdog);watchdog=null;}}
 function startPlay(){
-  if(playing)return;unlockAudio();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudio();clearPrefetchCache();if(hasGoogleKey())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
+  if(playing)return;unlockAudio();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(hasGoogleKey())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
 }
 function togglePlay(){
   if(!segs.length)return;
-  if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudio();updBtn();setBadge(false);msSetState('paused');}
+  if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudioFull();updBtn();setBadge(false);msSetState('paused');}
   else startPlay();
 }
 function stop(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
-  playing=false;_busy=false;SS.cancel();stopGoogleAudio();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();msSetState('none');
+  playing=false;_busy=false;SS.cancel();stopGoogleAudioFull();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();msSetState('none');
 }
 function stopForChapterTransition(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
-  playing=false;_busy=false;SS.cancel();stopGoogleAudio();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();
+  playing=false;_busy=false;SS.cancel();stopGoogleAudioFull();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();
 }
-function prevSeg(){if(_busy)return;SS.cancel();stopGoogleAudio();clearWatchdog();clearPrefetchCache();_busy=false;_sentIdx=-1;const i=Math.max(0,idx-1);if(playing)speakIdx(i);else{idx=i;updHighlight();updProg();}}
-function nextSeg(){if(_busy)return;SS.cancel();stopGoogleAudio();clearWatchdog();clearPrefetchCache();_busy=false;_sentIdx=-1;const i=Math.min(segs.length-1,idx+1);if(playing)speakIdx(i);else{idx=i;updHighlight();updProg();}}
+function prevSeg(){if(_busy)return;SS.cancel();stopGoogleAudioFull();clearWatchdog();clearPrefetchCache();_busy=false;_sentIdx=-1;const i=Math.max(0,idx-1);if(playing)speakIdx(i);else{idx=i;updHighlight();updProg();}}
+function nextSeg(){if(_busy)return;SS.cancel();stopGoogleAudioFull();clearWatchdog();clearPrefetchCache();_busy=false;_sentIdx=-1;const i=Math.min(segs.length-1,idx+1);if(playing)speakIdx(i);else{idx=i;updHighlight();updProg();}}
 function prevSegFull(){prevSeg();}
 function nextSegFull(){nextSeg();}
 function initSettings(){
