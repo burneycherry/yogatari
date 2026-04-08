@@ -1332,7 +1332,7 @@ function speakIdx(i){
     }).catch(e=>{
       _busy=false;_prefetchCache.delete(i);if(!playing)return;
       const msg=(e.message||'Google TTSエラー').slice(0,60);toast('⚠ '+msg);
-      if(/quota|key|API|無料枠|401|403/.test(msg)){playing=false;updBtn();setBadge(false);}
+      if(/quota|無料枠|not valid|not authorized|HTTP 401|HTTP 403/.test(msg)){playing=false;updBtn();setBadge(false);}
       else setTimeout(()=>{if(playing)speakIdx(idx);},2000);
     });
   } else {
@@ -1413,6 +1413,7 @@ function saveApiKey(){
   if(!key){showApiStatus('ng','キーを入力してください');return;}
   if(!key.startsWith('AIza')){showApiStatus('ng','キーの形式が正しくありません（AIzaSy…）');return;}
   _gApiKey=key;const selEl=document.getElementById('googleVoiceSel');if(selEl&&selEl.value)_gVoice=selEl.value;
+  clearPrefetchCache();
   localStorage.setItem('yogatari_gkey',_gApiKey);localStorage.setItem('yogatari_gvoice',_gVoice);
   document.getElementById('googleVoiceSection').style.display='block';
   showApiStatus('ok','✓ 保存しました — Google TTS が有効です');updModeDisplay();updStepperState();toast('Google TTSを設定しました');
