@@ -350,8 +350,6 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <div class="sett-sub" id="bgStatusTxt" style="margin-bottom:4px;color:#564838">月齢・星・流れ星・オーロラ・ランダム天気</div>
     </div>
     <div class="sett-section">
-      <div class="sett-title">// 音声エンジン</div>
-      <div id="modeDisplay" style="margin-bottom:12px"></div>
       <div class="sett-title">// 今月の使用量（アプリ内カウント）</div>
       <div class="usage-bar-wrap" id="usageWrap">
         <div class="usage-bar-header">
@@ -361,7 +359,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
         <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
       </div>
-      <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：各400万文字、Neural2 / Chirp 3 HD：各100万文字。合計1000万文字。<br>各上限の90%で警告、上限到達でKyokoに自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
+      <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：400万文字、Neural2：100万文字、Chirp 3 HD：100万文字。合計600万文字。<br>各上限の90%で警告、98%でKyokoに自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
       <div class="sett-title">// Google側での使用量・請求確認</div>
       <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">実際の使用量や請求額はGoogle Cloud Consoleで確認できます。</div>
       <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
@@ -432,7 +430,6 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       </select>
       <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
       <div class="chirp-warn" id="chirpWarn">⚠ Chirp 3 HD は速度・ピッチ調整が非対応です。<br>コントロールバーの速度・ピッチスライダーは無効になります。</div>
-      <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2 / Chirp 3 HD：月100万文字まで無料</div>
     </div>
     <div class="sett-section">
       <div class="sett-title">// データ管理</div>
@@ -683,6 +680,7 @@ setTimeout(() => {
   syncVoiceSelect(); updModeDisplay(); updStepperState(); updUsageWarnBar();
   document.getElementById('vRate').textContent  = _rate.toFixed(1)  + '×';
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
+  (function(){var gvs=document.getElementById('googleVoiceSection');if(gvs&&gvs.previousElementSibling)gvs.parentNode.insertBefore(gvs,gvs.previousElementSibling);})();
 }, 300);
 setTimeout(() => { startupNewCheck().catch(function(){}); }, 3000);
 (function recordToday(){
@@ -1267,7 +1265,7 @@ function clearNextChapterCache(){_prefetchGeneration += 1;_nextHtmlCache=null;_n
 function hasGoogleKey(){return _gApiKey.trim().length>10;}
 function currentGVoice(){return _gVoice;}
 async function fetchGoogleAudio(text){
-  if(isOverLimit())throw new Error('月間無料枠('+( USAGE_LIMIT()/10000).toFixed(0)+'万文字)に達しました。設定タブでリセットを。');
+  if(isOverLimit())throw new Error('月間使用量が98%に達しました。設定タブでリセットを。');
   const cat=voiceCategory();
   const voice=currentGVoice();
   const body={input:{text},voice:{languageCode:'ja-JP',name:voice},audioConfig:Object.assign({audioEncoding:'MP3'},voice.includes('Chirp3')?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
@@ -1449,10 +1447,10 @@ function clearApiKey(){
 function showApiStatus(type,msg){const el=document.getElementById('apiStatus');el.textContent=msg;el.className='api-status show '+type;}
 function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if(mc)return 'Chirp3-'+mc[1];const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
 function updModeDisplay(){
-  const el=document.getElementById('modeDisplay');if(!el)return;
+  const el=document.getElementById('modeDisplay');
   const row=document.getElementById('voiceRowKyoko');const rowG=document.getElementById('voiceRowGoogle');const badge=document.getElementById('googleBadge');
-  if(hasGoogleKey()){const fname=friendlyVoiceName(_gVoice);const lim=(USAGE_LIMIT()/10000).toFixed(0)+'万文字/月無料';el.innerHTML='<span class="mode-badge google">🎙 '+fname+'<br><span style="font-size:9px;opacity:0.7">'+lim+'</span></span>';if(badge)badge.textContent='🎙 '+fname;if(row)row.style.display='none';if(rowG)rowG.style.display='flex';}
-  else{el.innerHTML='<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';if(row)row.style.display='flex';if(rowG)rowG.style.display='none';}
+  if(hasGoogleKey()){const fname=friendlyVoiceName(_gVoice);const lim=(USAGE_LIMIT()/10000).toFixed(0)+'万文字/月無料';if(el)el.innerHTML='<span class="mode-badge google">🎙 '+fname+'<br><span style="font-size:9px;opacity:0.7">'+lim+'</span></span>';if(badge)badge.textContent='🎙 '+fname;if(row)row.style.display='none';if(rowG)rowG.style.display='flex';}
+  else{if(el)el.innerHTML='<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';if(row)row.style.display='flex';if(rowG)rowG.style.display='none';}
 }
 function saveBookmarkCurrent(segIdx){
   if(!currentNovelId)return;
@@ -1725,16 +1723,16 @@ function restoreData(){
   };
   input.click();
 }
-function checkUsageAlert(cur){const lim=USAGE_LIMIT(),warn=USAGE_WARN();const limStr=(lim/10000).toFixed(0)+'万';if(cur>=lim)toast('⚠ 月間無料枠('+limStr+'文字)に達しました。Kyokoに切り替えます。');else if(cur>=warn)toast('⚠ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字');}
+function checkUsageAlert(cur){const lim=USAGE_LIMIT(),warn=USAGE_WARN();const switchAt=Math.floor(lim*0.98);if(cur>=switchAt)toast('⚠ 使用量が98%に達しました。Kyokoに切り替えます。');else if(cur>=warn)toast('⚠ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字');}
 function updUsageWarnBar(){
   const bar=document.getElementById('usageWarnBar');if(!bar)return;
   if(!hasGoogleKey()){bar.style.display='none';return;}
-  const cur=getUsage();const lim=USAGE_LIMIT(),warn=USAGE_WARN();
-  if(cur>=lim){bar.textContent='⚠ 月間無料枠('+( lim/10000).toFixed(0)+'万文字)に達しました。Kyokoに切り替えます。';bar.className='usage-warn-bar critical';bar.style.display='block';}
+  const cur=getUsage();const lim=USAGE_LIMIT(),warn=USAGE_WARN();const switchAt=Math.floor(lim*0.98);
+  if(cur>=switchAt){bar.textContent='⚠ 使用量が98%に達しました。Kyokoに切り替え中。';bar.className='usage-warn-bar critical';bar.style.display='block';}
   else if(cur>=warn){bar.textContent='△ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字';bar.className='usage-warn-bar';bar.style.display='block';}
   else{bar.style.display='none';}
 }
-function isOverLimit(){return hasGoogleKey()&&getUsage()>=USAGE_LIMIT();}
+function isOverLimit(){return hasGoogleKey()&&getUsage()>=Math.floor(USAGE_LIMIT()*0.98);}
 function updUsageDisplay(){
   var cats=[{key:'standard',label:'Standard / WaveNet',limit:4000000,warn:3600000},{key:'neural2',label:'Neural2',limit:1000000,warn:900000},{key:'chirp3',label:'Chirp 3 HD',limit:1000000,warn:900000}];
   var wrap=document.getElementById('usageWrap');if(!wrap)return;
@@ -1799,8 +1797,6 @@ function getPitch(){return _pitch;}
 function onGVoiceChange(){
   const sel=document.getElementById('googleVoiceSel');if(sel&&sel.value){_gVoice=sel.value;localStorage.setItem('yogatari_gvoice',_gVoice);}
   clearPrefetchCache();updStepperState();
-  const note=document.getElementById('voiceLimitNote');
-  if(note){const isWave=_gVoice.includes('Wavenet')||_gVoice.includes('Standard');note.innerHTML=isWave?'WaveNet / Standard：月<b>400万文字</b>まで無料':'Neural2 / Chirp 3 HD：月<b>100万文字</b>まで無料';}
   updModeDisplay();updUsageDisplay();
 }
 async function testVoice(){
