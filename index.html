@@ -236,6 +236,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .custom-word-del:active{color:#e05050}
 .custom-word-list{display:flex;flex-wrap:wrap;gap:8px;min-height:28px}
 .custom-word-empty{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#564838}
+.rdict-input-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .usage-warn-bar{position:fixed;bottom:0;left:0;right:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));background:#3a2010;border-top:1px solid #8b4513;color:#f0a050;font-family:'Courier New',Consolas,monospace;font-size:12px;text-align:center;z-index:150;display:none}
 .usage-warn-bar.critical{background:#3a1010;border-top-color:#8b1513;color:#f05050}
 </style>
@@ -430,6 +431,32 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       </select>
       <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
       <div class="chirp-warn" id="chirpWarn">⚠ Chirp 3 HD は速度・ピッチ調整が非対応です。<br>コントロールバーの速度・ピッチスライダーは無効になります。</div>
+    </div>
+    <div class="sett-section" id="ssmlOptsSection" style="display:none">
+      <div class="sett-title">// 読み上げ演出（Google TTS）</div>
+      <div class="sett-row">
+        <span class="sett-label">ポーズ最適化<br><span class="sett-sub" style="font-size:11px">句点・三点リーダー後に間を追加</span></span>
+        <button class="sett-btn sett-btn-save" id="ssmlPauseBtn" onclick="toggleSsmlPause()">ON</button>
+      </div>
+      <div class="sett-row">
+        <span class="sett-label">会話文のピッチ変更<br><span class="sett-sub" style="font-size:11px">「」内をやや高め (+2st) に読む</span></span>
+        <button class="sett-btn" id="ssmlDialogueBtn" onclick="toggleSsmlDialogue()">OFF</button>
+      </div>
+      <div class="sett-sub" style="margin-top:4px">Chirp3 HD は非対応。5000文字超のセグメントは自動でフォールバック。</div>
+    </div>
+    <div class="sett-section" id="readingDictSection">
+      <div class="sett-title">// 読み間違い辞書</div>
+      <div class="sett-row">
+        <span class="sett-label">辞書を使う</span>
+        <button class="sett-btn sett-btn-save" id="rdictToggleBtn" onclick="toggleRdictOn()">ON</button>
+      </div>
+      <div class="sett-sub" style="margin-bottom:12px;line-height:1.8">Google TTSへの送信前にテキストを置換します。主人公名など特殊な読み方を登録してください。長い単語が優先適用されます。</div>
+      <div class="rdict-input-grid">
+        <input class="custom-word-input" id="rdictFrom" type="text" placeholder="原文（例: 夜語り）" maxlength="20">
+        <input class="custom-word-input" id="rdictTo" type="text" placeholder="読み（例: よがたり）" maxlength="30">
+      </div>
+      <button class="sett-btn sett-btn-save" id="rdictAddBtn" style="width:100%;margin-bottom:10px">追加</button>
+      <div class="custom-word-list" id="rdictList"></div>
     </div>
     <div class="sett-section">
       <div class="sett-title">// データ管理</div>
@@ -1271,11 +1298,53 @@ let _nextAudioCache=[];
 function clearNextChapterCache(){_prefetchGeneration += 1;_nextHtmlCache=null;_nextPageCache=null;_nextAudioCache=[];}
 function hasGoogleKey(){return _gApiKey.trim().length>10;}
 function currentGVoice(){return _gVoice;}
+// Reading dictionary helpers
+function loadRdict(){try{return JSON.parse(localStorage.getItem('yogatari_reading_dict')||'[]');}catch(e){return[];}}
+function saveRdict(a){try{localStorage.setItem('yogatari_reading_dict',JSON.stringify(a));}catch(e){}}
+function isRdictOn(){return localStorage.getItem('yogatari_rdict_on')!=='0';}
+function toggleRdictOn(){const next=!isRdictOn();localStorage.setItem('yogatari_rdict_on',next?'1':'0');const btn=document.getElementById('rdictToggleBtn');if(btn){btn.textContent=next?'ON':'OFF';btn.className='sett-btn'+(next?' sett-btn-save':'');}toast((next?'ON: ':'OFF: ')+'読み間違い辞書');}
+function applyReadingDict(text){if(!isRdictOn())return text;const dict=loadRdict();dict.sort((a,b)=>(b.from||'').length-(a.from||'').length);let r=text;for(const e of dict){if(e.from&&e.to!==undefined)r=r.split(e.from).join(e.to);}return r;}
+// SSML helpers
+function isSsmlPauseOn(){return localStorage.getItem('yogatari_ssml_pause')!=='0';}
+function isSsmlDialogueOn(){return localStorage.getItem('yogatari_ssml_dialogue')==='1';}
+function toggleSsmlPause(){const next=!isSsmlPauseOn();localStorage.setItem('yogatari_ssml_pause',next?'1':'0');const btn=document.getElementById('ssmlPauseBtn');if(btn){btn.textContent=next?'ON':'OFF';btn.className='sett-btn'+(next?' sett-btn-save':'');}clearPrefetchCache();toast((next?'ON: ':'OFF: ')+'ポーズ最適化');}
+function toggleSsmlDialogue(){const next=!isSsmlDialogueOn();localStorage.setItem('yogatari_ssml_dialogue',next?'1':'0');const btn=document.getElementById('ssmlDialogueBtn');if(btn){btn.textContent=next?'ON':'OFF';btn.className='sett-btn'+(next?' sett-btn-save':'');}clearPrefetchCache();toast((next?'ON: ':'OFF: ')+'会話文ピッチ');}
+function updSsmlSection(){const el=document.getElementById('ssmlOptsSection');if(el)el.style.display=hasGoogleKey()?'block':'none';}
+function toSsml(text){
+  let s=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if(isSsmlPauseOn()){
+    s=s.replace(/…+/g,'<break time="700ms"/>');
+    s=s.replace(/。/g,'。<break time="400ms"/>');
+    s=s.replace(/[！!]/g,'！<break time="300ms"/>');
+    s=s.replace(/[？?]/g,'？<break time="300ms"/>');
+  }
+  if(isSsmlDialogueOn()){s=s.replace(/「([^」]*)」/g,'「<prosody pitch="+2st" rate="0.95">$1</prosody>」');}
+  return '<speak>'+s+'</speak>';
+}
+// Reading dictionary UI
+function renderRdictList(){const el=document.getElementById('rdictList');if(!el)return;const arr=loadRdict();if(!arr.length){el.innerHTML='<span class="custom-word-empty">まだ登録されていません</span>';return;}el.innerHTML=arr.map((e,i)=>'<span class="custom-word-tag">'+esc(e.from)+' → '+esc(e.to)+'<button class="custom-word-del" data-idx="'+i+'">×</button></span>').join('');}
+function initRdict(){
+  const on=isRdictOn();const btn=document.getElementById('rdictToggleBtn');if(btn){btn.textContent=on?'ON':'OFF';btn.className='sett-btn'+(on?' sett-btn-save':'');}
+  const pb=document.getElementById('ssmlPauseBtn');if(pb){const p=isSsmlPauseOn();pb.textContent=p?'ON':'OFF';pb.className='sett-btn'+(p?' sett-btn-save':'');}
+  const db=document.getElementById('ssmlDialogueBtn');if(db){const d=isSsmlDialogueOn();db.textContent=d?'ON':'OFF';db.className='sett-btn'+(d?' sett-btn-save':'');}
+  const fromInp=document.getElementById('rdictFrom');const toInp=document.getElementById('rdictTo');
+  const doAdd=function(){const f=fromInp?fromInp.value.trim():'';const t=toInp?toInp.value.trim():'';if(!f){toast('原文を入力してください');return;}if(!t){toast('読みを入力してください');return;}const arr=loadRdict();if(arr.some(e=>e.from===f)){toast('すでに登録済みです');return;}arr.push({from:f,to:t});saveRdict(arr);if(fromInp)fromInp.value='';if(toInp)toInp.value='';renderRdictList();toast('「'+f+'」を登録しました');};
+  const addBtn=document.getElementById('rdictAddBtn');if(addBtn)addBtn.onclick=doAdd;
+  if(fromInp)fromInp.onkeydown=function(e){if(e.key==='Enter'){fromInp.blur();if(toInp)toInp.focus();}};
+  if(toInp)toInp.onkeydown=function(e){if(e.key==='Enter'){toInp.blur();doAdd();}};
+  const listEl=document.getElementById('rdictList');if(listEl)listEl.onclick=function(e){const t=e.target;if(t&&t.className==='custom-word-del'){const i=parseInt(t.getAttribute('data-idx'),10);const arr=loadRdict();arr.splice(i,1);saveRdict(arr);renderRdictList();}};
+  renderRdictList();
+}
 async function fetchGoogleAudio(text){
   if(isOverLimit())throw new Error('月間使用量が98%に達しました。設定タブでリセットを。');
+  text=applyReadingDict(text);
   const cat=voiceCategory();
   const voice=currentGVoice();
-  const body={input:{text},voice:{languageCode:'ja-JP',name:voice},audioConfig:Object.assign({audioEncoding:'MP3'},voice.includes('Chirp3')?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
+  const chirp3=voice.includes('Chirp3');
+  let input;
+  if(!chirp3&&(isSsmlPauseOn()||isSsmlDialogueOn())){const ssml=toSsml(text);input=ssml.length<=4900?{ssml}:{text};}
+  else{input={text};}
+  const body={input,voice:{languageCode:'ja-JP',name:voice},audioConfig:Object.assign({audioEncoding:'MP3'},chirp3?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
   const res=await fetch('https://texttospeech.googleapis.com/v1/text:synthesize',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':_gApiKey.trim()},body:JSON.stringify(body),signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(15000):undefined});
   if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||'HTTP '+res.status);}
   const data=await res.json();
@@ -1414,6 +1483,7 @@ function initSettings(){
     _rcw();
   })();
   if(_gApiKey){document.getElementById('apiKeyInput').value=_gApiKey;document.getElementById('googleVoiceSection').style.display='block';}
+  initRdict();updSsmlSection();
   syncVoiceSelect();updModeDisplay();updStepperState();updUsageDisplay();
 }
 function syncVoiceSelect(){
@@ -1429,6 +1499,7 @@ function saveApiKey(){
   clearPrefetchCache();
   localStorage.setItem('yogatari_gkey',_gApiKey);localStorage.setItem('yogatari_gvoice',_gVoice);
   document.getElementById('googleVoiceSection').style.display='block';
+  updSsmlSection();
   showApiStatus('ok','✓ 保存しました — Google TTS が有効です');updModeDisplay();updStepperState();updUsageWarnBar();toast('Google TTSを設定しました');
   var _xhrKey=_gApiKey.trim();var _xhr=new XMLHttpRequest();
   _xhr.open('GET','https://texttospeech.googleapis.com/v1/voices?languageCode=ja-JP');
@@ -1450,7 +1521,7 @@ function saveApiKey(){
 function clearApiKey(){
   _gApiKey='';localStorage.removeItem('yogatari_gkey');document.getElementById('apiKeyInput').value='';
   clearPrefetchCache();
-  document.getElementById('googleVoiceSection').style.display='none';showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();updUsageWarnBar();toast('Kyokoに戻しました');
+  document.getElementById('googleVoiceSection').style.display='none';updSsmlSection();showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();updUsageWarnBar();toast('Kyokoに戻しました');
 }
 function showApiStatus(type,msg){const el=document.getElementById('apiStatus');el.textContent=msg;el.className='api-status show '+type;}
 function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if(mc)return 'Chirp3-'+mc[1];const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
@@ -1459,6 +1530,7 @@ function updModeDisplay(){
   const row=document.getElementById('voiceRowKyoko');const rowG=document.getElementById('voiceRowGoogle');const badge=document.getElementById('googleBadge');
   if(hasGoogleKey()){const fname=friendlyVoiceName(_gVoice);const lim=(USAGE_LIMIT()/10000).toFixed(0)+'万文字/月無料';if(el)el.innerHTML='<span class="mode-badge google">🎙 '+fname+'<br><span style="font-size:9px;opacity:0.7">'+lim+'</span></span>';if(badge)badge.textContent='🎙 '+fname;if(row)row.style.display='none';if(rowG)rowG.style.display='flex';}
   else{if(el)el.innerHTML='<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';if(row)row.style.display='flex';if(rowG)rowG.style.display='none';}
+  updSsmlSection();
 }
 function saveBookmarkCurrent(segIdx){
   if(!currentNovelId)return;
