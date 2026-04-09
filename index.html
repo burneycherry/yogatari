@@ -7,19 +7,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#0a0908">
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
 <title>夜語り v165</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
-body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;}
+body{height:100%;overflow:hidden;background:#000000;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%;}
 .topbar{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:12px 18px 10px;border-bottom:1px solid #302618;background:rgba(10,9,8,0.88);position:relative;z-index:1}
 .app-name{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:22px;color:#c8991e;letter-spacing:0.12em;text-shadow:0 0 24px rgba(200,153,30,0.35);display:flex;align-items:baseline;gap:7px}
 .ver{font-size:11px;color:#564838;font-family:'Courier New',Consolas,monospace;letter-spacing:0.1em}
 .topbar-right{display:flex;align-items:center;gap:12px}
-.badge{font-family:'Courier New',Consolas,monospace;font-size:12px;letter-spacing:0.04em;color:#564838;display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid #302618;background:#1e1a15;transition:all 0.3s}
+.badge{font-family:'Courier New',Consolas,monospace;font-size:12px;letter-spacing:0.04em;color:#564838;display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;border:1px solid #302618;background:#0d0d0d;transition:all 0.3s}
 .badge.on{color:#e8be50;border-color:rgba(200,153,30,0.4);background:rgba(200,153,30,0.1);box-shadow:0 0 12px rgba(200,153,30,0.15)}
 .bdot{width:7px;height:7px;border-radius:50%;background:#564838;transition:all 0.3s;flex-shrink:0}
 .badge.on .bdot{background:#e8be50;box-shadow:0 0 8px #e8be50;animation:pulse 2s ease-in-out infinite}
@@ -33,16 +33,16 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px 10px;position:relative;z-index:1}
 .panel{display:none}.panel.active{display:block;position:relative;z-index:1}
 .url-row{display:flex;gap:8px;margin-bottom:10px}
-.url-in{flex:1;background:#1e1a15;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:'Courier New',Consolas,monospace;font-size:13px;padding:12px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;min-width:0}
+.url-in{flex:1;background:#0d0d0d;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:'Courier New',Consolas,monospace;font-size:13px;padding:12px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;min-width:0}
 .url-in:focus{border-color:#c8991e}
 .url-in::placeholder{color:#564838}
 .btn{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:14px;padding:12px 16px;border-radius:10px;border:1px solid;cursor:pointer;transition:all 0.18s;white-space:nowrap;-webkit-appearance:none;user-select:none}
-.btn-g{background:#c8991e;border-color:#c8991e;color:#0a0908;font-weight:700}
+.btn-g{background:#c8991e;border-color:#c8991e;color:#000000;font-weight:700}
 .btn-g:active{background:#e8be50}
 .btn-g:disabled{opacity:0.4;pointer-events:none}
 .btn-o{background:none;border-color:#302618;color:#9e8660;padding:12px 12px}
 .btn-o:active{border-color:#9e8660}
-.fetch-box{display:none;align-items:center;gap:10px;padding:11px 14px;background:#1e1a15;border:1px solid #302618;border-radius:10px;margin-bottom:10px;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#9e8660}
+.fetch-box{display:none;align-items:center;gap:10px;padding:11px 14px;background:#0d0d0d;border:1px solid #302618;border-radius:10px;margin-bottom:10px;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#9e8660}
 .fetch-box.show{display:flex}
 .fetch-box.err{border-color:#8b2020;color:#e05050}
 .spin{width:16px;height:16px;flex-shrink:0;border:2px solid #302618;border-top-color:#c8991e;border-radius:50%;animation:spin 0.8s linear infinite}
@@ -58,7 +58,7 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .resume-arrow{color:#564838;font-size:18px;flex-shrink:0}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:flex-end}
 .modal-overlay.show{display:flex}
-.modal-sheet{background:#141210;border-radius:16px 16px 0 0;width:100%;max-height:75vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+.modal-sheet{background:#000000;border-radius:16px 16px 0 0;width:100%;max-height:75vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid #302618;flex-shrink:0}
 .modal-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:17px;color:#e8be50;letter-spacing:0.08em}
 .modal-close{font-size:20px;color:#9e8660;cursor:pointer;padding:4px 8px;background:none;border:none}
@@ -90,14 +90,14 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .next-cancel{margin-left:auto;color:#564838;cursor:pointer;text-decoration:underline;font-size:10px}
 .queue-row{display:none;flex-wrap:wrap;gap:6px;margin-top:10px}
 .queue-row.show{display:flex}
-.q-chip{font-family:'Courier New',Consolas,monospace;font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid #302618;color:#564838;background:#1e1a15;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:all 0.15s}
+.q-chip{font-family:'Courier New',Consolas,monospace;font-size:10px;padding:4px 10px;border-radius:20px;border:1px solid #302618;color:#564838;background:#0d0d0d;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;transition:all 0.15s}
 .q-chip:active{border-color:#9e8660}
 .q-chip.cur{border-color:#c8991e;color:#c8991e;background:rgba(200,153,30,0.12)}
 .q-chip.done{opacity:0.4;text-decoration:line-through}
 .hist-empty{text-align:center;padding:40px 0;color:#564838;font-size:13px;font-family:'Courier New',Consolas,monospace}
 .hist-item{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid #302618;cursor:pointer}
 .hist-item:active .hist-main{color:#c8991e}
-.hist-thumb{width:36px;display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}.hist-thumb-icon{width:36px;height:36px;border-radius:8px;background:#28221a;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:18px}.hist-thumb-link{width:36px;height:28px;border-radius:8px;background:#1e1a15;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;transition:all 0.15s}.hist-thumb-link:active{border-color:#c8991e;background:rgba(200,153,30,0.12)}
+.hist-thumb{width:36px;display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}.hist-thumb-icon{width:36px;height:36px;border-radius:8px;background:#111111;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:18px}.hist-thumb-link{width:36px;height:28px;border-radius:8px;background:#0d0d0d;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;transition:all 0.15s}.hist-thumb-link:active{border-color:#c8991e;background:rgba(200,153,30,0.12)}
 .hist-main{flex:1;min-width:0}
 .hist-title{font-size:14px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hist-chap-title{font-size:11px;color:#9e8660;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Hiragino Mincho ProN','YuMincho',serif}
@@ -113,13 +113,13 @@ body{height:100%;overflow:hidden;background:#0a0908;color:#ede0c6;font-family:'H
 .stepper-row{display:flex;align-items:center;gap:6px}
 .st-label{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
 .st-val{font-family:'Courier New',Consolas,monospace;font-size:13px;color:#c8991e;width:34px;text-align:center;flex-shrink:0;font-weight:bold}
-.st-btn{width:32px;height:32px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;user-select:none;-webkit-appearance:none;transition:all 0.12s}
+.st-btn{width:32px;height:32px;border-radius:8px;background:#0d0d0d;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;user-select:none;-webkit-appearance:none;transition:all 0.12s}
 .st-btn:active{background:rgba(200,153,30,0.12);border-color:#c8991e;color:#c8991e}
 .voice-remain-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
 .voice-row{display:flex;align-items:center;gap:8px;flex:1;min-width:0}
 .remain-box{display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
 .voice-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
-select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
+select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:12px;padding:7px 10px;border-radius:8px;outline:none;-webkit-appearance:none}
 .btn-row{display:flex;align-items:center;justify-content:center;gap:8px}
 .cb{width:44px;height:44px;border-radius:50%;background:none;border:1px solid #302618;color:#9e8660;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-appearance:none;appearance:none;transition:all 0.15s;user-select:none;-webkit-appearance:none}
 .cb:active:not(:disabled){border-color:#c8991e;color:#c8991e;background:rgba(200,153,30,0.12)}
@@ -130,12 +130,12 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .cb-nxt:not(:disabled){border-color:#c8991e;color:#c8991e}
 .cfm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:600;display:none;align-items:center;justify-content:center;padding:24px}
 .cfm-overlay.show{display:flex}
-.cfm-box{background:#141210;border:1px solid #564838;border-radius:16px;width:100%;max-width:320px;padding:24px 20px 16px;display:flex;flex-direction:column;gap:0}
+.cfm-box{background:#000000;border:1px solid #564838;border-radius:16px;width:100%;max-width:320px;padding:24px 20px 16px;display:flex;flex-direction:column;gap:0}
 .cfm-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:17px;color:#e8be50;letter-spacing:0.08em;margin-bottom:12px;text-align:center}
 .cfm-msg{font-size:13px;color:#9e8660;line-height:1.85;text-align:center;white-space:pre-line;margin-bottom:20px}
 .cfm-btns{display:flex;gap:10px}
 .cfm-btn{flex:1;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:14px;padding:13px 0;border-radius:10px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s;text-align:center}
-.cfm-btn-ok{background:#c8991e;border-color:#c8991e;color:#0a0908;font-weight:700}
+.cfm-btn-ok{background:#c8991e;border-color:#c8991e;color:#000000;font-weight:700}
 .cfm-btn-ok:active{background:#e8be50}
 .cfm-btn-cancel{background:none;border-color:#302618;color:#9e8660}
 .cfm-btn-cancel:active{border-color:#9e8660;color:#ede0c6}
@@ -143,7 +143,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .readme-btn:active{border-color:#c8991e;color:#c8991e}
 .rdm-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:400;display:none;align-items:flex-end}
 .rdm-overlay.show{display:flex}
-.rdm-sheet{background:#141210;border-radius:16px 16px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+.rdm-sheet{background:#000000;border-radius:16px 16px 0 0;width:100%;max-height:88vh;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
 .rdm-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid #302618;flex-shrink:0}
 .rdm-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:18px;color:#e8be50;letter-spacing:0.1em}
 .rdm-close{font-size:20px;color:#9e8660;cursor:pointer;padding:4px 8px;background:none;border:none}
@@ -155,14 +155,14 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .rdm-body ul li{font-size:13px;line-height:1.9;color:#9e8660;padding:2px 0;padding-left:14px;position:relative}
 .rdm-body ul li::before{content:'›';position:absolute;left:0;color:#c8991e}
 .rdm-step{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start}
-.rdm-step-num{width:22px;height:22px;border-radius:50%;background:#c8991e;color:#0a0908;font-family:'Courier New',Consolas,monospace;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.rdm-step-num{width:22px;height:22px;border-radius:50%;background:#c8991e;color:#000000;font-family:'Courier New',Consolas,monospace;font-size:11px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
 .rdm-step-txt{font-size:13px;line-height:1.8;color:#9e8660;flex:1}
-.rdm-note{background:#1e1a15;border:1px solid #302618;border-radius:8px;padding:10px 14px;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#564838;line-height:1.7;margin-top:8px}
-.usage-bar-wrap{background:#1e1a15;border:1px solid #302618;border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.rdm-note{background:#0d0d0d;border:1px solid #302618;border-radius:8px;padding:10px 14px;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#564838;line-height:1.7;margin-top:8px}
+.usage-bar-wrap{background:#0d0d0d;border:1px solid #302618;border-radius:10px;padding:12px 14px;margin-bottom:10px}
 .usage-bar-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .usage-bar-label{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.1em}
 .usage-bar-val{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#c8991e}
-.usage-track{height:6px;background:#28221a;border-radius:3px;overflow:hidden}
+.usage-track{height:6px;background:#111111;border-radius:3px;overflow:hidden}
 .usage-fill{height:100%;background:linear-gradient(90deg,#4a9,#c8991e);border-radius:3px;transition:width 0.5s}
 .usage-fill.warn{background:linear-gradient(90deg,#c8991e,#e07030)}
 .usage-fill.over{background:linear-gradient(90deg,#e05050,#c02020)}
@@ -178,12 +178,12 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .sett-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .sett-label{font-size:13px;color:#ede0c6;flex:1}
 .sett-sub{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;color:#564838;margin-top:3px;line-height:1.7}
-.api-input{width:100%;background:#1e1a15;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:'Courier New',Consolas,monospace;font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
+.api-input{width:100%;background:#0d0d0d;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:'Courier New',Consolas,monospace;font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
 .api-input:focus{border-color:#c8991e}
 .api-input::placeholder{color:#564838}
 .api-btns{display:flex;gap:8px}
 .sett-btn{font-family:'Courier New',Consolas,monospace;font-size:12px;padding:9px 16px;border-radius:8px;border:1px solid;cursor:pointer;-webkit-appearance:none;transition:all 0.15s}
-.sett-btn-save{background:#c8991e;border-color:#c8991e;color:#0a0908;font-weight:bold}
+.sett-btn-save{background:#c8991e;border-color:#c8991e;color:#000000;font-weight:bold}
 .sett-btn-save:active{background:#e8be50}
 .sett-btn-clear{background:none;border-color:#302618;color:#9e8660}
 .sett-btn-clear:active{border-color:#8b2020;color:#e05050}
@@ -191,23 +191,23 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .api-status.show{display:flex}
 .api-status.ok{background:rgba(42,92,58,0.2);border:1px solid rgba(42,200,80,0.2);color:#7abf8a}
 .api-status.ng{background:rgba(139,32,32,0.15);border:1px solid rgba(139,32,32,0.3);color:#e07070}
-.gv-select{width:100%;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:13px;padding:9px 12px;border-radius:10px;outline:none;-webkit-appearance:none;margin-bottom:8px}
+.gv-select{width:100%;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:13px;padding:9px 12px;border-radius:10px;outline:none;-webkit-appearance:none;margin-bottom:8px}
 .howto-link{display:block;font-family:'Courier New',Consolas,monospace;font-size:11px;color:#9e8660;text-decoration:none;padding:8px 0}
 .howto-link:active{color:#c8991e}
-.mode-badge{display:inline-flex;align-items:center;gap:5px;font-family:'Courier New',Consolas,monospace;font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid #302618;color:#564838;background:#1e1a15}
+.mode-badge{display:inline-flex;align-items:center;gap:5px;font-family:'Courier New',Consolas,monospace;font-size:10px;padding:3px 10px;border-radius:12px;border:1px solid #302618;color:#564838;background:#0d0d0d}
 .mode-badge.google{border-color:rgba(66,133,244,0.4);color:#74a8f8;background:rgba(66,133,244,0.08)}
 .sleep-row{display:none;align-items:center;gap:8px;margin-bottom:8px}
 .sleep-row.show{display:flex}
 .sleep-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;width:36px;flex-shrink:0}
 .sleep-val{font-family:'Courier New',Consolas,monospace;font-size:13px;color:#9e8660;min-width:54px;text-align:center}
 .sleep-val.on{color:#e8be50}
-.sleep-btn{font-family:'Courier New',Consolas,monospace;font-size:10px;padding:5px 10px;border-radius:8px;background:#1e1a15;border:1px solid #302618;color:#9e8660;cursor:pointer}
+.sleep-btn{font-family:'Courier New',Consolas,monospace;font-size:10px;padding:5px 10px;border-radius:8px;background:#0d0d0d;border:1px solid #302618;color:#9e8660;cursor:pointer}
 .sleep-btn.on{border-color:rgba(200,153,30,0.4);color:#c8991e;background:rgba(200,153,30,0.08)}
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
-.stats-card{background:#1e1a15;border:1px solid #302618;border-radius:10px;padding:12px 14px;text-align:center}
+.stats-card{background:#0d0d0d;border:1px solid #302618;border-radius:10px;padding:12px 14px;text-align:center}
 .stats-num{font-family:'Courier New',Consolas,monospace;font-size:20px;color:#c8991e;font-weight:bold;margin-bottom:4px}
 .stats-lbl{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;letter-spacing:0.08em}
-.toast{position:fixed;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(10px);background:#28221a;border:1px solid #564838;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#ede0c6;padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
+.toast{position:fixed;bottom:calc(120px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%) translateY(10px);background:#111111;border:1px solid #564838;font-family:'Courier New',Consolas,monospace;font-size:12px;color:#ede0c6;padding:10px 18px;border-radius:20px;white-space:nowrap;opacity:0;transition:all 0.25s;z-index:300;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .filter-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #302618}
 .filter-item:last-child{border-bottom:none}
@@ -216,8 +216,8 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .filter-note{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;line-height:1.6}
 .filter-toggle{font-family:'Courier New',Consolas,monospace;font-size:11px;padding:6px 14px;border-radius:8px;border:1px solid;cursor:pointer;flex-shrink:0;-webkit-appearance:none}
 .filter-toggle.on{background:rgba(200,153,30,0.15);border-color:rgba(200,153,30,0.4);color:#c8991e}
-.filter-toggle.off{background:#1e1a15;border-color:#302618;color:#564838}
-.filter-always{padding:8px 10px;background:#1e1a15;border:1px solid #302618;border-radius:8px;margin-bottom:12px}
+.filter-toggle.off{background:#0d0d0d;border-color:#302618;color:#564838}
+.filter-always{padding:8px 10px;background:#0d0d0d;border:1px solid #302618;border-radius:8px;margin-bottom:12px}
 .filter-always-item{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;padding:3px 0;line-height:1.6}
 .stepper-grid.disabled .st-btn{opacity:0.25;pointer-events:none}
 .stepper-grid.disabled .st-val{opacity:0.25}
@@ -228,10 +228,10 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .sleep-overlay.show{display:flex}
 .sleep-overlay-txt{color:#333;font-family:'Courier New',Consolas,monospace;font-size:12px;letter-spacing:0.1em}
 .custom-word-input-row{display:flex;gap:8px;margin-bottom:10px}
-.custom-word-input{flex:1;background:#1e1a15;border:1px solid #302618;border-radius:8px;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:14px;padding:9px 12px;outline:none;-webkit-appearance:none;transition:border-color 0.2s}
+.custom-word-input{flex:1;background:#0d0d0d;border:1px solid #302618;border-radius:8px;color:#ede0c6;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:14px;padding:9px 12px;outline:none;-webkit-appearance:none;transition:border-color 0.2s}
 .custom-word-input:focus{border-color:#c8991e}
 .custom-word-input::placeholder{color:#564838}
-.custom-word-tag{display:inline-flex;align-items:center;gap:6px;background:#28221a;border:1px solid #302618;border-radius:16px;padding:5px 10px 5px 12px;font-size:13px;color:#ede0c6}
+.custom-word-tag{display:inline-flex;align-items:center;gap:6px;background:#111111;border:1px solid #302618;border-radius:16px;padding:5px 10px 5px 12px;font-size:13px;color:#ede0c6}
 .custom-word-del{background:none;border:none;color:#564838;cursor:pointer;font-size:14px;padding:0;line-height:1}
 .custom-word-del:active{color:#e05050}
 .custom-word-list{display:flex;flex-wrap:wrap;gap:8px;min-height:28px}
@@ -333,14 +333,9 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <div id="skipFilterList"></div>
     </div>
     <div class="sett-sub" style="font-size:10px;color:#564838;margin:12px 0 6px">— カスタムフィルター</div>
-    <div class="filter-item" style="flex-direction:column;align-items:stretch;gap:8px">
-      <div class="filter-label">省略単語</div>
-      <div class="filter-note">省略したい単語を登録。段落に含まれていたらスキップ（次話読み込みから反映）</div>
-      <div class="custom-word-input-row">
-        <input class="custom-word-input" id="customWordInput" type="text" placeholder="例: ブックマーク、感想" maxlength="30">
-        <button class="sett-btn sett-btn-save" id="customWordAddBtn" style="white-space:nowrap;font-size:13px;padding:9px 14px">追加</button>
-      </div>
-      <div class="custom-word-list" id="customWordList"></div>
+    <div class="filter-item">
+      <div class="filter-desc"><div class="filter-label">省略単語</div><div class="filter-note">段落に含まれていたらスキップ（次話読み込みから反映）</div></div>
+      <button class="sett-btn" onclick="openCustomWordModal()">管理 →</button>
     </div>
     <div class="sett-section">
       <div class="sett-title">// 背景エフェクト</div>
@@ -450,13 +445,8 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         <span class="sett-label">辞書を使う</span>
         <button class="sett-btn sett-btn-save" id="rdictToggleBtn" onclick="toggleRdictOn()">ON</button>
       </div>
-      <div class="sett-sub" style="margin-bottom:12px;line-height:1.8">Google TTSへの送信前にテキストを置換します。主人公名など特殊な読み方を登録してください。長い単語が優先適用されます。</div>
-      <div class="rdict-input-grid">
-        <input class="custom-word-input" id="rdictFrom" type="text" placeholder="原文（例: 夜語り）" maxlength="20">
-        <input class="custom-word-input" id="rdictTo" type="text" placeholder="読み（例: よがたり）" maxlength="30">
-      </div>
-      <button class="sett-btn sett-btn-save" id="rdictAddBtn" style="width:100%;margin-bottom:10px">追加</button>
-      <div class="custom-word-list" id="rdictList"></div>
+      <div class="sett-sub" style="margin-bottom:10px">Google TTS / Kyokoへの送信前にテキストを置換します。長い単語が優先適用されます。</div>
+      <button class="sett-btn" onclick="openRdictModal()" style="width:100%">単語を管理 →</button>
     </div>
     <div class="sett-section">
       <div class="sett-title">// データ管理</div>
@@ -620,6 +610,39 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
     <div class="chap-list-wrap" id="chapListWrap"></div>
   </div>
 </div>
+<div class="modal-overlay" id="customWordModal" onclick="if(event.target===this)closeCustomWordModal()">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <div class="modal-title">省略単語</div>
+      <button class="modal-close" onclick="closeCustomWordModal()">✕</button>
+    </div>
+    <div style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px">
+      <div class="filter-note" style="margin-bottom:12px">省略したい単語を登録。段落に含まれていたらスキップします（次話読み込みから反映）。</div>
+      <div class="custom-word-input-row">
+        <input class="custom-word-input" id="customWordInput" type="text" placeholder="例: ブックマーク、感想" maxlength="30">
+        <button class="sett-btn sett-btn-save" id="customWordAddBtn" style="white-space:nowrap;font-size:13px;padding:9px 14px">追加</button>
+      </div>
+      <div class="custom-word-list" id="customWordList"></div>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="rdictModal" onclick="if(event.target===this)closeRdictModal()">
+  <div class="modal-sheet">
+    <div class="modal-head">
+      <div class="modal-title">読み間違い辞書</div>
+      <button class="modal-close" onclick="closeRdictModal()">✕</button>
+    </div>
+    <div style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px">
+      <div class="filter-note" style="margin-bottom:12px">Google TTS / Kyokoへの送信前にテキストを置換します。長い単語が優先適用されます。</div>
+      <div class="rdict-input-grid">
+        <input class="custom-word-input" id="rdictFrom" type="text" placeholder="原文（例: 夜語り）" maxlength="20">
+        <input class="custom-word-input" id="rdictTo" type="text" placeholder="読み（例: よがたり）" maxlength="30">
+      </div>
+      <button class="sett-btn sett-btn-save" id="rdictAddBtn" style="width:100%;margin-bottom:12px">追加</button>
+      <div class="custom-word-list" id="rdictList"></div>
+    </div>
+  </div>
+</div>
 <div class="sleep-overlay" id="sleepOverlay" onclick="dismissSleepOverlay()">
   <div class="sleep-overlay-txt">画面をタップして復帰</div>
   <div class="sleep-overlay-txt" style="font-size:10px;margin-top:4px;color:#222">▶ で再生開始</div>
@@ -654,7 +677,7 @@ function msSetMetadata() {
       title: currentChapterTitle || '読み上げ中',
       artist: currentNovelTitle  || '夜語り',
       album: '夜語り',
-      artwork: [{ src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#0a0908"/><text x="256" y="300" text-anchor="middle" font-size="220" fill="#c8991e">夜</text></svg>'), sizes: '512x512', type: 'image/svg+xml' }]
+      artwork: [{ src: 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512"><rect width="512" height="512" fill="#000000"/><text x="256" y="300" text-anchor="middle" font-size="220" fill="#c8991e">夜</text></svg>'), sizes: '512x512', type: 'image/svg+xml' }]
     });
   } catch(e) {}
 }
@@ -1387,7 +1410,7 @@ function playSentence(si){
   const sents=splitSentences(segs[idx]);if(!sents[si])return;
   _busy=false;clearWatchdog();SS.cancel();stopGoogleAudio();
   if(hasGoogleKey()){_busy=true;const el=getAudioEl();fetchGoogleAudio(sents[si]).then(src=>{_busy=false;if(!playing)return;el.onended=()=>{clearWatchdog();if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};el.src=src;el.play().catch(()=>{_busy=false;});}).catch(()=>{_busy=false;});}
-  else{const utt=new SpeechSynthesisUtterance(sents[si]);if(selVoice)utt.voice=selVoice;utt.rate=getRate();utt.pitch=getPitch();utt.lang='ja-JP';utt.onend=()=>{if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};SS.speak(utt);}
+  else{const utt=new SpeechSynthesisUtterance(applyReadingDict(sents[si]));if(selVoice)utt.voice=selVoice;utt.rate=getRate();utt.pitch=getPitch();utt.lang='ja-JP';utt.onend=()=>{if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};SS.speak(utt);}
 }
 function speakIdx(i){
   if(_busy)return;_sentIdx=-1;clearWatchdog();
@@ -1418,7 +1441,7 @@ function speakIdx(i){
       else setTimeout(()=>{if(playing)speakIdx(idx);},2000);
     });
   } else {
-    stopGoogleAudio();const utt=new SpeechSynthesisUtterance(segs[i]);if(selVoice)utt.voice=selVoice;
+    stopGoogleAudio();const utt=new SpeechSynthesisUtterance(applyReadingDict(segs[i]));if(selVoice)utt.voice=selVoice;
     utt.rate=getRate();utt.volume=1.0;utt.pitch=getPitch();utt.lang='ja-JP';
     utt.onstart=()=>startWatchdog(getRate(),false);
     utt.onend=()=>{clearWatchdog();if(playing)speakIdx(idx+1);};
@@ -1715,6 +1738,10 @@ function openConfirm(title,msg,onOk){_cfmCallback=onOk;document.getElementById('
 function closeConfirm(){document.getElementById('cfmOverlay').classList.remove('show');_cfmCallback=null;}
 function openReadme(){document.getElementById('rdmOverlay').classList.add('show');}
 function closeReadme(){document.getElementById('rdmOverlay').classList.remove('show');}
+function openCustomWordModal(){document.getElementById('customWordModal').classList.add('show');}
+function closeCustomWordModal(){document.getElementById('customWordModal').classList.remove('show');}
+function openRdictModal(){document.getElementById('rdictModal').classList.add('show');}
+function closeRdictModal(){document.getElementById('rdictModal').classList.remove('show');}
 var _sleepEnd=0, _sleepTick=null;
 function toggleSleepRow(){var row=document.getElementById('sleepRow');if(!row)return;if(row.classList.contains('show'))row.classList.remove('show');else row.classList.add('show');}
 function setSleepTimer(mins){
@@ -1925,7 +1952,7 @@ function drawBg(){
 }
 function bgLoop(timestamp){if(!_bgOn)return;if(timestamp-_bgLastFrame>=BG_FRAME_INTERVAL){_bgLastFrame=timestamp;drawBg();}_bgRaf=requestAnimationFrame(bgLoop);}
 function startBgEffect(){if(!bgCv||!bgCtx)return;_bgCond=pickRandomCond();bgResize();initStars(200);initClouds(7);initRain(130);initSnow(90);initAuroras(5);bgCv.style.opacity='0.93';document.body.style.background='transparent';_bgLastFrame=0;_bgRaf=requestAnimationFrame(bgLoop);}
-function stopBgEffect(){if(_bgRaf){cancelAnimationFrame(_bgRaf);_bgRaf=null;}if(bgCv)bgCv.style.opacity='0';document.body.style.background='#0a0908';}
+function stopBgEffect(){if(_bgRaf){cancelAnimationFrame(_bgRaf);_bgRaf=null;}if(bgCv)bgCv.style.opacity='0';document.body.style.background='#000000';}
 function toggleBgEffect(){_bgOn=!_bgOn;localStorage.setItem('yogatari_bg',_bgOn?'1':'0');const btn=document.getElementById('bgToggleBtn');const st=document.getElementById('bgStatusTxt');if(btn){btn.textContent=_bgOn?'ON':'OFF';btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn';}if(st)st.textContent=_bgOn?'月齢・星・流れ星・オーロラ・ランダム天気':'';if(_bgOn)startBgEffect();else stopBgEffect();}
 window.addEventListener('resize',()=>{if(_bgOn){bgResize();initStars(200);initClouds(7);initAuroras(5);}});
 window.addEventListener('offline', () => { toast('⚠ オフラインになりました'); });
