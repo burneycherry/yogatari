@@ -682,6 +682,13 @@ setTimeout(() => {
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
   (function(){var gvs=document.getElementById('googleVoiceSection');if(gvs&&gvs.previousElementSibling)gvs.parentNode.insertBefore(gvs,gvs.previousElementSibling);})();
 }, 300);
+(function migrateWavenetUsage(){
+  try{
+    const wk=usageKey('wavenet');
+    const wn=parseInt(localStorage.getItem(wk)||'0');
+    if(wn>0){const sk=usageKey('standard');const st=parseInt(localStorage.getItem(sk)||'0');localStorage.setItem(sk,st+wn);localStorage.setItem(wk,'0');}
+  }catch(e){}
+})();
 setTimeout(() => { startupNewCheck().catch(function(){}); }, 3000);
 (function recordToday(){
   var st = loadStats();
@@ -1676,9 +1683,7 @@ function updStepperState(){var grid=document.getElementById('stepperGrid');var w
 function usageKey(cat){const d=new Date();const c=cat||voiceCategory();return 'yogatari_usage_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+c;}
 function getUsage(cat){
   const c=cat||(typeof voiceCategory==='function'?voiceCategory():'standard');
-  const base=parseInt(localStorage.getItem(usageKey(c))||'0');
-  if(c==='standard'){const wn=parseInt(localStorage.getItem(usageKey('wavenet'))||'0');return base+wn;}
-  return base;
+  return parseInt(localStorage.getItem(usageKey(c))||'0');
 }
 function addUsage(chars,cat){const c=cat||voiceCategory();const cur=getUsage(c)+chars;localStorage.setItem(usageKey(c),cur);checkUsageAlert(cur);updUsageDisplay();updUsageWarnBar();return cur;}
 function resetUsage(){
