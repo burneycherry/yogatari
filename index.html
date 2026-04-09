@@ -8,9 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#0a0908">
-<link rel="manifest" href="/manifest.json">
-<link rel="apple-touch-icon" href="/icon-192.png">
-<title>夜語り v164</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
+<title>夜語り v165</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{height:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;}
@@ -236,6 +236,8 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .custom-word-del:active{color:#e05050}
 .custom-word-list{display:flex;flex-wrap:wrap;gap:8px;min-height:28px}
 .custom-word-empty{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#564838}
+.usage-warn-bar{position:fixed;bottom:0;left:0;right:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));background:#3a2010;border-top:1px solid #8b4513;color:#f0a050;font-family:'Courier New',Consolas,monospace;font-size:12px;text-align:center;z-index:150;display:none}
+.usage-warn-bar.critical{background:#3a1010;border-top-color:#8b1513;color:#f05050}
 </style>
 </head>
 <body>
@@ -243,7 +245,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 <audio id="silentLoopEl" loop playsinline webkit-playsinline style="display:none"></audio>
 <canvas id="bgCanvas" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;opacity:0;transition:opacity 1s"></canvas>
 <div class="topbar">
-  <div class="app-name">夜語り <span class="ver">v164</span></div>
+  <div class="app-name">夜語り <span class="ver">v165</span></div>
   <div class="topbar-right">
     <div class="badge" id="badge"><div class="bdot"></div><span id="btext">待機中</span></div>
     <button class="readme-btn" onclick="toggleSleepRow()" title="睡眠タイマー">🌙</button>
@@ -348,8 +350,6 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       <div class="sett-sub" id="bgStatusTxt" style="margin-bottom:4px;color:#564838">月齢・星・流れ星・オーロラ・ランダム天気</div>
     </div>
     <div class="sett-section">
-      <div class="sett-title">// 音声エンジン</div>
-      <div id="modeDisplay" style="margin-bottom:12px"></div>
       <div class="sett-title">// 今月の使用量（アプリ内カウント）</div>
       <div class="usage-bar-wrap" id="usageWrap">
         <div class="usage-bar-header">
@@ -359,7 +359,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
         <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
         <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
       </div>
-      <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：各400万文字、Neural2 / Chirp 3 HD：各100万文字。合計1000万文字。<br>各上限の90%で警告、上限到達でKyokoに自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
+      <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：400万文字、Neural2：100万文字、Chirp 3 HD：100万文字。合計600万文字。<br>各上限の90%で警告、98%でKyokoに自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
       <div class="sett-title">// Google側での使用量・請求確認</div>
       <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">実際の使用量や請求額はGoogle Cloud Consoleで確認できます。</div>
       <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
@@ -430,7 +430,14 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
       </select>
       <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
       <div class="chirp-warn" id="chirpWarn">⚠ Chirp 3 HD は速度・ピッチ調整が非対応です。<br>コントロールバーの速度・ピッチスライダーは無効になります。</div>
-      <div class="sett-sub" id="voiceLimitNote">WaveNet / Standard：月<b>400万文字</b>まで無料<br>Neural2 / Chirp 3 HD：月100万文字まで無料</div>
+    </div>
+    <div class="sett-section">
+      <div class="sett-title">// データ管理</div>
+      <div class="sett-sub" style="margin-bottom:12px;line-height:1.8">しおり・設定・統計をファイルに書き出し／読み込みできます。<br><span style="font-size:11px;color:#564838">※ APIキーはセキュリティ上バックアップに含まれません。リストア後に再入力してください。</span></div>
+      <div class="api-btns">
+        <button class="sett-btn sett-btn-save" onclick="backupData()" style="flex:1">バックアップ</button>
+        <button class="sett-btn sett-btn-clear" onclick="restoreData()" style="flex:1">リストア</button>
+      </div>
     </div>
   </div>
 </div>
@@ -591,8 +598,9 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <div class="sleep-overlay-txt" style="font-size:10px;margin-top:4px;color:#222">▶ で再生開始</div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="usage-warn-bar" id="usageWarnBar"></div>
 <script>
-const APP_VER = 'v164';
+const APP_VER = 'v165';
 let _actx = null, _silentOn = false;
 function startSilentAudio() {
   if (!_actx) {
@@ -669,10 +677,18 @@ function loadVoices() {
 SS.addEventListener ? SS.addEventListener('voiceschanged', loadVoices) : (SS.onvoiceschanged = loadVoices);
 loadVoices();
 setTimeout(() => {
-  syncVoiceSelect(); updModeDisplay(); updStepperState();
+  syncVoiceSelect(); updModeDisplay(); updStepperState(); updUsageWarnBar();
   document.getElementById('vRate').textContent  = _rate.toFixed(1)  + '×';
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
+  (function(){var gvs=document.getElementById('googleVoiceSection');if(gvs&&gvs.previousElementSibling)gvs.parentNode.insertBefore(gvs,gvs.previousElementSibling);})();
 }, 300);
+(function migrateWavenetUsage(){
+  try{
+    const wk=usageKey('wavenet');
+    const wn=parseInt(localStorage.getItem(wk)||'0');
+    if(wn>0){const sk=usageKey('standard');const st=parseInt(localStorage.getItem(sk)||'0');localStorage.setItem(sk,st+wn);localStorage.setItem(wk,'0');}
+  }catch(e){}
+})();
 setTimeout(() => { startupNewCheck().catch(function(){}); }, 3000);
 (function recordToday(){
   var st = loadStats();
@@ -694,6 +710,7 @@ async function startupNewCheck() {
     for (const bk of items) {
       const lastCheck = _newChapCache[bk.novelId]?.checkedAt || 0;
       if (Date.now() - lastCheck < 3600000) continue;
+      if (_resumeActive) break;
       await checkNewChapter(bk);
       await new Promise(r => setTimeout(r, 1500));
     }
@@ -745,6 +762,10 @@ let _goNextRunning = false;
 const SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e////////////////////////////////////////////////////////////////AAAAAExhdmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//sQRAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE==';
 function keepAudioSessionAlive() {
   if (!playing) return;
+  try {
+    const sl = document.getElementById('silentLoopEl');
+    if (sl && (sl.paused || sl.ended)) { sl.src = SILENT_MP3; sl.play().catch(()=>{}); }
+  } catch(e) {}
   try { const el = getAudioEl(); if (el && el.paused) { el.src = SILENT_MP3; el.play().catch(() => {}); } } catch(e) {}
 }
 let queue=[], qi=0;
@@ -770,6 +791,7 @@ let watchdog=null;
 let currentNovelId=null, currentNovelTitle='', currentChapterTitle='', currentChapterNum=1, currentChapterUrl=null;
 let _navGeneration=0;
 let _startupCheckRunning=false;
+let _resumeActive=false;
 const PROXIES = [
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
@@ -1250,7 +1272,7 @@ function clearNextChapterCache(){_prefetchGeneration += 1;_nextHtmlCache=null;_n
 function hasGoogleKey(){return _gApiKey.trim().length>10;}
 function currentGVoice(){return _gVoice;}
 async function fetchGoogleAudio(text){
-  if(isOverLimit())throw new Error('月間無料枠('+( USAGE_LIMIT()/10000).toFixed(0)+'万文字)に達しました。設定タブでリセットを。');
+  if(isOverLimit())throw new Error('月間使用量が98%に達しました。設定タブでリセットを。');
   const cat=voiceCategory();
   const voice=currentGVoice();
   const body={input:{text},voice:{languageCode:'ja-JP',name:voice},audioConfig:Object.assign({audioEncoding:'MP3'},voice.includes('Chirp3')?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
@@ -1264,7 +1286,8 @@ function getAudioCached(i){if(!_prefetchCache.has(i)){if(i<segs.length)_prefetch
 function evictCache(currentIdx){for(const key of _prefetchCache.keys()){if(key<currentIdx-1||key>currentIdx+2)_prefetchCache.delete(key);}}
 function prefetchNext(i){if(!hasGoogleKey())return;if(i+1<segs.length&&!_prefetchCache.has(i+1))getAudioCached(i+1);}
 function clearPrefetchCache(){_prefetchCache.clear();}
-function stopGoogleAudio(){const el=getAudioEl();if(el){el.onended=null;el.onerror=null;el.pause();el.src='';}}
+function stopGoogleAudio(){const el=getAudioEl();if(el){el.onended=null;el.onerror=null;el.pause();}}
+function stopGoogleAudioFull(){const el=getAudioEl();if(el){el.onended=null;el.onerror=null;el.pause();el.src='';}}
 let _skipLabel=null;
 function skipSec(sec){
   if(!playing||!segs.length)return;
@@ -1322,7 +1345,7 @@ function speakIdx(i){
     }).catch(e=>{
       _busy=false;_prefetchCache.delete(i);if(!playing)return;
       const msg=(e.message||'Google TTSエラー').slice(0,60);toast('⚠ '+msg);
-      if(/quota|key|API|無料枠|401|403/.test(msg)){playing=false;updBtn();setBadge(false);}
+      if(/quota|無料枠|not valid|not authorized|HTTP 401|HTTP 403/.test(msg)){playing=false;updBtn();setBadge(false);}
       else setTimeout(()=>{if(playing)speakIdx(idx);},2000);
     });
   } else {
@@ -1343,23 +1366,23 @@ function startWatchdog(rate,isGoogle=false){
 }
 function clearWatchdog(){if(watchdog){clearTimeout(watchdog);watchdog=null;}}
 function startPlay(){
-  if(playing)return;unlockAudio();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudio();clearPrefetchCache();if(hasGoogleKey())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
+  if(playing)return;unlockAudio();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(hasGoogleKey())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
 }
 function togglePlay(){
   if(!segs.length)return;
-  if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudio();updBtn();setBadge(false);msSetState('paused');}
+  if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudioFull();updBtn();setBadge(false);msSetState('paused');}
   else startPlay();
 }
 function stop(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
-  playing=false;_busy=false;SS.cancel();stopGoogleAudio();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();msSetState('none');
+  playing=false;_busy=false;SS.cancel();stopGoogleAudioFull();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();msSetState('none');
 }
 function stopForChapterTransition(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
-  playing=false;_busy=false;SS.cancel();stopGoogleAudio();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();
+  playing=false;_busy=false;SS.cancel();stopGoogleAudioFull();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();
 }
-function prevSeg(){if(_busy)return;SS.cancel();stopGoogleAudio();clearWatchdog();clearPrefetchCache();_busy=false;_sentIdx=-1;const i=Math.max(0,idx-1);if(playing)speakIdx(i);else{idx=i;updHighlight();updProg();}}
-function nextSeg(){if(_busy)return;SS.cancel();stopGoogleAudio();clearWatchdog();clearPrefetchCache();_busy=false;_sentIdx=-1;const i=Math.min(segs.length-1,idx+1);if(playing)speakIdx(i);else{idx=i;updHighlight();updProg();}}
+function prevSeg(){if(_busy)return;SS.cancel();stopGoogleAudioFull();clearWatchdog();clearPrefetchCache();_busy=false;_sentIdx=-1;const i=Math.max(0,idx-1);if(playing)speakIdx(i);else{idx=i;updHighlight();updProg();}}
+function nextSeg(){if(_busy)return;SS.cancel();stopGoogleAudioFull();clearWatchdog();clearPrefetchCache();_busy=false;_sentIdx=-1;const i=Math.min(segs.length-1,idx+1);if(playing)speakIdx(i);else{idx=i;updHighlight();updProg();}}
 function prevSegFull(){prevSeg();}
 function nextSegFull(){nextSeg();}
 function initSettings(){
@@ -1403,9 +1426,10 @@ function saveApiKey(){
   if(!key){showApiStatus('ng','キーを入力してください');return;}
   if(!key.startsWith('AIza')){showApiStatus('ng','キーの形式が正しくありません（AIzaSy…）');return;}
   _gApiKey=key;const selEl=document.getElementById('googleVoiceSel');if(selEl&&selEl.value)_gVoice=selEl.value;
+  clearPrefetchCache();
   localStorage.setItem('yogatari_gkey',_gApiKey);localStorage.setItem('yogatari_gvoice',_gVoice);
   document.getElementById('googleVoiceSection').style.display='block';
-  showApiStatus('ok','✓ 保存しました — Google TTS が有効です');updModeDisplay();updStepperState();toast('Google TTSを設定しました');
+  showApiStatus('ok','✓ 保存しました — Google TTS が有効です');updModeDisplay();updStepperState();updUsageWarnBar();toast('Google TTSを設定しました');
   var _xhrKey=_gApiKey.trim();var _xhr=new XMLHttpRequest();
   _xhr.open('GET','https://texttospeech.googleapis.com/v1/voices?languageCode=ja-JP');
   _xhr.setRequestHeader('x-goog-api-key',_xhrKey);
@@ -1425,15 +1449,16 @@ function saveApiKey(){
 }
 function clearApiKey(){
   _gApiKey='';localStorage.removeItem('yogatari_gkey');document.getElementById('apiKeyInput').value='';
-  document.getElementById('googleVoiceSection').style.display='none';showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();toast('Kyokoに戻しました');
+  clearPrefetchCache();
+  document.getElementById('googleVoiceSection').style.display='none';showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();updUsageWarnBar();toast('Kyokoに戻しました');
 }
 function showApiStatus(type,msg){const el=document.getElementById('apiStatus');el.textContent=msg;el.className='api-status show '+type;}
 function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if(mc)return 'Chirp3-'+mc[1];const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
 function updModeDisplay(){
-  const el=document.getElementById('modeDisplay');if(!el)return;
+  const el=document.getElementById('modeDisplay');
   const row=document.getElementById('voiceRowKyoko');const rowG=document.getElementById('voiceRowGoogle');const badge=document.getElementById('googleBadge');
-  if(hasGoogleKey()){const fname=friendlyVoiceName(_gVoice);const lim=(USAGE_LIMIT()/10000).toFixed(0)+'万文字/月無料';el.innerHTML='<span class="mode-badge google">🎙 '+fname+'<br><span style="font-size:9px;opacity:0.7">'+lim+'</span></span>';if(badge)badge.textContent='🎙 '+fname;if(row)row.style.display='none';if(rowG)rowG.style.display='flex';}
-  else{el.innerHTML='<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';if(row)row.style.display='flex';if(rowG)rowG.style.display='none';}
+  if(hasGoogleKey()){const fname=friendlyVoiceName(_gVoice);const lim=(USAGE_LIMIT()/10000).toFixed(0)+'万文字/月無料';if(el)el.innerHTML='<span class="mode-badge google">🎙 '+fname+'<br><span style="font-size:9px;opacity:0.7">'+lim+'</span></span>';if(badge)badge.textContent='🎙 '+fname;if(row)row.style.display='none';if(rowG)rowG.style.display='flex';}
+  else{if(el)el.innerHTML='<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';if(row)row.style.display='flex';if(rowG)rowG.style.display='none';}
 }
 function saveBookmarkCurrent(segIdx){
   if(!currentNovelId)return;
@@ -1539,8 +1564,6 @@ function renderHistList(){
       '<span>第'+(bk.chapterNum||'?')+'話</span><span>段落'+(bk.segIdx+1)+'</span><span>'+dateStr+'</span></div></div>' +
       '<button class="hist-del" onclick="event.stopPropagation();delHist(\''+esc(bk.novelId)+'\')">✕</button></div>';
   }).join('');
-  const hasUnchecked=items.some(bk=>bk.tocUrl&&bk.totalChap&&(Date.now()-(_newChapCache[bk.novelId]?.checkedAt||0))>=3600000);
-  if(hasUnchecked)startupNewCheck().catch(function(){});
 }
 async function checkNewChapter(bk){
   const tocUrl=bk.tocUrl||inferTocUrl(bk.chapterUrl);if(!tocUrl)return;
@@ -1581,14 +1604,15 @@ async function checkNewChapter(bk){
 }
 async function resumeFrom(novelId){
   _navGeneration++;
-  const bk=bkGet(novelId);if(!bk){toast('しおりが見つかりません');return;}
+  _resumeActive=true;
+  const bk=bkGet(novelId);if(!bk){_resumeActive=false;toast('しおりが見つかりません');return;}
   const all=bkLoad();if(all[novelId]){delete all[novelId].hasNew;delete all[novelId].newDiff;bkSave(all);}
   delete _newChapCache[novelId];switchTab('read');document.getElementById('urlIn').value=bk.novelId;
   stop();disable(true);showFetch('load','履歴から読み込み中…');
   try{
     const cacheKey=makePageCacheKey(bk.chapterUrl);const cached=sessionStorage.getItem(cacheKey);
     const isKakuyomu=bk.chapterUrl&&bk.chapterUrl.includes('kakuyomu.jp');
-    if(!cached&&isKakuyomu){hideFetch();disable(false);currentNovelId=novelId;currentNovelTitle=bk.novelTitle||bk.chapterTitle||'';await loadChapterUrl(bk.chapterUrl,bk.segIdx||0,novelId,chapNumFromUrl(bk.chapterUrl)||bk.chapterNum||1,'');return;}
+    if(!cached&&isKakuyomu){hideFetch();disable(false);currentNovelId=novelId;currentNovelTitle=bk.novelTitle||bk.chapterTitle||'';await loadChapterUrl(bk.chapterUrl,bk.segIdx||0,novelId,chapNumFromUrl(bk.chapterUrl)||bk.chapterNum||1,'');_resumeActive=false;return;}
     let html;
     if(cached){html=cached;showFetch('load','キャッシュから復元中…');}
     else{showFetch('load','ページ取得中… (初回は時間がかかります)');html=await fetchHtml(bk.chapterUrl);safeSessionSet(cacheKey,html);}
@@ -1600,6 +1624,7 @@ async function resumeFrom(novelId){
     else qi=queue.findIndex(q=>q.url===bk.chapterUrl);
     displayPage(page,bk.chapterUrl,bk.segIdx||0,null);startSilentAudio();hideFetch();
   }catch(e){showFetch('err',e.message);}
+  _resumeActive=false;
   disable(false);
 }
 function delHist(novelId){bkDel(novelId);renderHistList();toast('削除しました');}
@@ -1614,7 +1639,7 @@ function safeSessionSet(key,data){
   catch(e){try{Object.keys(sessionStorage).filter(k=>k.startsWith(SS_PAGE_CACHE_PREFIX)).forEach(k=>sessionStorage.removeItem(k));sessionStorage.setItem(key,data);}catch(e2){toast('⚠ キャッシュ保存に失敗しました');}}
 }
 let _cfmCallback=null;
-function openConfirm(title,msg,onOk){_cfmCallback=onOk;document.getElementById('cfmTitle').textContent=title;document.getElementById('cfmMsg').textContent=msg;document.getElementById('cfmOkBtn').onclick=()=>{closeConfirm();if(_cfmCallback)_cfmCallback();};document.getElementById('cfmOverlay').classList.add('show');}
+function openConfirm(title,msg,onOk){_cfmCallback=onOk;document.getElementById('cfmTitle').textContent=title;document.getElementById('cfmMsg').textContent=msg;document.getElementById('cfmOkBtn').onclick=()=>{const cb=_cfmCallback;closeConfirm();if(cb)cb();};document.getElementById('cfmOverlay').classList.add('show');}
 function closeConfirm(){document.getElementById('cfmOverlay').classList.remove('show');_cfmCallback=null;}
 function openReadme(){document.getElementById('rdmOverlay').classList.add('show');}
 function closeReadme(){document.getElementById('rdmOverlay').classList.remove('show');}
@@ -1653,22 +1678,69 @@ const VOICE_LIMITS={'Wavenet':{free:4000000,warn:3600000},'Standard':{free:40000
 function getVoiceLimits(){const v=_gVoice||'';if(v.includes('Chirp3'))return VOICE_LIMITS['Chirp3'];if(v.includes('Wavenet'))return VOICE_LIMITS['Wavenet'];if(v.includes('Standard'))return VOICE_LIMITS['Standard'];if(v.includes('Neural2'))return VOICE_LIMITS['Neural2'];return VOICE_LIMITS['default'];}
 function USAGE_WARN(){return getVoiceLimits().warn;}
 function USAGE_LIMIT(){return getVoiceLimits().free;}
-function voiceCategory(){if(_gVoice.includes('Chirp3'))return 'chirp3';if(_gVoice.includes('Neural2'))return 'neural2';if(_gVoice.includes('Wavenet')||_gVoice.includes('wavenet'))return 'wavenet';return 'standard';}
+function voiceCategory(){if(_gVoice.includes('Chirp3'))return 'chirp3';if(_gVoice.includes('Neural2'))return 'neural2';return 'standard';}
 function isChirp3(){return _gVoice.includes('Chirp3');}
 function updStepperState(){var grid=document.getElementById('stepperGrid');var warn=document.getElementById('chirpWarnCtrl');var warnSett=document.getElementById('chirpWarn');var chirp=isChirp3();if(grid)grid.classList.toggle('disabled',chirp);if(warn)warn.classList.toggle('show',chirp);if(warnSett)warnSett.classList.toggle('show',chirp);}
 function usageKey(cat){const d=new Date();const c=cat||voiceCategory();return 'yogatari_usage_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+c;}
-function getUsage(cat){return parseInt(localStorage.getItem(usageKey(cat))||'0');}
-function addUsage(chars,cat){const c=cat||voiceCategory();const cur=getUsage(c)+chars;localStorage.setItem(usageKey(c),cur);checkUsageAlert(cur);updUsageDisplay();return cur;}
+function getUsage(cat){
+  const c=cat||(typeof voiceCategory==='function'?voiceCategory():'standard');
+  return parseInt(localStorage.getItem(usageKey(c))||'0');
+}
+function addUsage(chars,cat){const c=cat||voiceCategory();const cur=getUsage(c)+chars;localStorage.setItem(usageKey(c),cur);checkUsageAlert(cur);updUsageDisplay();updUsageWarnBar();return cur;}
 function resetUsage(){
   openConfirm('使用量をリセット','月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',()=>{
     ['standard','wavenet','neural2','chirp3'].forEach(function(c){localStorage.setItem(usageKey(c),'0');});
-    updUsageDisplay();toast('使用量をリセットしました');
+    updUsageDisplay();updUsageWarnBar();toast('使用量をリセットしました');
   });
 }
-function checkUsageAlert(cur){const lim=USAGE_LIMIT(),warn=USAGE_WARN();const limStr=(lim/10000).toFixed(0)+'万';if(cur>=lim)toast('⚠ 月間無料枠('+limStr+'文字)に達しました。Kyokoに切り替えます。');else if(cur>=warn)toast('⚠ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字');}
-function isOverLimit(){return hasGoogleKey()&&getUsage()>=USAGE_LIMIT();}
+function backupData(){
+  const data={};
+  for(let i=0;i<localStorage.length;i++){
+    const key=localStorage.key(i);
+    if(key&&key.startsWith('yogatari_')&&key!=='yogatari_gkey') data[key]=localStorage.getItem(key);
+  }
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download='yogatari_backup_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.json';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('バックアップを保存しました');
+}
+function restoreData(){
+  const input=document.createElement('input');
+  input.type='file';input.accept='.json,application/json';
+  input.onchange=function(e){
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=function(ev){
+      try{
+        const data=JSON.parse(ev.target.result);
+        let count=0;
+        for(const key of Object.keys(data)){
+          if(key.startsWith('yogatari_')&&key!=='yogatari_gkey'){localStorage.setItem(key,data[key]);count++;}
+        }
+        toast('リストア完了（'+count+'件）');
+        setTimeout(()=>location.reload(),1200);
+      }catch(e){toast('ファイルの読み込みに失敗しました');}
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+function checkUsageAlert(cur){const lim=USAGE_LIMIT(),warn=USAGE_WARN();const switchAt=Math.floor(lim*0.98);if(cur>=switchAt)toast('⚠ 使用量が98%に達しました。Kyokoに切り替えます。');else if(cur>=warn)toast('⚠ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字');}
+function updUsageWarnBar(){
+  const bar=document.getElementById('usageWarnBar');if(!bar)return;
+  if(!hasGoogleKey()){bar.style.display='none';return;}
+  const cur=getUsage();const lim=USAGE_LIMIT(),warn=USAGE_WARN();const switchAt=Math.floor(lim*0.98);
+  if(cur>=switchAt){bar.textContent='⚠ 使用量が98%に達しました。Kyokoに切り替え中。';bar.className='usage-warn-bar critical';bar.style.display='block';}
+  else if(cur>=warn){bar.textContent='△ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字';bar.className='usage-warn-bar';bar.style.display='block';}
+  else{bar.style.display='none';}
+}
+function isOverLimit(){return hasGoogleKey()&&getUsage()>=Math.floor(USAGE_LIMIT()*0.98);}
 function updUsageDisplay(){
-  var cats=[{key:'standard',label:'Standard',limit:4000000,warn:3600000},{key:'wavenet',label:'WaveNet',limit:4000000,warn:3600000},{key:'neural2',label:'Neural2',limit:1000000,warn:900000},{key:'chirp3',label:'Chirp 3 HD',limit:1000000,warn:900000}];
+  var cats=[{key:'standard',label:'Standard / WaveNet',limit:4000000,warn:3600000},{key:'neural2',label:'Neural2',limit:1000000,warn:900000},{key:'chirp3',label:'Chirp 3 HD',limit:1000000,warn:900000}];
   var wrap=document.getElementById('usageWrap');if(!wrap)return;
   var html2='';var totalUsed=0;
   cats.forEach(function(c){var cur=getUsage(c.key);totalUsed+=cur;var pct=Math.min(cur/c.limit*100,100);var cls='usage-fill'+(cur>=c.limit?' over':cur>=c.warn?' warn':'');html2+='<div class="usage-bar-header" style="margin-top:8px"><span class="usage-bar-label">'+c.label+'</span><span class="usage-bar-val">'+cur.toLocaleString()+' / '+(c.limit/10000).toFixed(0)+'万</span></div><div class="usage-track"><div class="'+cls+'" style="width:'+pct+'%"></div></div>';});
@@ -1731,8 +1803,6 @@ function getPitch(){return _pitch;}
 function onGVoiceChange(){
   const sel=document.getElementById('googleVoiceSel');if(sel&&sel.value){_gVoice=sel.value;localStorage.setItem('yogatari_gvoice',_gVoice);}
   clearPrefetchCache();updStepperState();
-  const note=document.getElementById('voiceLimitNote');
-  if(note){const isWave=_gVoice.includes('Wavenet')||_gVoice.includes('Standard');note.innerHTML=isWave?'WaveNet / Standard：月<b>400万文字</b>まで無料':'Neural2 / Chirp 3 HD：月<b>100万文字</b>まで無料';}
   updModeDisplay();updUsageDisplay();
 }
 async function testVoice(){
