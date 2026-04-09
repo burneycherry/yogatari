@@ -236,6 +236,8 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
 .custom-word-del:active{color:#e05050}
 .custom-word-list{display:flex;flex-wrap:wrap;gap:8px;min-height:28px}
 .custom-word-empty{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#564838}
+.usage-warn-bar{position:fixed;bottom:0;left:0;right:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));background:#3a2010;border-top:1px solid #8b4513;color:#f0a050;font-family:'Courier New',Consolas,monospace;font-size:12px;text-align:center;z-index:150;display:none}
+.usage-warn-bar.critical{background:#3a1010;border-top-color:#8b1513;color:#f05050}
 </style>
 </head>
 <body>
@@ -599,6 +601,7 @@ select{flex:1;background:#1e1a15;border:1px solid #302618;color:#ede0c6;font-fam
   <div class="sleep-overlay-txt" style="font-size:10px;margin-top:4px;color:#222">▶ で再生開始</div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="usage-warn-bar" id="usageWarnBar"></div>
 <script>
 const APP_VER = 'v164';
 let _actx = null, _silentOn = false;
@@ -609,7 +612,7 @@ function startSilentAudio() {
   if (_silentOn) return;
   try {
     var _sl = document.getElementById('silentLoopEl');
-    if (_sl) { _sl.src = SILENT_MP3; _sl.volume = 0.01; _sl.play().catch(function(){}); _silentOn = true; }
+    if (_sl) { _sl.src = SILENT_MP3; _sl.volume = 0.001; _sl.play().catch(function(){}); _silentOn = true; }
   } catch(e) {}
 }
 function stopSilentAudio() {
@@ -677,7 +680,7 @@ function loadVoices() {
 SS.addEventListener ? SS.addEventListener('voiceschanged', loadVoices) : (SS.onvoiceschanged = loadVoices);
 loadVoices();
 setTimeout(() => {
-  syncVoiceSelect(); updModeDisplay(); updStepperState();
+  syncVoiceSelect(); updModeDisplay(); updStepperState(); updUsageWarnBar();
   document.getElementById('vRate').textContent  = _rate.toFixed(1)  + '×';
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
 }, 300);
@@ -1421,7 +1424,7 @@ function saveApiKey(){
   clearPrefetchCache();
   localStorage.setItem('yogatari_gkey',_gApiKey);localStorage.setItem('yogatari_gvoice',_gVoice);
   document.getElementById('googleVoiceSection').style.display='block';
-  showApiStatus('ok','✓ 保存しました — Google TTS が有効です');updModeDisplay();updStepperState();toast('Google TTSを設定しました');
+  showApiStatus('ok','✓ 保存しました — Google TTS が有効です');updModeDisplay();updStepperState();updUsageWarnBar();toast('Google TTSを設定しました');
   var _xhrKey=_gApiKey.trim();var _xhr=new XMLHttpRequest();
   _xhr.open('GET','https://texttospeech.googleapis.com/v1/voices?languageCode=ja-JP');
   _xhr.setRequestHeader('x-goog-api-key',_xhrKey);
@@ -1441,7 +1444,7 @@ function saveApiKey(){
 }
 function clearApiKey(){
   _gApiKey='';localStorage.removeItem('yogatari_gkey');document.getElementById('apiKeyInput').value='';
-  document.getElementById('googleVoiceSection').style.display='none';showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();toast('Kyokoに戻しました');
+  document.getElementById('googleVoiceSection').style.display='none';showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();updUsageWarnBar();toast('Kyokoに戻しました');
 }
 function showApiStatus(type,msg){const el=document.getElementById('apiStatus');el.textContent=msg;el.className='api-status show '+type;}
 function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if(mc)return 'Chirp3-'+mc[1];const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
@@ -1669,16 +1672,21 @@ const VOICE_LIMITS={'Wavenet':{free:4000000,warn:3600000},'Standard':{free:40000
 function getVoiceLimits(){const v=_gVoice||'';if(v.includes('Chirp3'))return VOICE_LIMITS['Chirp3'];if(v.includes('Wavenet'))return VOICE_LIMITS['Wavenet'];if(v.includes('Standard'))return VOICE_LIMITS['Standard'];if(v.includes('Neural2'))return VOICE_LIMITS['Neural2'];return VOICE_LIMITS['default'];}
 function USAGE_WARN(){return getVoiceLimits().warn;}
 function USAGE_LIMIT(){return getVoiceLimits().free;}
-function voiceCategory(){if(_gVoice.includes('Chirp3'))return 'chirp3';if(_gVoice.includes('Neural2'))return 'neural2';if(_gVoice.includes('Wavenet')||_gVoice.includes('wavenet'))return 'wavenet';return 'standard';}
+function voiceCategory(){if(_gVoice.includes('Chirp3'))return 'chirp3';if(_gVoice.includes('Neural2'))return 'neural2';return 'standard';}
 function isChirp3(){return _gVoice.includes('Chirp3');}
 function updStepperState(){var grid=document.getElementById('stepperGrid');var warn=document.getElementById('chirpWarnCtrl');var warnSett=document.getElementById('chirpWarn');var chirp=isChirp3();if(grid)grid.classList.toggle('disabled',chirp);if(warn)warn.classList.toggle('show',chirp);if(warnSett)warnSett.classList.toggle('show',chirp);}
 function usageKey(cat){const d=new Date();const c=cat||voiceCategory();return 'yogatari_usage_'+d.getFullYear()+'_'+(d.getMonth()+1)+'_'+c;}
-function getUsage(cat){return parseInt(localStorage.getItem(usageKey(cat))||'0');}
-function addUsage(chars,cat){const c=cat||voiceCategory();const cur=getUsage(c)+chars;localStorage.setItem(usageKey(c),cur);checkUsageAlert(cur);updUsageDisplay();return cur;}
+function getUsage(cat){
+  const c=cat||(typeof voiceCategory==='function'?voiceCategory():'standard');
+  const base=parseInt(localStorage.getItem(usageKey(c))||'0');
+  if(c==='standard'){const wn=parseInt(localStorage.getItem(usageKey('wavenet'))||'0');return base+wn;}
+  return base;
+}
+function addUsage(chars,cat){const c=cat||voiceCategory();const cur=getUsage(c)+chars;localStorage.setItem(usageKey(c),cur);checkUsageAlert(cur);updUsageDisplay();updUsageWarnBar();return cur;}
 function resetUsage(){
   openConfirm('使用量をリセット','月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',()=>{
     ['standard','wavenet','neural2','chirp3'].forEach(function(c){localStorage.setItem(usageKey(c),'0');});
-    updUsageDisplay();toast('使用量をリセットしました');
+    updUsageDisplay();updUsageWarnBar();toast('使用量をリセットしました');
   });
 }
 function backupData(){
@@ -1718,9 +1726,17 @@ function restoreData(){
   input.click();
 }
 function checkUsageAlert(cur){const lim=USAGE_LIMIT(),warn=USAGE_WARN();const limStr=(lim/10000).toFixed(0)+'万';if(cur>=lim)toast('⚠ 月間無料枠('+limStr+'文字)に達しました。Kyokoに切り替えます。');else if(cur>=warn)toast('⚠ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字');}
+function updUsageWarnBar(){
+  const bar=document.getElementById('usageWarnBar');if(!bar)return;
+  if(!hasGoogleKey()){bar.style.display='none';return;}
+  const cur=getUsage();const lim=USAGE_LIMIT(),warn=USAGE_WARN();
+  if(cur>=lim){bar.textContent='⚠ 月間無料枠('+( lim/10000).toFixed(0)+'万文字)に達しました。Kyokoに切り替えます。';bar.className='usage-warn-bar critical';bar.style.display='block';}
+  else if(cur>=warn){bar.textContent='△ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字';bar.className='usage-warn-bar';bar.style.display='block';}
+  else{bar.style.display='none';}
+}
 function isOverLimit(){return hasGoogleKey()&&getUsage()>=USAGE_LIMIT();}
 function updUsageDisplay(){
-  var cats=[{key:'standard',label:'Standard',limit:4000000,warn:3600000},{key:'wavenet',label:'WaveNet',limit:4000000,warn:3600000},{key:'neural2',label:'Neural2',limit:1000000,warn:900000},{key:'chirp3',label:'Chirp 3 HD',limit:1000000,warn:900000}];
+  var cats=[{key:'standard',label:'Standard / WaveNet',limit:4000000,warn:3600000},{key:'neural2',label:'Neural2',limit:1000000,warn:900000},{key:'chirp3',label:'Chirp 3 HD',limit:1000000,warn:900000}];
   var wrap=document.getElementById('usageWrap');if(!wrap)return;
   var html2='';var totalUsed=0;
   cats.forEach(function(c){var cur=getUsage(c.key);totalUsed+=cur;var pct=Math.min(cur/c.limit*100,100);var cls='usage-fill'+(cur>=c.limit?' over':cur>=c.warn?' warn':'');html2+='<div class="usage-bar-header" style="margin-top:8px"><span class="usage-bar-label">'+c.label+'</span><span class="usage-bar-val">'+cur.toLocaleString()+' / '+(c.limit/10000).toFixed(0)+'万</span></div><div class="usage-track"><div class="'+cls+'" style="width:'+pct+'%"></div></div>';});
