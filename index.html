@@ -1638,7 +1638,7 @@ function safeSessionSet(key,data){
   catch(e){try{Object.keys(sessionStorage).filter(k=>k.startsWith(SS_PAGE_CACHE_PREFIX)).forEach(k=>sessionStorage.removeItem(k));sessionStorage.setItem(key,data);}catch(e2){toast('⚠ キャッシュ保存に失敗しました');}}
 }
 let _cfmCallback=null;
-function openConfirm(title,msg,onOk){_cfmCallback=onOk;document.getElementById('cfmTitle').textContent=title;document.getElementById('cfmMsg').textContent=msg;document.getElementById('cfmOkBtn').onclick=()=>{closeConfirm();if(_cfmCallback)_cfmCallback();};document.getElementById('cfmOverlay').classList.add('show');}
+function openConfirm(title,msg,onOk){_cfmCallback=onOk;document.getElementById('cfmTitle').textContent=title;document.getElementById('cfmMsg').textContent=msg;document.getElementById('cfmOkBtn').onclick=()=>{const cb=_cfmCallback;closeConfirm();if(cb)cb();};document.getElementById('cfmOverlay').classList.add('show');}
 function closeConfirm(){document.getElementById('cfmOverlay').classList.remove('show');_cfmCallback=null;}
 function openReadme(){document.getElementById('rdmOverlay').classList.add('show');}
 function closeReadme(){document.getElementById('rdmOverlay').classList.remove('show');}
