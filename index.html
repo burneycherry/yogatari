@@ -1449,6 +1449,7 @@ function saveApiKey(){
 }
 function clearApiKey(){
   _gApiKey='';localStorage.removeItem('yogatari_gkey');document.getElementById('apiKeyInput').value='';
+  clearPrefetchCache();
   document.getElementById('googleVoiceSection').style.display='none';showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();updUsageWarnBar();toast('Kyokoに戻しました');
 }
 function showApiStatus(type,msg){const el=document.getElementById('apiStatus');el.textContent=msg;el.className='api-status show '+type;}
