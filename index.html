@@ -434,7 +434,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <button class="sett-btn sett-btn-save" id="ssmlPauseBtn" onclick="toggleSsmlPause()">ON</button>
       </div>
       <div class="sett-row">
-        <span class="sett-label">会話文のピッチ変更<br><span class="sett-sub" style="font-size:11px">「」内をやや高め (+2st) に読む</span></span>
+        <span class="sett-label">会話文の速度・ピッチ変更<br><span class="sett-sub" style="font-size:11px">「」内を設定速度-0.1・設定ピッチ+0.2で読む</span></span>
         <button class="sett-btn" id="ssmlDialogueBtn" onclick="toggleSsmlDialogue()">OFF</button>
       </div>
       <div class="sett-sub" style="margin-top:4px">Chirp3 HD は非対応。5000文字超のセグメントは自動でフォールバック。</div>
@@ -1341,7 +1341,7 @@ function toSsml(text){
     s=s.replace(/[！!]/g,'！<break time="300ms"/>');
     s=s.replace(/[？?]/g,'？<break time="300ms"/>');
   }
-  if(isSsmlDialogueOn()){s=s.replace(/「([^」]*)」/g,'「<prosody pitch="+2st" rate="0.95">$1</prosody>」');}
+  if(isSsmlDialogueOn()){const _dr=Math.max(0.25,Math.min(4.0,getRate()-0.1)).toFixed(2);const _dp=(0.2*6).toFixed(1);s=s.replace(/「([^」]*)」/g,'「<prosody rate="'+_dr+'" pitch="+'+_dp+'st">$1</prosody>」');}
   return '<speak>'+s+'</speak>';
 }
 // Reading dictionary UI
