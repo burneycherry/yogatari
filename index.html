@@ -1828,7 +1828,7 @@ function restoreData(){
   };
   input.click();
 }
-function checkUsageAlert(cur){const lim=USAGE_LIMIT(),warn=USAGE_WARN();const switchAt=Math.floor(lim*0.98);if(cur>=switchAt)toast('⚠ 使用量が98%に達しました。Kyokoに切り替えます。');else if(cur>=warn)toast('⚠ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字');}
+function checkUsageAlert(cur){}
 function updUsageWarnBar(){
   const bar=document.getElementById('usageWarnBar');if(!bar)return;
   if(!hasGoogleKey()){bar.style.display='none';return;}
