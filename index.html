@@ -1553,7 +1553,7 @@ function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if
 function updModeDisplay(){
   const el=document.getElementById('modeDisplay');
   const row=document.getElementById('voiceRowKyoko');const rowG=document.getElementById('voiceRowGoogle');const badge=document.getElementById('googleBadge');
-  if(hasGoogleKey()){const fname=friendlyVoiceName(_gVoice);const lim=(USAGE_LIMIT()/10000).toFixed(0)+'万文字/月無料';if(el)el.innerHTML='<span class="mode-badge google">🎙 '+fname+'<br><span style="font-size:9px;opacity:0.7">'+lim+'</span></span>';if(badge)badge.textContent='🎙 '+fname;if(row)row.style.display='none';if(rowG)rowG.style.display='flex';}
+  if(hasGoogleKey()){const fname=friendlyVoiceName(_gVoice);const lim=(USAGE_LIMIT()/10000).toFixed(0)+'万文字/月無料';if(isOverLimit()){if(el)el.innerHTML='<span class="mode-badge">🔊 Kyoko（制限中フォールバック）</span>';if(badge)badge.textContent='🔊 Kyoko（制限中）';}else{if(el)el.innerHTML='<span class="mode-badge google">🎙 '+fname+'<br><span style="font-size:9px;opacity:0.7">'+lim+'</span></span>';if(badge)badge.textContent='🎙 '+fname;}if(row)row.style.display='none';if(rowG)rowG.style.display='flex';}
   else{if(el)el.innerHTML='<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';if(row)row.style.display='flex';if(rowG)rowG.style.display='none';}
   updSsmlSection();
 }
@@ -1787,7 +1787,7 @@ function getUsage(cat){
   const c=cat||(typeof voiceCategory==='function'?voiceCategory():'standard');
   return parseInt(localStorage.getItem(usageKey(c))||'0');
 }
-function addUsage(chars,cat){const c=cat||voiceCategory();const cur=getUsage(c)+chars;localStorage.setItem(usageKey(c),cur);checkUsageAlert(cur);updUsageDisplay();updUsageWarnBar();return cur;}
+function addUsage(chars,cat){const c=cat||voiceCategory();const cur=getUsage(c)+chars;localStorage.setItem(usageKey(c),cur);checkUsageAlert(cur);updUsageDisplay();updUsageWarnBar();updModeDisplay();return cur;}
 function resetUsage(){
   openConfirm('使用量をリセット','月間カウントを0に戻します。\n課金プランを利用していて\n上限を引き上げたい場合にご利用ください。\n\n本当にリセットしますか？',()=>{
     ['standard','wavenet','neural2','chirp3'].forEach(function(c){localStorage.setItem(usageKey(c),'0');});
