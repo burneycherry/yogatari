@@ -1376,7 +1376,7 @@ async function fetchGoogleAudio(text){
 }
 function getAudioCached(i){if(!_prefetchCache.has(i)){if(i<segs.length)_prefetchCache.set(i,fetchGoogleAudio(segs[i]));}return _prefetchCache.get(i);}
 function evictCache(currentIdx){for(const key of _prefetchCache.keys()){if(key<currentIdx-1||key>currentIdx+2)_prefetchCache.delete(key);}}
-function prefetchNext(i){if(!hasGoogleKey())return;if(i+1<segs.length&&!_prefetchCache.has(i+1))getAudioCached(i+1);}
+function prefetchNext(i){if(!hasGoogleKey()||isOverLimit())return;if(i+1<segs.length&&!_prefetchCache.has(i+1))getAudioCached(i+1);}
 function clearPrefetchCache(){_prefetchCache.clear();}
 function stopGoogleAudio(){const el=getAudioEl();if(el){el.onended=null;el.onerror=null;el.pause();}}
 function stopGoogleAudioFull(){const el=getAudioEl();if(el){el.onended=null;el.onerror=null;el.pause();el.src='';}}
@@ -1424,7 +1424,7 @@ function speakIdx(i){
   idx=i;updHighlight();updProg();
   if(i%5===0)saveBookmarkCurrent(i);
   msSetState('playing');
-  if(hasGoogleKey()){
+  if(hasGoogleKey() && !isOverLimit()){
     SS.cancel();_busy=true;evictCache(i);
     getAudioCached(i).then(audioSrc=>{
       _busy=false;if(!playing)return;stopGoogleAudio();const el=getAudioEl();
@@ -1436,7 +1436,9 @@ function speakIdx(i){
       startWatchdog(getRate(),true);prefetchNext(i);
     }).catch(e=>{
       _busy=false;_prefetchCache.delete(i);if(!playing)return;
-      const msg=(e.message||'Google TTSエラー').slice(0,60);toast('⚠ '+msg);
+      const msg=(e.message||'Google TTSエラー').slice(0,60);
+      if(msg.includes('98%')){setTimeout(()=>{if(playing)speakIdx(idx);},100);return;}
+      toast('⚠ '+msg);
       if(/quota|無料枠|not valid|not authorized|HTTP 401|HTTP 403/.test(msg)){playing=false;updBtn();setBadge(false);}
       else setTimeout(()=>{if(playing)speakIdx(idx);},2000);
     });
@@ -1458,7 +1460,7 @@ function startWatchdog(rate,isGoogle=false){
 }
 function clearWatchdog(){if(watchdog){clearTimeout(watchdog);watchdog=null;}}
 function startPlay(){
-  if(playing)return;unlockAudio();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(hasGoogleKey())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
+  if(playing)return;unlockAudio();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(hasGoogleKey()&&!isOverLimit())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
 }
 function togglePlay(){
   if(!segs.length)return;
