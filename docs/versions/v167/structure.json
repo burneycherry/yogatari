@@ -1,0 +1,163 @@
+{
+  "version": "v167",
+  "date": "2026-04-14",
+  "files": [
+    {
+      "path": "index.html",
+      "description": "UIおよびメインロジック（英語記述）。CSS・HTML・JavaScript全体を1ファイルに収録。",
+      "status": "implemented"
+    },
+    {
+      "path": "manifest.json",
+      "description": "PWAマニフェスト設定。theme_color・background_colorを#000000（OLEDピュアブラック）に変更済み。",
+      "status": "implemented"
+    },
+    {
+      "path": "icon-192.png",
+      "description": "PWAホーム画面アイコン（192x192）。夜空・三日月・星・「夜」文字デザイン。",
+      "status": "implemented"
+    },
+    {
+      "path": "icon-512.png",
+      "description": "PWAスプラッシュ・ストア向けアイコン（512x512）。同上デザイン。",
+      "status": "implemented"
+    },
+    {
+      "path": "CLAUDE.md",
+      "description": "Claude Code向けプロジェクト作業指針。バージョン管理プロトコル・コーディングルール等。",
+      "status": "implemented"
+    }
+  ],
+  "features": [
+    {
+      "name": "Web Speech API 読み上げ",
+      "status": "implemented",
+      "details": "speechSynthesisを使用。日本語音声を優先選択し、speakIdx()で文単位再生。"
+    },
+    {
+      "name": "Google Cloud TTS 読み上げ",
+      "status": "implemented",
+      "details": "APIキー必須。fetchGoogleAudio()で音声取得、_prefetchCacheにキャッシュ、<audio id=\"gAudioEl\">で再生。APIキーはx-goog-api-keyヘッダーで送信（URLクエリ不使用）。"
+    },
+    {
+      "name": "小説家になろう 対応",
+      "status": "implemented",
+      "details": "parseSyosetuToc()で目次解析。ncode.syosetu.comのURLに対応。"
+    },
+    {
+      "name": "カクヨム 対応",
+      "status": "implemented",
+      "details": "parseKakuyomuToc()で目次解析。kakuyomu.jpのURLに対応。"
+    },
+    {
+      "name": "CORSプロキシ フォールバック",
+      "status": "implemented",
+      "details": "PROXIES配列に複数サービスを定義。fetchHtml()がローテーションしながらsessionStorageにキャッシュ。"
+    },
+    {
+      "name": "しおり・履歴保存",
+      "status": "implemented",
+      "details": "localStorageキー yogatari_bk に小説・章・セグメントインデックスを保存。5段落ごとに自動保存。"
+    },
+    {
+      "name": "読書統計",
+      "status": "implemented",
+      "details": "localStorageキー yogatari_stats に読書日数・作品数・話数・秒数を記録。"
+    },
+    {
+      "name": "スキップフィルター",
+      "status": "implemented",
+      "details": "yogatari_skip_filters および yogatari_custom_words に基づき、条件一致段落を読み上げからスキップ。"
+    },
+    {
+      "name": "スリープタイマー",
+      "status": "implemented",
+      "details": "15・30・60分の選択式。タイマー終了時に再生停止・画面フェード。"
+    },
+    {
+      "name": "バックグラウンド再生（iOS）",
+      "status": "implemented",
+      "details": "silentLoopEl（音量0.01）によるAudioContext維持。keepAudioSessionAlive()でsilentLoopElと主音声要素の双方を再起動。stopGoogleAudio()（遷移用）とstopGoogleAudioFull()（ユーザー停止用）に分割し、段落間のオーディオセッション断を防止。Media Session APIでロック画面コントロールに対応。"
+    },
+    {
+      "name": "章キュー再生",
+      "status": "implemented",
+      "details": "queue配列に章URLを積み、章末に3秒カウントダウン後自動進行。"
+    },
+    {
+      "name": "音声プリフェッチ",
+      "status": "implemented",
+      "details": "prefetchNext()が次セグメントのGoogle TTS音声をバックグラウンドで事前取得。isOverLimit()時はスキップ。"
+    },
+    {
+      "name": "PWA manifest",
+      "status": "implemented",
+      "details": "manifest.jsonを追加。purpose any/maskableを別エントリに分割。start_url・scopeを相対パス（./）に変更しGitHub Pagesサブディレクトリ配信に対応。"
+    },
+    {
+      "name": "PWA アイコン",
+      "status": "implemented",
+      "details": "icon-192.png・icon-512.pngを配置。apple-touch-iconにsizes=\"180x180\"を追加。manifest・index.htmlのパスを相対パスに統一。"
+    },
+    {
+      "name": "PWA ホーム画面追加",
+      "status": "partial",
+      "details": "manifest.json・アイコン・メタタグが揃いインストール要件を満たす。Service Worker未実装のためオフライン非対応。"
+    },
+    {
+      "name": "データ管理（バックアップ／リストア）",
+      "status": "implemented",
+      "details": "backupData()でyogatari_*キー（yogatari_gkey除く）をJSONファイルにエクスポート。restoreData()でファイルからインポートしてリロード。APIキーはセキュリティ上バックアップに含めない。"
+    },
+    {
+      "name": "Google TTS 使用量カウンター",
+      "status": "implemented",
+      "details": "Standard/WaveNetを同一SKU（9D01-5995-B545）として1カテゴリに統合。Neural2・Chirp3HDを別カテゴリで管理（合計3カテゴリ・600万文字）。98%到達でKyoko自動切替・バッジ表示変更。90%で警告。画面下部の持続的警告バーで常時表示。"
+    },
+    {
+      "name": "98%超過時Kyoko自動切替",
+      "status": "implemented",
+      "details": "isOverLimit()がtrueの場合、speakIdx()はGoogle TTSをスキップしてWebSpeech API（Kyoko）に直接フォールバック。バッジ・モード表示が「Kyoko（制限中）」に切り替わる。"
+    },
+    {
+      "name": "読み間違い辞書",
+      "status": "implemented",
+      "details": "localStorageキー yogatari_reading_dict に登録語を保存。yogatari_rdict_on でON/OFF管理。applyReadingDict()で長い語から優先適用。Google TTS・Kyoko両方に対応。"
+    },
+    {
+      "name": "省略単語モーダル",
+      "status": "implemented",
+      "details": "設定タブの「管理 →」ボタンからボトムシートモーダルで管理。"
+    },
+    {
+      "name": "会話文ピッチ・速度変更（SSML）",
+      "status": "implemented",
+      "details": "「」内テキストをSSML prosodyタグで設定速度-0.1・設定ピッチ+0.2（×6st）で読む。Chirp3 HD非対応・5000文字超でプレーンテキストフォールバック。localStorageキー yogatari_ssml_dialogue で管理。"
+    },
+    {
+      "name": "OLEDピュアブラック",
+      "status": "implemented",
+      "details": "全背景色を#000000に統一。topbar・tab-bar・ctrl-bar・novelText等をピュアブラック化。manifest.jsonのtheme_color・background_colorも#000000に変更。"
+    },
+    {
+      "name": "夜空アニメーション半透明UI",
+      "status": "implemented",
+      "details": "startBgEffect()でcanvasを表示するとともに、topbar・tab-bar・ctrl-bar・novelTextを半透明化。stopBgEffect()で#000000に戻す。localStorageキー yogatari_bg で管理。"
+    },
+    {
+      "name": "Chirp3 HD「too long」エラー時スキップ",
+      "status": "implemented",
+      "details": "Google TTS APIが「too long」エラーを返した場合、無限リトライせず次セグメントへ自動スキップ。"
+    },
+    {
+      "name": "SSMLポーズ最適化",
+      "status": "not_implemented",
+      "details": "v165で実装後、v166で削除。復活予定なし。"
+    },
+    {
+      "name": "オフライン動作",
+      "status": "not_implemented",
+      "details": "Service Worker不使用（CLAUDE.mdで禁止）。リアルタイム取得が前提のため対応予定なし。"
+    }
+  ]
+}
