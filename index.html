@@ -1425,6 +1425,7 @@ function speakIdx(i){
       _busy=false;_prefetchCache.delete(i);if(!playing)return;
       const msg=(e.message||'Google TTSエラー').slice(0,60);
       if(msg.includes('98%')){setTimeout(()=>{if(playing)speakIdx(idx);},100);return;}
+      if(/too long/i.test(msg)){setTimeout(()=>{if(playing)speakIdx(idx+1);},100);return;}
       toast('⚠ '+msg);
       if(/quota|無料枠|not valid|not authorized|HTTP 401|HTTP 403/.test(msg)){playing=false;updBtn();setBadge(false);}
       else setTimeout(()=>{if(playing)speakIdx(idx);},2000);
