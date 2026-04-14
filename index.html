@@ -655,7 +655,7 @@ function startSilentAudio() {
   if (_silentOn) return;
   try {
     var _sl = document.getElementById('silentLoopEl');
-    if (_sl) { _sl.src = SILENT_MP3; _sl.volume = 0.001; _sl.play().catch(function(){}); _silentOn = true; }
+    if (_sl) { _sl.src = SILENT_MP3; _sl.volume = 0.01; _sl.play().catch(function(){}); _silentOn = true; }
   } catch(e) {}
 }
 function stopSilentAudio() {
