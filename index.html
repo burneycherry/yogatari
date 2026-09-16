@@ -316,34 +316,14 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <div class="stats-card"><div class="stats-num" id="statsEps">-</div><div class="stats-lbl">読んだ話数</div></div>
         <div class="stats-card"><div class="stats-num" id="statsHours">-</div><div class="stats-lbl">読み上げ時間</div></div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;align-items:center">
+        <span class="sett-sub" style="margin:0">リセット</span>
         <button class="usage-reset-btn" onclick="resetStatItem('days')">読書日数</button>
         <button class="usage-reset-btn" onclick="resetStatItem('novels')">作品数</button>
         <button class="usage-reset-btn" onclick="resetStatItem('episodes')">話数</button>
         <button class="usage-reset-btn" onclick="resetStatItem('seconds')">時間</button>
         <button class="usage-reset-btn" style="color:#8b2020" onclick="resetStats()">全部</button>
       </div>
-    </div>
-    <div class="sett-section">
-      <div class="sett-title">// 省略設定</div>
-      <div class="sett-sub" style="margin-bottom:12px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">
-        📖 <b>省略をONにした項目</b>は、その言葉や形式を含む段落を<b>読み上げから自動でスキップ</b>します。<br>
-        <span style="color:#564838;font-size:11px">設定は次の話の読み込みから反映されます。</span>
-      </div>
-      <div id="skipFilterList"></div>
-    </div>
-    <div class="sett-sub" style="font-size:10px;color:#564838;margin:12px 0 6px">— カスタムフィルター</div>
-    <div class="filter-item">
-      <div class="filter-desc"><div class="filter-label">省略単語</div><div class="filter-note">段落に含まれていたらスキップ（次話読み込みから反映）</div></div>
-      <button class="sett-btn" onclick="openCustomWordModal()">管理 →</button>
-    </div>
-    <div class="sett-section">
-      <div class="sett-title">// 背景エフェクト</div>
-      <div class="sett-row">
-        <span class="sett-label">夜空アニメーション</span>
-        <button class="sett-btn" id="bgToggleBtn" onclick="toggleBgEffect()">OFF</button>
-      </div>
-      <div class="sett-sub" id="bgStatusTxt" style="margin-bottom:4px;color:#564838">月齢・星・流れ星・オーロラ・ランダム天気</div>
     </div>
     <div class="sett-section">
       <div class="sett-title">// 今月の使用量（アプリ内カウント）</div>
@@ -356,20 +336,6 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
       </div>
       <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：400万文字、Neural2：100万文字、Chirp 3 HD：100万文字。合計600万文字。<br>各上限の90%で警告、98%でKyokoに自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
-      <div class="sett-title">// Google側での使用量・請求確認</div>
-      <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">実際の使用量や請求額はGoogle Cloud Consoleで確認できます。</div>
-      <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
-      <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">💳 請求・料金を確認する（課金防止設定）</a>
-      <div class="sett-sub" style="margin-bottom:14px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">⭐ 予算アラートを <b>¥1</b> で設定しておくと<br>万が一の課金時にメールで通知が届いて安心です。</div>
-      <div class="sett-title">// Google Cloud TTS（高品質）</div>
-      <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">GoogleアカウントのAPIキーを入力すると<br>Kyokoより自然な日本語音声になります。</div>
-      <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
-      <div class="api-status" id="apiStatus"></div>
-      <input class="api-input" id="apiKeyInput" type="password" placeholder="AIzaSy…（APIキーを貼り付け）" autocomplete="off" autocorrect="off" spellcheck="false">
-      <div class="api-btns">
-        <button class="sett-btn sett-btn-save" onclick="saveApiKey()">保存して使う</button>
-        <button class="sett-btn sett-btn-clear" onclick="clearApiKey()">クリア</button>
-      </div>
     </div>
     <div class="sett-section" id="googleVoiceSection" style="display:none">
       <div class="sett-title">// Google音声を選ぶ</div>
@@ -427,6 +393,24 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
       <div class="chirp-warn" id="chirpWarn">⚠ Chirp 3 HD は速度・ピッチ調整が非対応です。<br>コントロールバーの速度・ピッチスライダーは無効になります。</div>
     </div>
+    <div class="sett-section">
+      <div class="sett-title">// Google側での使用量・請求確認</div>
+      <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">実際の使用量や請求額はGoogle Cloud Consoleで確認できます。</div>
+      <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
+      <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">💳 請求・料金を確認する（課金防止設定）</a>
+      <div class="sett-sub" style="margin-bottom:14px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">⭐ 予算アラートを <b>¥1</b> で設定しておくと<br>万が一の課金時にメールで通知が届いて安心です。</div>
+    </div>
+    <div class="sett-section">
+      <div class="sett-title">// Google Cloud TTS（高品質）</div>
+      <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">GoogleアカウントのAPIキーを入力すると<br>Kyokoより自然な日本語音声になります。</div>
+      <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
+      <div class="api-status" id="apiStatus"></div>
+      <input class="api-input" id="apiKeyInput" type="password" placeholder="AIzaSy…（APIキーを貼り付け）" autocomplete="off" autocorrect="off" spellcheck="false">
+      <div class="api-btns">
+        <button class="sett-btn sett-btn-save" onclick="saveApiKey()">保存して使う</button>
+        <button class="sett-btn sett-btn-clear" onclick="clearApiKey()">クリア</button>
+      </div>
+    </div>
     <div class="sett-section" id="ssmlOptsSection" style="display:none">
       <div class="sett-title">// 読み上げ演出（Google TTS）</div>
       <div class="sett-row">
@@ -434,6 +418,19 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <button class="sett-btn" id="ssmlDialogueBtn" onclick="toggleSsmlDialogue()">OFF</button>
       </div>
       <div class="sett-sub" style="margin-top:4px">Chirp3 HD は非対応。5000文字超のセグメントは自動でフォールバック。<br>⚠ ONにするとSSMLタグ分の文字数が上乗せされ、TTS使用量カウントが増えます。節約したい場合はOFF推奨。</div>
+    </div>
+    <div class="sett-section">
+      <div class="sett-title">// 省略設定</div>
+      <div class="sett-sub" style="margin-bottom:12px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">
+        📖 <b>省略をONにした項目</b>は、その言葉や形式を含む段落を<b>読み上げから自動でスキップ</b>します。<br>
+        <span style="color:#564838;font-size:11px">設定は次の話の読み込みから反映されます。</span>
+      </div>
+      <div id="skipFilterList"></div>
+    </div>
+    <div class="sett-sub" style="font-size:10px;color:#564838;margin:12px 0 6px">— カスタムフィルター</div>
+    <div class="filter-item">
+      <div class="filter-desc"><div class="filter-label">省略単語</div><div class="filter-note">段落に含まれていたらスキップ（次話読み込みから反映）</div></div>
+      <button class="sett-btn" onclick="openCustomWordModal()">管理 →</button>
     </div>
     <div class="sett-section" id="readingDictSection">
       <div class="sett-title">// 読み間違い辞書</div>
@@ -443,6 +440,14 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       </div>
       <div class="sett-sub" style="margin-bottom:10px">Google TTS / Kyokoへの送信前にテキストを置換します。長い単語が優先適用されます。</div>
       <button class="sett-btn" onclick="openRdictModal()" style="width:100%">単語を管理 →</button>
+    </div>
+    <div class="sett-section">
+      <div class="sett-title">// 背景エフェクト</div>
+      <div class="sett-row">
+        <span class="sett-label">夜空アニメーション</span>
+        <button class="sett-btn" id="bgToggleBtn" onclick="toggleBgEffect()">OFF</button>
+      </div>
+      <div class="sett-sub" id="bgStatusTxt" style="margin-bottom:4px;color:#564838">月齢・星・流れ星・オーロラ・ランダム天気</div>
     </div>
     <div class="sett-section">
       <div class="sett-title">// データ管理</div>
@@ -726,7 +731,6 @@ setTimeout(() => {
   syncVoiceSelect(); updModeDisplay(); updStepperState(); updUsageWarnBar();
   document.getElementById('vRate').textContent  = _rate.toFixed(1)  + '×';
   document.getElementById('vPitch').textContent = _pitch.toFixed(1);
-  (function(){var gvs=document.getElementById('googleVoiceSection');if(gvs&&gvs.previousElementSibling)gvs.parentNode.insertBefore(gvs,gvs.previousElementSibling);})();
 }, 300);
 (function migrateWavenetUsage(){
   try{
