@@ -1132,7 +1132,7 @@ async function loadChapterUrl(url, startSeg = 0, novelIdOverride = null, chapNum
     if (!queue.find(q=>q.url===url)) { queue.push({url, title:page.title, done:false}); qi=queue.length-1; trimQueue(); }
     else qi = queue.findIndex(q=>q.url===url);
     displayPage(page, url, startSeg, null);
-    startSilentAudio(); startPlay(); hideFetch(); hideResumeBanner();
+    startSilentAudio(); hideFetch(); hideResumeBanner();
   } catch(e) { showFetch('err', e.message); }
   disable(false);
 }
