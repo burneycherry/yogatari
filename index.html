@@ -839,9 +839,9 @@ let _navGeneration=0;
 let _startupCheckRunning=false;
 let _resumeActive=false;
 const PROXIES = [
+  { build: u=>'https://yogatari-proxy.burneycherry.workers.dev/?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
-  { build: u=>'https://test.cors.workers.dev/?'+u, isJson:false, ms:7000 },
   { build: u=>'https://cors.eu.org/'+u, isJson:false, ms:7000 },
   { build: u=>'https://yacdn.org/serve/'+u, isJson:false, ms:7000 },
   { build: u=>'https://api.codetabs.com/v1/proxy?quest='+encodeURIComponent(u), isJson:false, ms:7000 },
