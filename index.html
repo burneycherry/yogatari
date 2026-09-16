@@ -1290,7 +1290,7 @@ function renderText() {
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 let _gApiKey=localStorage.getItem('yogatari_gkey')||'';
 let _gVoice=localStorage.getItem('yogatari_gvoice')||'ja-JP-Wavenet-A';
-let _gAudio=null, _busy=false, _tabSw=false, _audioUnlocked=false;
+let _gAudio=null, _busy=false, _audioUnlocked=false;
 function getAudioEl(){if(!_gAudio)_gAudio=document.getElementById('gAudioEl');return _gAudio;}
 function unlockAudio(){
   if(_audioUnlocked)return;
@@ -1418,10 +1418,10 @@ function speakIdx(i){
     SS.cancel();_busy=true;evictCache(i);
     getAudioCached(i).then(audioSrc=>{
       _busy=false;if(!playing)return;stopGoogleAudio();const el=getAudioEl();
-      el.onended=()=>{if(el.duration>0.3&&segs[idx]&&segs[idx].length>3){const segCpm=segs[idx].length/el.duration*60;_liveCpm=_liveCpm>0?_liveCpm*0.7+segCpm*0.3:segCpm;}clearWatchdog();if(playing&&!_tabSw){msSetState('playing');keepAudioSessionAlive();speakIdx(idx+1);}};
-      el.onerror=()=>{clearWatchdog();_busy=false;_prefetchCache.delete(i);if(playing&&!_tabSw)setTimeout(()=>speakIdx(idx),800);};
+      el.onended=()=>{if(el.duration>0.3&&segs[idx]&&segs[idx].length>3){const segCpm=segs[idx].length/el.duration*60;_liveCpm=_liveCpm>0?_liveCpm*0.7+segCpm*0.3:segCpm;}clearWatchdog();if(playing){msSetState('playing');keepAudioSessionAlive();speakIdx(idx+1);}};
+      el.onerror=()=>{clearWatchdog();_busy=false;_prefetchCache.delete(i);if(playing)setTimeout(()=>speakIdx(idx),800);};
       el.src=audioSrc;
-      el.play().catch(e=>{console.warn('play() failed:',e.name,e.message);clearWatchdog();_busy=false;_prefetchCache.delete(i);if(playing&&!_tabSw)setTimeout(()=>speakIdx(idx),600);});
+      el.play().catch(e=>{console.warn('play() failed:',e.name,e.message);clearWatchdog();_busy=false;_prefetchCache.delete(i);if(playing)setTimeout(()=>speakIdx(idx),600);});
       el.onplay=()=>{msSetState('playing');};
       startWatchdog(getRate(),true);prefetchNext(i);
     }).catch(e=>{
@@ -1841,9 +1841,8 @@ function updUsageDisplay(){
   wrap.innerHTML=html2+resetBtn;
 }
 function switchTab(name){
-  _tabSw=true;document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+name).classList.add('active');document.getElementById('panel-'+name).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+name).classList.add('active');document.getElementById('panel-'+name).classList.add('active');
   if(name==='hist')renderHistList();if(name==='sett'){initSettings();updUsageDisplay();updStatsDisplay();}
-  setTimeout(()=>{_tabSw=false;},600);
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
