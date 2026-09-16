@@ -1352,14 +1352,16 @@ async function fetchGoogleAudio(text){
   const cat=voiceCategory();
   const voice=currentGVoice();
   const chirp3=voice.includes('Chirp3');
-  let input;
-  if(!chirp3&&isSsmlDialogueOn()){const ssml=toSsml(text);input=ssml.length<=4900?{ssml}:{text};}
-  else{input={text};}
+  let input;let billedChars;
+  // Google bills every character in the actual request string (all SSML tags count except <mark>),
+  // so track the length of what is actually sent, not the plain source text.
+  if(!chirp3&&isSsmlDialogueOn()){const ssml=toSsml(text);if(ssml.length<=4900){input={ssml};billedChars=ssml.length;}else{input={text};billedChars=text.length;}}
+  else{input={text};billedChars=text.length;}
   const body={input,voice:{languageCode:'ja-JP',name:voice},audioConfig:Object.assign({audioEncoding:'MP3'},chirp3?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
   const res=await fetch('https://texttospeech.googleapis.com/v1/text:synthesize',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':_gApiKey.trim()},body:JSON.stringify(body),signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(15000):undefined});
   if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||'HTTP '+res.status);}
   const data=await res.json();
-  addUsage(text.length,cat);
+  addUsage(billedChars,cat);
   return 'data:audio/mp3;base64,'+data.audioContent;
 }
 function getAudioCached(i){if(!_prefetchCache.has(i)){if(i<segs.length)_prefetchCache.set(i,fetchGoogleAudio(segs[i]));}return _prefetchCache.get(i);}
@@ -1444,7 +1446,7 @@ function startWatchdog(rate,isGoogle=false){
   const segLen=segs[idx]?.length||20;
   const estimatedSpeechMs=segLen/(rate*4)*1000;
   const bufferMs=isGoogle?12000:5000;const minMs=isGoogle?5000:2000;
-  const ms=Math.min(Math.max(estimatedSpeechMs+bufferMs,minMs),60000);
+  const ms=Math.min(Math.max(estimatedSpeechMs+bufferMs,minMs),180000);
   watchdog=setTimeout(()=>{if(!playing)return;_busy=false;if(isGoogle){stopGoogleAudio();speakIdx(idx);}else if(!SS.speaking&&!SS.pending){SS.cancel();speakIdx(idx);}},ms);
 }
 function clearWatchdog(){if(watchdog){clearTimeout(watchdog);watchdog=null;}}
