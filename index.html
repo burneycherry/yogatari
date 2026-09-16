@@ -433,7 +433,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <span class="sett-label">会話文の速度・ピッチ変更<br><span class="sett-sub" style="font-size:11px">「」内を設定速度-0.1・設定ピッチ+0.2で読む</span></span>
         <button class="sett-btn" id="ssmlDialogueBtn" onclick="toggleSsmlDialogue()">OFF</button>
       </div>
-      <div class="sett-sub" style="margin-top:4px">Chirp3 HD は非対応。5000文字超のセグメントは自動でフォールバック。</div>
+      <div class="sett-sub" style="margin-top:4px">Chirp3 HD は非対応。5000文字超のセグメントは自動でフォールバック。<br>⚠ ONにするとSSMLタグ分の文字数が上乗せされ、TTS使用量カウントが増えます。節約したい場合はOFF推奨。</div>
     </div>
     <div class="sett-section" id="readingDictSection">
       <div class="sett-title">// 読み間違い辞書</div>
