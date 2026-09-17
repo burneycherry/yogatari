@@ -1718,6 +1718,19 @@ async function _checkNewChapterImpl(bk){
     if(!items.length)return;
     var current=items.length;
     if(!isKakuyomuBk){
+      // 目次1ページ目の取得だけでは100話超の作品を過小カウントしてしまうため、
+      // ページネーションの最終ページ番号を調べ、その最終ページも取得して
+      // 正確な総話数を算出する
+      var maxPage=1;
+      (html.match(/[?&]p=(\d+)/g)||[]).forEach(function(pm){var pn=parseInt(pm.replace(/[^\d]/g,''));if(pn>maxPage)maxPage=pn;});
+      if(maxPage>1){
+        try{
+          var lastPageUrl=tocUrl.replace(/\/?$/,'/')+'?p='+maxPage;
+          var lastHtml=await fetchHtml(lastPageUrl);
+          var lastItems=parseSyosetuToc(lastHtml,lastPageUrl);
+          if(lastItems.length>0)current=(maxPage-1)*100+lastItems.length;
+        }catch(_le){}
+      }
       var tm=html.match(/全([\d,]+)部分|全([\d,]+)話|（([\d,]+)話）|([\d,]+)話まで無料/);
       if(tm){var rawNum=(tm[1]||tm[2]||tm[3]||tm[4]||'').replace(/,/g,'');var n=parseInt(rawNum);if(n>current)current=n;}
     }
@@ -1884,7 +1897,7 @@ function updUsageDisplay(){
 }
 function switchTab(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+name).classList.add('active');document.getElementById('panel-'+name).classList.add('active');
-  if(name==='hist')renderHistList();if(name==='sett'){initSettings();updUsageDisplay();updStatsDisplay();}
+  if(name==='hist'){renderHistList();startupNewCheck().catch(()=>{});}if(name==='sett'){initSettings();updUsageDisplay();updStatsDisplay();}
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
