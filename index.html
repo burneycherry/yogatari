@@ -1679,7 +1679,16 @@ function renderHistList(){
       '<button class="hist-del" onclick="event.stopPropagation();delHist(\''+esc(bk.novelId)+'\')">✕</button></div>';
   }).join('');
 }
-async function checkNewChapter(bk){
+const _checkInFlight={};
+function checkNewChapter(bk){
+  // 同じ作品に対して複数箇所(起動時の一括チェック・履歴から再開時等)から
+  // 同時に呼ばれることがあるため、多重実行を防ぐ
+  if(_checkInFlight[bk.novelId])return _checkInFlight[bk.novelId];
+  const p=_checkNewChapterImpl(bk).finally(()=>{delete _checkInFlight[bk.novelId];});
+  _checkInFlight[bk.novelId]=p;
+  return p;
+}
+async function _checkNewChapterImpl(bk){
   const tocUrl=bk.tocUrl||inferTocUrl(bk.chapterUrl);if(!tocUrl)return;
   const isKakuyomuBk=bk.chapterUrl&&bk.chapterUrl.includes('kakuyomu.jp');
   if(!isKakuyomuBk){
@@ -1692,8 +1701,11 @@ async function checkNewChapter(bk){
         var _apiTotal=0;
         try{var _d=JSON.parse(_rawJson);if(_d&&_d[1]&&_d[1].general_all_no)_apiTotal=parseInt(_d[1].general_all_no);}catch(_e){}
         if(_apiTotal>0){
-          _newChapCache[bk.novelId]={total:_apiTotal,checkedAt:Date.now()};
-          bkSetToc(bk.novelId,tocUrl,_apiTotal);
+          // APIの公式値が最も信頼できるため優先するが、既知の値より低い場合は
+          // 一時的な取得ミス等の可能性があるため既知の値を維持する
+          const _finalTotal=Math.max(_apiTotal,bk.totalChap||0);
+          _newChapCache[bk.novelId]={total:_finalTotal,checkedAt:Date.now()};
+          bkSetToc(bk.novelId,tocUrl,_finalTotal);
           renderHistList();
           return;
         }
@@ -1709,8 +1721,12 @@ async function checkNewChapter(bk){
       var tm=html.match(/全([\d,]+)部分|全([\d,]+)話|（([\d,]+)話）|([\d,]+)話まで無料/);
       if(tm){var rawNum=(tm[1]||tm[2]||tm[3]||tm[4]||'').replace(/,/g,'');var n=parseInt(rawNum);if(n>current)current=n;}
     }
-    _newChapCache[bk.novelId]={total:current,checkedAt:Date.now()};
-    bkSetToc(bk.novelId,tocUrl,current);
+    // このフォールバックは目次1ページ分(最大100話)しか見ていないため、
+    // 100話超の作品では既知のtotalChapより小さい値になりうる。過小な値で
+    // 上書きしないよう既知の値との大きい方を採用する
+    const finalCurrent=Math.max(current,bk.totalChap||0);
+    _newChapCache[bk.novelId]={total:finalCurrent,checkedAt:Date.now()};
+    bkSetToc(bk.novelId,tocUrl,finalCurrent);
     renderHistList();
   }catch(e){}
 }
