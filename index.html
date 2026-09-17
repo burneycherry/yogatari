@@ -937,10 +937,21 @@ function parseSyosetuToc(html, baseUrl) {
     num += 1; items.push({ title: a.textContent.trim(), url, num });
   });
   if (!items.length) {
+    // フォールバック: 同一ノベルの "/ncode/数字/" 形式のリンクのみを話として扱う。
+    // 単純に「数字で終わるURL」だけで判定すると、書籍化告知等に含まれる
+    // Amazon/楽天/ヨドバシカメラ等の商品リンク(ISBN等の数字で終わる)まで
+    // 話として誤カウントしてしまうため。
+    let baseHost = null, ncodePrefix = null;
+    try { const bu = new URL(baseUrl); baseHost = bu.hostname; const m = bu.pathname.match(/^\/[^\/]+/); ncodePrefix = m ? m[0] : null; } catch (e) {}
     const seen = new Set();
     doc.querySelectorAll('a[href]').forEach(a => {
-      const href = a.getAttribute('href'); if (!href || !/\/\d+\/?$/.test(href)) return;
+      const href = a.getAttribute('href'); if (!href) return;
       const url = resolveUrl(href, baseUrl); if (!url || seen.has(url)) return;
+      try {
+        const u = new URL(url);
+        if (u.hostname !== baseHost) return;
+        if (!ncodePrefix || !new RegExp('^' + ncodePrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/\\d+/?$').test(u.pathname)) return;
+      } catch (e) { return; }
       seen.add(url); num += 1; items.push({ title: a.textContent.trim() || '第'+num+'話', url, num });
     });
   }
