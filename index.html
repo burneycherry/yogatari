@@ -945,6 +945,41 @@ function parseSyosetuToc(html, baseUrl) {
   }
   return items;
 }
+async function resolveTocPageUrl(bk) {
+  const tocUrl = bk.tocUrl || inferTocUrl(bk.chapterUrl);
+  if (!tocUrl) return bk.chapterUrl || bk.novelId || '';
+  if (!tocUrl.includes('syosetu.com') || !(bk.chapterNum > 100)) return tocUrl;
+  const base = tocUrl.replace(/\/?$/, '/');
+  let page = Math.ceil(bk.chapterNum / 100);
+  const fallback = base + '?p=' + page;
+  const tried = {};
+  for (let i = 0; i < 6; i++) {
+    if (page < 1) page = 1;
+    if (tried[page]) break;
+    tried[page] = true;
+    const pageUrl = base + '?p=' + page;
+    try {
+      const html = await fetchHtml(pageUrl);
+      const items = parseSyosetuToc(html, pageUrl);
+      if (!items.length) break;
+      if (items.some(it => it.url === bk.chapterUrl)) return pageUrl;
+      const firstNum = chapNumFromUrl(items[0].url);
+      const lastNum = chapNumFromUrl(items[items.length - 1].url);
+      if (bk.chapterNum < firstNum) page -= 1;
+      else if (bk.chapterNum > lastNum) page += 1;
+      else return pageUrl;
+    } catch (e) { break; }
+  }
+  return fallback;
+}
+function openHistTocLink(event, novelId) {
+  event.preventDefault(); event.stopPropagation();
+  const bk = bkGet(novelId); if (!bk) return;
+  const win = window.open('', '_blank');
+  if (win) { try { win.document.body.innerHTML = '<p style="font-family:sans-serif;padding:20px;color:#333">目次ページを検索中…</p>'; } catch (e) {} }
+  resolveTocPageUrl(bk).then(url => { if (win && !win.closed) win.location.href = url; })
+    .catch(() => { if (win && !win.closed) win.location.href = bk.tocUrl || inferTocUrl(bk.chapterUrl) || bk.chapterUrl || ''; });
+}
 function parseKakuyomuToc(html, baseUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const items = []; const seen = new Set(); let num = 0;
@@ -1650,7 +1685,7 @@ function renderHistList(){
     const newInfo=_newChapCache[bk.novelId];const diff=newInfo?.diff||(bk.hasNew?bk.newDiff:0)||0;
     const newBadge=diff>0?'<span class="hist-new">NEW +'+diff+'話</span>':'';
     return '<div class="hist-item" id="hi-'+esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_')+'" onclick="resumeFrom(\''+esc(bk.novelId)+'\')">' +
-      '<div class="hist-thumb"><div class="hist-thumb-icon">📖</div><a class="hist-thumb-link" href="'+(function(){var _tu=bk.tocUrl||bk.novelId||bk.chapterUrl||'';if(_tu.includes('syosetu.com')&&bk.chapterNum>100){var _p=Math.ceil(bk.chapterNum/100);return _tu.replace(/\/?$/,'/')+'?p='+_p;}return _tu;})()+'" target="_blank" onclick="event.stopPropagation()" title="目次ページを開く">🔗</a></div>' +
+      '<div class="hist-thumb"><div class="hist-thumb-icon">📖</div><a class="hist-thumb-link" href="'+(function(){var _tu=bk.tocUrl||bk.novelId||bk.chapterUrl||'';if(_tu.includes('syosetu.com')&&bk.chapterNum>100){var _p=Math.ceil(bk.chapterNum/100);return _tu.replace(/\/?$/,'/')+'?p='+_p;}return _tu;})()+'" target="_blank" rel="noopener" onclick="openHistTocLink(event,\''+esc(bk.novelId)+'\')" title="目次ページを開く">🔗</a></div>' +
       '<div class="hist-main"><div class="hist-title">'+esc(bk.novelTitle||bk.chapterTitle)+'</div>' +
       (function(){var ct=bk.chapterTitle||'',nt=bk.novelTitle||'';if(!ct||ct===nt||/^第\d+話?$/.test(ct.trim()))return '';return '<div class="hist-chap-title">'+esc(ct)+'</div>';})() +
       '<div class="hist-meta">'+(newBadge?newBadge+' ':'')+
