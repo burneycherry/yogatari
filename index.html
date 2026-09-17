@@ -211,6 +211,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .filter-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #302618}
 .filter-item:last-child{border-bottom:none}
+#skipFilterList .filter-item:last-child{border-bottom:1px solid #302618}
 .filter-desc{flex:1;min-width:0}
 .filter-label{font-size:13px;color:#ede0c6;margin-bottom:3px}
 .filter-note{font-family:'Courier New',Consolas,monospace;font-size:10px;color:#564838;line-height:1.6}
@@ -427,7 +428,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       </div>
       <div id="skipFilterList"></div>
     </div>
-    <div class="sett-sub" style="font-size:10px;color:#564838;margin:12px 0 6px;border-top:1px solid #302618;padding-top:12px">— カスタムフィルター</div>
+    <div class="sett-sub" style="font-size:10px;color:#564838;margin:12px 0 6px">— カスタムフィルター</div>
     <div class="filter-item" style="border-bottom:none">
       <div class="filter-desc"><div class="filter-label">省略単語</div><div class="filter-note">段落に含まれていたらスキップ（次話読み込みから反映）</div></div>
       <button class="sett-btn" onclick="openCustomWordModal()">管理 →</button>
