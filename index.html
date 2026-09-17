@@ -1584,9 +1584,6 @@ function saveBookmarkCurrent(segIdx){
   const cachedTotal=(_newChapCache[currentNovelId]&&_newChapCache[currentNovelId].total)||0;
   const newTotal=Math.max(currentChapterNum,(prevBk&&prevBk.totalChap)?prevBk.totalChap:0,cachedTotal)||null;
   bkSet(currentNovelId,currentNovelTitle,url,currentChapterTitle,currentChapterNum,segIdx,newTotal);
-  const all=bkLoad();
-  if(all[currentNovelId]&&all[currentNovelId].hasNew){delete all[currentNovelId].hasNew;delete all[currentNovelId].newDiff;bkSave(all);}
-  if(_newChapCache[currentNovelId])delete _newChapCache[currentNovelId];
   renderHistList();
 }
 function startNextCd(){
@@ -1670,7 +1667,8 @@ function renderHistList(){
   if(!items.length){list.innerHTML='<div class="hist-empty">まだ履歴がありません<br>小説を読むと自動で保存されます</div>';return;}
   list.innerHTML=items.map(bk=>{
     const d=new Date(bk.ts);const dateStr=d.getMonth()+1+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
-    const newInfo=_newChapCache[bk.novelId];const diff=newInfo?.diff||(bk.hasNew?bk.newDiff:0)||0;
+    const newInfo=_newChapCache[bk.novelId];const latestTotal=(newInfo&&newInfo.total)||bk.totalChap||0;
+    const diff=Math.max(0,latestTotal-(bk.chapterNum||0));
     const newBadge=diff>0?'<span class="hist-new">NEW +'+diff+'話</span>':'';
     return '<div class="hist-item" id="hi-'+esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_')+'" onclick="resumeFrom(\''+esc(bk.novelId)+'\')">' +
       '<div class="hist-thumb"><div class="hist-thumb-icon">📖</div><a class="hist-thumb-link" href="'+esc(tocHrefFor(bk))+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="目次ページを開く">🔗</a></div>' +
@@ -1694,10 +1692,9 @@ async function checkNewChapter(bk){
         var _apiTotal=0;
         try{var _d=JSON.parse(_rawJson);if(_d&&_d[1]&&_d[1].general_all_no)_apiTotal=parseInt(_d[1].general_all_no);}catch(_e){}
         if(_apiTotal>0){
-          var _saved=bk.totalChap||0;var _diff=Math.max(0,_apiTotal-_saved);
-          _newChapCache[bk.novelId]={total:_apiTotal,diff:_diff,checkedAt:Date.now()};
-          if(!bk.tocUrl)bkSetToc(bk.novelId,tocUrl,_apiTotal);
-          if(_diff>0){var _all=bkLoad();if(_all[bk.novelId]){_all[bk.novelId].hasNew=true;_all[bk.novelId].newDiff=_diff;bkSave(_all);}renderHistList();}
+          _newChapCache[bk.novelId]={total:_apiTotal,checkedAt:Date.now()};
+          bkSetToc(bk.novelId,tocUrl,_apiTotal);
+          renderHistList();
           return;
         }
       }catch(_fe){}
@@ -1712,18 +1709,16 @@ async function checkNewChapter(bk){
       var tm=html.match(/全([\d,]+)部分|全([\d,]+)話|（([\d,]+)話）|([\d,]+)話まで無料/);
       if(tm){var rawNum=(tm[1]||tm[2]||tm[3]||tm[4]||'').replace(/,/g,'');var n=parseInt(rawNum);if(n>current)current=n;}
     }
-    const saved=bk.totalChap||0;const diff=Math.max(0,current-saved);
-    _newChapCache[bk.novelId]={total:current,diff,checkedAt:Date.now()};
-    if(!bk.tocUrl)bkSetToc(bk.novelId,tocUrl,current);
-    if(diff>0){const all=bkLoad();if(all[bk.novelId]){all[bk.novelId].hasNew=true;all[bk.novelId].newDiff=diff;bkSave(all);}renderHistList();}
+    _newChapCache[bk.novelId]={total:current,checkedAt:Date.now()};
+    bkSetToc(bk.novelId,tocUrl,current);
+    renderHistList();
   }catch(e){}
 }
 async function resumeFrom(novelId){
   _navGeneration++;
   _resumeActive=true;
   const bk=bkGet(novelId);if(!bk){_resumeActive=false;toast('しおりが見つかりません');return;}
-  const all=bkLoad();if(all[novelId]){delete all[novelId].hasNew;delete all[novelId].newDiff;bkSave(all);}
-  delete _newChapCache[novelId];switchTab('read');document.getElementById('urlIn').value=bk.novelId;
+  switchTab('read');document.getElementById('urlIn').value=bk.novelId;
   stop();disable(true);showFetch('load','履歴から読み込み中…');
   try{
     const cacheKey=makePageCacheKey(bk.chapterUrl);const cached=sessionStorage.getItem(cacheKey);
