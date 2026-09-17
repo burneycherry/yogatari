@@ -1723,7 +1723,7 @@ async function resumeFrom(novelId){
   try{
     const cacheKey=makePageCacheKey(bk.chapterUrl);const cached=sessionStorage.getItem(cacheKey);
     const isKakuyomu=bk.chapterUrl&&bk.chapterUrl.includes('kakuyomu.jp');
-    if(!cached&&isKakuyomu){hideFetch();disable(false);currentNovelId=novelId;currentNovelTitle=bk.novelTitle||bk.chapterTitle||'';await loadChapterUrl(bk.chapterUrl,bk.segIdx||0,novelId,chapNumFromUrl(bk.chapterUrl)||bk.chapterNum||1,'');_resumeActive=false;return;}
+    if(!cached&&isKakuyomu){hideFetch();disable(false);currentNovelId=novelId;currentNovelTitle=bk.novelTitle||bk.chapterTitle||'';await loadChapterUrl(bk.chapterUrl,bk.segIdx||0,novelId,chapNumFromUrl(bk.chapterUrl)||bk.chapterNum||1,'');_resumeActive=false;checkNewChapter(bk).catch(()=>{});return;}
     let html;
     if(cached){html=cached;showFetch('load','キャッシュから復元中…');}
     else{showFetch('load','ページ取得中… (初回は時間がかかります)');html=await fetchHtml(bk.chapterUrl);safeSessionSet(cacheKey,html);}
@@ -1737,6 +1737,9 @@ async function resumeFrom(novelId){
   }catch(e){showFetch('err',e.message);}
   _resumeActive=false;
   disable(false);
+  // 履歴から再開した作品は、起動時の一括チェック(_resumeActiveで中断されうる)を
+  // 待たずに、読み始めたタイミングで最新話数を確認しNEWバッジに反映する
+  checkNewChapter(bk).catch(()=>{});
 }
 function delHist(novelId){bkDel(novelId);renderHistList();toast('削除しました');}
 function urlHash(str){let h=5381;for(let i=0;i<str.length;i++){h=((h<<5)+h)^str.charCodeAt(i);h=h>>>0;}return h.toString(16).padStart(8,'0');}
