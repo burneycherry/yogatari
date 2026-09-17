@@ -945,40 +945,62 @@ function parseSyosetuToc(html, baseUrl) {
   }
   return items;
 }
+function normChapterUrl(u) { try { return u.replace(/^https?:/, '').replace(/\/$/, ''); } catch (e) { return u; } }
 async function resolveTocPageUrl(bk) {
   const tocUrl = bk.tocUrl || inferTocUrl(bk.chapterUrl);
-  if (!tocUrl) return bk.chapterUrl || bk.novelId || '';
-  if (!tocUrl.includes('syosetu.com') || !(bk.chapterNum > 100)) return tocUrl;
+  if (!tocUrl) return { url: bk.chapterUrl || bk.novelId || '', exact: false };
+  if (!tocUrl.includes('syosetu.com') || !(bk.chapterNum > 100)) return { url: tocUrl, exact: false };
   const base = tocUrl.replace(/\/?$/, '/');
-  let page = Math.ceil(bk.chapterNum / 100);
-  const fallback = base + '?p=' + page;
+  const targetNorm = normChapterUrl(bk.chapterUrl || '');
   const tried = {};
-  for (let i = 0; i < 6; i++) {
-    if (page < 1) page = 1;
-    if (tried[page]) break;
+  const fetchPage = async page => {
+    if (page < 1 || tried[page]) return null;
     tried[page] = true;
     const pageUrl = base + '?p=' + page;
     try {
       const html = await fetchHtml(pageUrl);
       const items = parseSyosetuToc(html, pageUrl);
-      if (!items.length) break;
-      if (items.some(it => it.url === bk.chapterUrl)) return pageUrl;
-      const firstNum = chapNumFromUrl(items[0].url);
-      const lastNum = chapNumFromUrl(items[items.length - 1].url);
-      if (bk.chapterNum < firstNum) page -= 1;
-      else if (bk.chapterNum > lastNum) page += 1;
-      else return pageUrl;
-    } catch (e) { break; }
+      return items.length ? { pageUrl, items } : null;
+    } catch (e) { return null; }
+  };
+  const isExact = items => items.some(it => normChapterUrl(it.url) === targetNorm);
+  // Step 1: 生番号(URL連番)/100の推測ページから、前後に歩いて実際の掲載範囲に絞り込む
+  // (作品が長期連載で削除・統合等により生番号とTOC掲載順がズレている場合の補正)
+  let page = Math.ceil(bk.chapterNum / 100);
+  let lastGood = null;
+  for (let i = 0; i < 6; i++) {
+    const res = await fetchPage(page);
+    if (!res) break;
+    lastGood = res;
+    if (isExact(res.items)) return { url: res.pageUrl, exact: true };
+    const firstNum = chapNumFromUrl(res.items[0].url);
+    const lastNum = chapNumFromUrl(res.items[res.items.length - 1].url);
+    if (bk.chapterNum < firstNum) page -= 1;
+    else if (bk.chapterNum > lastNum) page += 1;
+    else break;
   }
-  return fallback;
+  // Step 2: 挿入された番外編・短編等で生番号の順序が前後することがあるため、
+  // 絞り込めたページの周辺を左右に広げながら厳密一致を探す
+  const centerMatch = lastGood && lastGood.pageUrl.match(/[?&]p=(\d+)/);
+  const center = centerMatch ? parseInt(centerMatch[1]) : page;
+  for (let r = 1; r <= 5; r++) {
+    for (const p of [center - r, center + r]) {
+      const res = await fetchPage(p);
+      if (res && isExact(res.items)) return { url: res.pageUrl, exact: true };
+    }
+  }
+  const fallbackUrl = (lastGood && lastGood.pageUrl) || (base + '?p=' + Math.ceil(bk.chapterNum / 100));
+  return { url: fallbackUrl, exact: false };
 }
 function openHistTocLink(event, novelId) {
   event.preventDefault(); event.stopPropagation();
   const bk = bkGet(novelId); if (!bk) return;
   const win = window.open('', '_blank');
   if (win) { try { win.document.body.innerHTML = '<p style="font-family:sans-serif;padding:20px;color:#333">目次ページを検索中…</p>'; } catch (e) {} }
-  resolveTocPageUrl(bk).then(url => { if (win && !win.closed) win.location.href = url; })
-    .catch(() => { if (win && !win.closed) win.location.href = bk.tocUrl || inferTocUrl(bk.chapterUrl) || bk.chapterUrl || ''; });
+  resolveTocPageUrl(bk).then(result => {
+    if (win && !win.closed) win.location.href = result.url;
+    if (!result.exact) toast('正確な話のページが見つからず、近いページを開きました');
+  }).catch(() => { if (win && !win.closed) win.location.href = bk.tocUrl || inferTocUrl(bk.chapterUrl) || bk.chapterUrl || ''; });
 }
 function parseKakuyomuToc(html, baseUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
