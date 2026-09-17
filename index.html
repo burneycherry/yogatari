@@ -784,7 +784,8 @@ function bkSet(novelId, novelTitle, chapterUrl, chapterTitle, chapterNum, segIdx
 function bkSetToc(novelId, tocUrl, totalChap) {
   const all = bkLoad();
   if (!all[novelId]) return;
-  all[novelId].tocUrl = tocUrl;
+  // ページ番号付きURL(?p=13等)がそのまま渡された場合に備え、素のTOC URLとして保存する
+  all[novelId].tocUrl = (tocUrl || '').split('?')[0].split('#')[0];
   if (totalChap) all[novelId].totalChap = totalChap;
   bkSave(all);
 }
@@ -947,8 +948,12 @@ function parseSyosetuToc(html, baseUrl) {
 }
 function normChapterUrl(u) { try { return u.replace(/^https?:/, '').replace(/\/$/, ''); } catch (e) { return u; } }
 async function resolveTocPageUrl(bk) {
-  const tocUrl = bk.tocUrl || inferTocUrl(bk.chapterUrl);
-  if (!tocUrl) return { url: bk.chapterUrl || bk.novelId || '', exact: false };
+  // bk.tocUrl は目次ページを直接読み込んだ場合、入力URLがそのまま(?p=13等の
+  // ページ番号付きで)保存されていることがあるため、章URLから素のTOC URLを
+  // 再導出できる場合はそちらを優先し、クエリ文字列は常に除去する
+  const tocUrlRaw = inferTocUrl(bk.chapterUrl) || bk.tocUrl;
+  if (!tocUrlRaw) return { url: bk.chapterUrl || bk.novelId || '', exact: false };
+  const tocUrl = tocUrlRaw.split('?')[0].split('#')[0];
   if (!tocUrl.includes('syosetu.com') || !(bk.chapterNum > 100)) return { url: tocUrl, exact: false };
   const base = tocUrl.replace(/\/?$/, '/');
   const targetNorm = normChapterUrl(bk.chapterUrl || '');
@@ -1707,7 +1712,7 @@ function renderHistList(){
     const newInfo=_newChapCache[bk.novelId];const diff=newInfo?.diff||(bk.hasNew?bk.newDiff:0)||0;
     const newBadge=diff>0?'<span class="hist-new">NEW +'+diff+'話</span>':'';
     return '<div class="hist-item" id="hi-'+esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_')+'" onclick="resumeFrom(\''+esc(bk.novelId)+'\')">' +
-      '<div class="hist-thumb"><div class="hist-thumb-icon">📖</div><a class="hist-thumb-link" href="'+(function(){var _tu=bk.tocUrl||bk.novelId||bk.chapterUrl||'';if(_tu.includes('syosetu.com')&&bk.chapterNum>100){var _p=Math.ceil(bk.chapterNum/100);return _tu.replace(/\/?$/,'/')+'?p='+_p;}return _tu;})()+'" target="_blank" rel="noopener" onclick="openHistTocLink(event,\''+esc(bk.novelId)+'\')" title="目次ページを開く">🔗</a></div>' +
+      '<div class="hist-thumb"><div class="hist-thumb-icon">📖</div><a class="hist-thumb-link" href="'+(function(){var _tu=(inferTocUrl(bk.chapterUrl)||bk.tocUrl||bk.novelId||bk.chapterUrl||'').split('?')[0].split('#')[0];if(_tu.includes('syosetu.com')&&bk.chapterNum>100){var _p=Math.ceil(bk.chapterNum/100);return _tu.replace(/\/?$/,'/')+'?p='+_p;}return _tu;})()+'" target="_blank" rel="noopener" onclick="openHistTocLink(event,\''+esc(bk.novelId)+'\')" title="目次ページを開く">🔗</a></div>' +
       '<div class="hist-main"><div class="hist-title">'+esc(bk.novelTitle||bk.chapterTitle)+'</div>' +
       (function(){var ct=bk.chapterTitle||'',nt=bk.novelTitle||'';if(!ct||ct===nt||/^第\d+話?$/.test(ct.trim()))return '';return '<div class="hist-chap-title">'+esc(ct)+'</div>';})() +
       '<div class="hist-meta">'+(newBadge?newBadge+' ':'')+
