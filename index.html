@@ -499,11 +499,11 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
     </div>
   </div>
   <div class="btn-row">
-    <button class="cb cb-nxt" id="bPrev2" onclick="goPrev()" disabled>←前話</button>
+    <button class="cb cb-nxt" id="bPrev2" onclick="goPrev(false)" disabled>←前話</button>
     <button class="cb" id="bPrev" onclick="prevSeg()" disabled>⏮</button>
     <button class="cb cb-play" id="bPlay" onclick="togglePlay()" disabled>▶</button>
     <button class="cb" id="bFwd"  onclick="nextSeg()" disabled>⏭</button>
-    <button class="cb cb-nxt" id="bNext" onclick="goNext()" disabled>次話→</button>
+    <button class="cb cb-nxt" id="bNext" onclick="goNext(false)" disabled>次話→</button>
   </div>
 </div>
 <div class="cfm-overlay" id="cfmOverlay">
@@ -692,8 +692,8 @@ function msRegisterHandlers() {
   try {
     navigator.mediaSession.setActionHandler('play', () => { if (!playing && segs.length) startPlay(); });
     navigator.mediaSession.setActionHandler('pause', () => { if (playing) togglePlay(); });
-    navigator.mediaSession.setActionHandler('previoustrack', () => { if (prevUrl) goPrev(); else prevSeg(); });
-    navigator.mediaSession.setActionHandler('nexttrack', () => { if (nextUrl) goNext(); else nextSeg(); });
+    navigator.mediaSession.setActionHandler('previoustrack', () => { if (prevUrl) goPrev(false); else prevSeg(); });
+    navigator.mediaSession.setActionHandler('nexttrack', () => { if (nextUrl) goNext(false); else nextSeg(); });
     navigator.mediaSession.setActionHandler('seekbackward', (d) => { skipSec(-(d?.seekOffset || 10)); });
     navigator.mediaSession.setActionHandler('seekforward', (d) => { skipSec(d?.seekOffset || 10); });
   } catch(e) {}
@@ -1594,7 +1594,7 @@ function startNextCd(){
   nextTimer=setInterval(()=>{nextCount -= 1;document.getElementById('nextCd').textContent=nextCount;if(nextCount<=0){cancelNext();goNext();}},1000);
 }
 function cancelNext(){if(nextTimer){clearInterval(nextTimer);nextTimer=null;}document.getElementById('nextNotice').classList.remove('show');}
-async function goPrev(){
+async function goPrev(autoPlay=true){
   if(!prevUrl){toast('前の話はありません');return;}
   const url=prevUrl;document.getElementById('urlIn').value=url;
   stopForChapterTransition();disable(true);showFetch('load','前の話を取得中…');
@@ -1606,12 +1606,12 @@ async function goPrev(){
     currentChapterNum=chapNumFromUrl(url)||(currentChapterNum>1?currentChapterNum-1:1);
     displayPage(page,url,0,null);hideFetch();
     if(_actx&&_actx.state==='suspended')await _actx.resume().catch(()=>{});
-    await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing)startPlay();
+    await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){showFetch('err',e.message);}
   disable(false);
 }
-async function goNext(){if(_goNextRunning)return;_goNextRunning=true;try{await _goNextImpl();}finally{_goNextRunning=false;}}
-async function _goNextImpl(){
+async function goNext(autoPlay=true){if(_goNextRunning)return;_goNextRunning=true;try{await _goNextImpl(autoPlay);}finally{_goNextRunning=false;}}
+async function _goNextImpl(autoPlay=true){
   const myGen=_navGeneration;
   if(!nextUrl&&currentChapterUrl&&currentChapterUrl.includes('kakuyomu.jp')){
     if(_nextHtmlCache&&_nextHtmlCache.url){nextUrl=_nextHtmlCache.url;document.getElementById('bNext').disabled=false;}
@@ -1640,7 +1640,7 @@ async function _goNextImpl(){
     if(_nextAudioCache.length>0&&hasGoogleKey()){clearPrefetchCache();_nextAudioCache.forEach(({idx:k,promise})=>_prefetchCache.set(k,promise));_nextAudioCache=[];}
     const prevUrlForNext=currentChapterUrl;recordEpisode();displayPage(page,url,0,prevUrlForNext);hideFetch();
     if(_actx&&_actx.state==='suspended')await _actx.resume().catch(()=>{});
-    await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing)startPlay();
+    await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){
     const msg=e.message||'';
     const isTrulyFinal=msg.includes('最終話の可能性');
