@@ -1467,8 +1467,8 @@ function speakIdx(i){
   } else {
     stopGoogleAudio();const utt=new SpeechSynthesisUtterance(applyReadingDict(segs[i]));if(selVoice)utt.voice=selVoice;
     utt.rate=getRate();utt.volume=1.0;utt.pitch=getPitch();utt.lang='ja-JP';
-    utt.onstart=()=>startWatchdog(getRate(),false);
-    utt.onend=()=>{clearWatchdog();if(playing)speakIdx(idx+1);};
+    utt.onstart=()=>{startWatchdog(getRate(),false);keepAudioSessionAlive();};
+    utt.onend=()=>{clearWatchdog();if(playing){keepAudioSessionAlive();speakIdx(idx+1);}};
     utt.onerror=(e)=>{clearWatchdog();if(e.error==='interrupted'||e.error==='canceled')return;if(playing)setTimeout(()=>speakIdx(idx),500);};
     SS.speak(utt);
   }
