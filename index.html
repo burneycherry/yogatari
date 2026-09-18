@@ -653,18 +653,31 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 <div class="usage-warn-bar" id="usageWarnBar"></div>
 <script>
 const APP_VER = 'v170';
-let _actx = null, _silentOn = false;
+const BG_RELOAD_KEY = 'yogatari_pending_bg_reload';
+let _actx = null, _silentOn = false, _bgSessionBroken = false;
 function resumeAudioContext() {
   // iOS Safari sets state to 'interrupted' (distinct from 'suspended') after a phone call,
   // Siri, or another app's audio interrupts this page's audio session.
   if (_actx && (_actx.state === 'suspended' || _actx.state === 'interrupted')) return _actx.resume().catch(() => {});
   return Promise.resolve();
 }
+// Once iOS revokes this page's background-audio session (detected via AudioContext
+// 'interrupted' or repeated Google TTS play() failures), only a fresh page load
+// (not just resume()) re-establishes it. Stop cleanly here; the next ▶ press
+// reloads the page instead of just calling startPlay() (see togglePlay()).
+function markBgSessionBroken() {
+  if (_bgSessionBroken) return;
+  _bgSessionBroken = true;
+  if (playing) {
+    if (currentNovelId && segs.length) saveBookmarkCurrent(idx);
+    stop();
+  }
+}
 function startSilentAudio() {
   if (!_actx) {
     try {
       _actx = new (window.AudioContext || window.webkitAudioContext)();
-      _actx.onstatechange = () => resumeAudioContext();
+      _actx.onstatechange = () => { resumeAudioContext(); if (_actx.state === 'interrupted') markBgSessionBroken(); };
     } catch(e) {}
   }
   if (_silentOn) return;
@@ -1330,7 +1343,8 @@ function renderText() {
 function esc(t){return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 let _gApiKey=localStorage.getItem('yogatari_gkey')||'';
 let _gVoice=localStorage.getItem('yogatari_gvoice')||'ja-JP-Wavenet-A';
-let _gAudio=null, _busy=false, _audioUnlocked=false;
+let _gAudio=null, _busy=false, _audioUnlocked=false, _playFailCount=0;
+const PLAY_FAIL_LIMIT=3;
 function getAudioEl(){if(!_gAudio)_gAudio=document.getElementById('gAudioEl');return _gAudio;}
 function unlockAudio(){
   if(_audioUnlocked)return;
@@ -1461,8 +1475,13 @@ function speakIdx(i){
       el.onended=()=>{if(el.duration>0.3&&segs[idx]&&segs[idx].length>3){const segCpm=segs[idx].length/el.duration*60;_liveCpm=_liveCpm>0?_liveCpm*0.7+segCpm*0.3:segCpm;}clearWatchdog();if(playing){msSetState('playing');keepAudioSessionAlive();speakIdx(idx+1);}};
       el.onerror=()=>{clearWatchdog();_busy=false;_prefetchCache.delete(i);if(playing)setTimeout(()=>speakIdx(idx),800);};
       el.src=audioSrc;
-      el.play().catch(e=>{console.warn('play() failed:',e.name,e.message);clearWatchdog();_busy=false;_prefetchCache.delete(i);if(playing)setTimeout(()=>speakIdx(idx),600);});
-      el.onplay=()=>{msSetState('playing');};
+      el.play().catch(e=>{
+        console.warn('play() failed:',e.name,e.message);clearWatchdog();_busy=false;_prefetchCache.delete(i);
+        _playFailCount += 1;
+        if(_playFailCount>=PLAY_FAIL_LIMIT){markBgSessionBroken();return;}
+        if(playing)setTimeout(()=>speakIdx(idx),600);
+      });
+      el.onplay=()=>{_playFailCount=0;msSetState('playing');};
       startWatchdog(getRate(),true);prefetchNext(i);
     }).catch(e=>{
       _busy=false;_prefetchCache.delete(i);if(!playing)return;
@@ -1496,6 +1515,7 @@ function startPlay(){
 function togglePlay(){
   if(!segs.length)return;
   if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudioFull();updBtn();setBadge(false);msSetState('paused');}
+  else if(_bgSessionBroken&&currentNovelId){try{sessionStorage.setItem(BG_RELOAD_KEY,currentNovelId);}catch(e){}location.reload();}
   else startPlay();
 }
 function stop(){
@@ -1782,6 +1802,15 @@ async function resumeFrom(novelId){
   // 待たずに、読み始めたタイミングで最新話数を確認しNEWバッジに反映する
   checkNewChapter(bk).catch(()=>{});
 }
+// バックグラウンド音声セッションが壊れた後、再生ボタン押下でリロードした場合の自動復帰。
+// リロード直前の▶タップをユーザーの再生意思とみなし、本文復元後に自動で再生を開始する
+// (自動再生禁止ルールの例外ではなく、直前のユーザー操作起点の継続として扱う)。
+(function resumeAfterBgReload(){
+  let novelId;
+  try { novelId = sessionStorage.getItem(BG_RELOAD_KEY); sessionStorage.removeItem(BG_RELOAD_KEY); } catch(e) {}
+  if (!novelId) return;
+  resumeFrom(novelId).then(() => { if (segs.length) startPlay(); });
+})();
 function delHist(novelId){bkDel(novelId);renderHistList();toast('削除しました');}
 function urlHash(str){let h=5381;for(let i=0;i<str.length;i++){h=((h<<5)+h)^str.charCodeAt(i);h=h>>>0;}return h.toString(16).padStart(8,'0');}
 function makePageCacheKey(url){return SS_PAGE_CACHE_PREFIX+urlHash(url)+'_'+urlHash(url.split('').reverse().join(''));}
