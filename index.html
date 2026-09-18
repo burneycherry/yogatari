@@ -654,9 +654,18 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 <script>
 const APP_VER = 'v170';
 let _actx = null, _silentOn = false;
+function resumeAudioContext() {
+  // iOS Safari sets state to 'interrupted' (distinct from 'suspended') after a phone call,
+  // Siri, or another app's audio interrupts this page's audio session.
+  if (_actx && (_actx.state === 'suspended' || _actx.state === 'interrupted')) return _actx.resume().catch(() => {});
+  return Promise.resolve();
+}
 function startSilentAudio() {
   if (!_actx) {
-    try { _actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+    try {
+      _actx = new (window.AudioContext || window.webkitAudioContext)();
+      _actx.onstatechange = () => resumeAudioContext();
+    } catch(e) {}
   }
   if (_silentOn) return;
   try {
@@ -1467,8 +1476,8 @@ function speakIdx(i){
   } else {
     stopGoogleAudio();const utt=new SpeechSynthesisUtterance(applyReadingDict(segs[i]));if(selVoice)utt.voice=selVoice;
     utt.rate=getRate();utt.volume=1.0;utt.pitch=getPitch();utt.lang='ja-JP';
-    utt.onstart=()=>{startWatchdog(getRate(),false);keepAudioSessionAlive();};
-    utt.onend=()=>{clearWatchdog();if(playing){keepAudioSessionAlive();speakIdx(idx+1);}};
+    utt.onstart=()=>startWatchdog(getRate(),false);
+    utt.onend=()=>{clearWatchdog();if(playing)speakIdx(idx+1);};
     utt.onerror=(e)=>{clearWatchdog();if(e.error==='interrupted'||e.error==='canceled')return;if(playing)setTimeout(()=>speakIdx(idx),500);};
     SS.speak(utt);
   }
@@ -1482,7 +1491,7 @@ function startWatchdog(rate,isGoogle=false){
 }
 function clearWatchdog(){if(watchdog){clearTimeout(watchdog);watchdog=null;}}
 function startPlay(){
-  if(playing)return;unlockAudio();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(hasGoogleKey()&&!isOverLimit())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
+  if(playing)return;unlockAudio();resumeAudioContext();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(hasGoogleKey()&&!isOverLimit())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
 }
 function togglePlay(){
   if(!segs.length)return;
@@ -1605,7 +1614,7 @@ async function goPrev(autoPlay=true){
     if(queue[qi])queue[qi].title=page.title;currentChapterTitle=page.title;
     currentChapterNum=chapNumFromUrl(url)||(currentChapterNum>1?currentChapterNum-1:1);
     displayPage(page,url,0,null);hideFetch();
-    if(_actx&&_actx.state==='suspended')await _actx.resume().catch(()=>{});
+    await resumeAudioContext();
     await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){showFetch('err',e.message);}
   disable(false);
@@ -1639,7 +1648,7 @@ async function _goNextImpl(autoPlay=true){
     currentChapterNum=chapNumFromUrl(url)||(nextTitleNum?parseInt(nextTitleNum[1]):0)||(currentChapterNum>0?currentChapterNum+1:1);
     if(_nextAudioCache.length>0&&hasGoogleKey()){clearPrefetchCache();_nextAudioCache.forEach(({idx:k,promise})=>_prefetchCache.set(k,promise));_nextAudioCache=[];}
     const prevUrlForNext=currentChapterUrl;recordEpisode();displayPage(page,url,0,prevUrlForNext);hideFetch();
-    if(_actx&&_actx.state==='suspended')await _actx.resume().catch(()=>{});
+    await resumeAudioContext();
     await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){
     const msg=e.message||'';
@@ -1905,11 +1914,11 @@ function switchTab(name){
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
     if(playing&&!_busy){if(hasGoogleKey()){const _ael=getAudioEl();if(!_ael||_ael.paused||_ael.ended){stopGoogleAudio();_busy=false;setTimeout(()=>speakIdx(idx),400);}}else if(!SS.speaking&&!SS.pending){SS.cancel();setTimeout(()=>speakIdx(idx),300);}}
-    if(_actx&&_actx.state==='suspended')_actx.resume().catch(()=>{});
+    resumeAudioContext();
   }
 });
 document.addEventListener('touchstart',(e)=>{
-  if(_actx&&_actx.state==='suspended')_actx.resume().catch(()=>{});
+  resumeAudioContext();
   const tag=e.target?.tagName||'';const cl=e.target?.className||'';
   const skip=['BUTTON','INPUT','SELECT','A','LABEL'].includes(tag)||cl.includes('cb')||cl.includes('tab')||cl.includes('seg')||cl.includes('step')||cl.includes('chip')||cl.includes('howto')||e.target?.closest?.('button, input, select, a, .cb, .tab, .stepper, .q-chip');
   if(skip)return;if(!playing)return;
