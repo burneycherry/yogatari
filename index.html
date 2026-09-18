@@ -1936,9 +1936,15 @@ function updUsageDisplay(){
   var resetBtn='<button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>';
   wrap.innerHTML=html2+resetBtn;
 }
+let _curTab='read';
+const _tabScroll={read:0,hist:0,sett:0};
 function switchTab(name){
+  const area=document.querySelector('.scroll-area');
+  if(area)_tabScroll[_curTab]=area.scrollTop;
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.getElementById('tab-'+name).classList.add('active');document.getElementById('panel-'+name).classList.add('active');
+  _curTab=name;
   if(name==='hist')renderHistList();if(name==='sett'){initSettings();updUsageDisplay();updStatsDisplay();}
+  if(area)area.scrollTop=_tabScroll[name]||0;
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
