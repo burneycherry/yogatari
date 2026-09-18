@@ -1716,7 +1716,7 @@ async function _goNextImpl(autoPlay=true){
     await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){
     const msg=e.message||'';
-    const isTrulyFinal=msg.includes('最終話の可能性');
+    const isTrulyFinal=msg.includes('最終話の可能性')||msg.includes('HTTP 404');
     const isNetErr=msg.includes('取得失敗')||msg.includes('HTTP')||msg.includes('Load failed')||msg.includes('全プロキシ');
     if(isTrulyFinal){nextUrl=null;clearNextChapterCache();document.getElementById('bNext').disabled=true;showFetch('err','📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');}
     else if(isNetErr){clearNextChapterCache();showFetch('err','⚠ ページ取得に失敗しました。「次話→」で再試行できます');document.getElementById('bNext').disabled=!nextUrl;}
