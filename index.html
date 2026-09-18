@@ -935,14 +935,15 @@ async function fetchHtml(url) {
   });
 }
 const SITE_RULES = [
-  { host:'ncode.syosetu.com',   body:'#novel_honbun', next:'.novel_bn a:last-of-type', toc:'#novel_color', tocItem:'.novel_sublist2 a, dd a' },
-  { host:'novel18.syosetu.com', body:'#novel_honbun', next:'.novel_bn a:last-of-type' },
-  { host:'kakuyomu.jp',         body:'.p-novel__body,.widget-episodeBody,.js-episode-body', next:'a.widget-episodeNavigation-button-next,a[rel="next"]' },
-  { host:'alphapolis.co.jp',    body:'.content-text,.novel_text', next:'a.next,a[href*="next"]' },
-  { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0', next:'' },
-  { host:'estar.jp',            body:'#novel-content,.novel-content', next:'.pager-next a' },
+  { host:'ncode.syosetu.com',   body:'#novel_honbun', next:'.novel_bn a:last-of-type', prev:'.novel_bn a:first-of-type', toc:'#novel_color', tocItem:'.novel_sublist2 a, dd a' },
+  { host:'novel18.syosetu.com', body:'#novel_honbun', next:'.novel_bn a:last-of-type', prev:'.novel_bn a:first-of-type' },
+  { host:'kakuyomu.jp',         body:'.p-novel__body,.widget-episodeBody,.js-episode-body', next:'a.widget-episodeNavigation-button-next,a[rel="next"]', prev:'a.widget-episodeNavigation-button-prev,a[rel="prev"]' },
+  { host:'alphapolis.co.jp',    body:'.content-text,.novel_text', next:'a.next,a[href*="next"]', prev:'a.prev,a[href*="prev"]' },
+  { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0', next:'', prev:'' },
+  { host:'estar.jp',            body:'#novel-content,.novel-content', next:'.pager-next a', prev:'.pager-prev a' },
 ];
 const NEXT_TEXTS = ['次の話','次話','次章','次のページ','次へ','次話へ','次のエピソード','次のページへ','>>','→','next','次回'];
+const PREV_TEXTS = ['前の話','前話','前章','前のページ','前へ','前話へ','前のエピソード','前のページへ','<<','←','prev','前回'];
 function getRule(url) { const host = new URL(url).hostname.replace('www.',''); return SITE_RULES.find(r => host.includes(r.host.replace('www.',''))) || null; }
 function isIndexUrl(url) {
   try {
@@ -1082,6 +1083,46 @@ function extractPage(html, pageUrl) {
       }
     } catch(e) {}
   }
+  let prevPageUrl = null;
+  if (rule && rule.prev) { const a = doc.querySelector(rule.prev); if (a) prevPageUrl = resolveUrl(a.getAttribute('href'), pageUrl); }
+  if (prevPageUrl && prevPageUrl === nextPageUrl) prevPageUrl = null; // e.g. chapter 1 has only one nav link, which is "next"
+  if (!prevPageUrl && !phost.includes('kakuyomu.jp')) {
+    for (const a of doc.querySelectorAll('a')) {
+      const t = (a.textContent||'').trim();
+      if (PREV_TEXTS.some(p=>t.includes(p))) {
+        const href = a.getAttribute('href');
+        if (href && !href.startsWith('javascript') && !href.startsWith('#')) {
+          const r = resolveUrl(href, pageUrl);
+          if (r && r !== pageUrl && r !== nextPageUrl) { if (phost.includes('kakuyomu.jp')) { const wm = pageUrl.match(/\/works\/([^/]+)\//); if (wm && !r.includes('/works/' + wm[1] + '/')) continue; } prevPageUrl = r; break; }
+        }
+      }
+    }
+  }
+  if (!prevPageUrl) {
+    const rp = doc.querySelector('link[rel="prev"],a[rel="prev"]');
+    if (rp) {
+      const rpUrl = resolveUrl(rp.getAttribute('href'), pageUrl);
+      if (rpUrl && rpUrl !== nextPageUrl) {
+        if (phost.includes('kakuyomu.jp')) { const wmR = pageUrl.match(/\/works\/([^/]+)\//); if (wmR && rpUrl.includes('/works/'+wmR[1]+'/episodes/') && rpUrl!==pageUrl) prevPageUrl=rpUrl; }
+        else { prevPageUrl=rpUrl; }
+      }
+    }
+  }
+  if (!prevPageUrl && phost.includes('syosetu.com')) { const m = pageUrl.match(/^(https?:\/\/[^/]+\/[^/]+\/)(\d+)\/?$/); if (m) { const n = parseInt(m[2]); if (n > 1) prevPageUrl = m[1] + (n-1) + '/'; } }
+  if (!prevPageUrl && phost.includes('kakuyomu.jp') && pageUrl.includes('/episodes/')) {
+    try {
+      const nd = doc.querySelector('script#__NEXT_DATA__');
+      if (nd) {
+        const json = JSON.parse(nd.textContent);
+        const prevEp = findInObj(json, 'previousEpisode') || findInObj(json, 'previousEpisodeId');
+        if (prevEp) {
+          const wm = pageUrl.match(/\/works\/([^/]+)\//);
+          const epId = (typeof prevEp === 'object') ? (prevEp.id || prevEp.slug || prevEp.__id || prevEp.episodeId || null) : String(prevEp);
+          if (wm && epId && epId.length > 5) prevPageUrl = 'https://kakuyomu.jp/works/' + wm[1] + '/episodes/' + epId;
+        }
+      }
+    } catch(e) {}
+  }
   var novelTitle = null, preChapTitle = null;
   try {
     var ph2 = new URL(pageUrl).hostname.replace('www.','');
@@ -1116,7 +1157,7 @@ function extractPage(html, pageUrl) {
   if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) throw new Error('本文を取得できませんでした（最終話の可能性があります）');
   if (/Enable JavaScript and cookies to continue|Just a moment|Cloudflare Ray ID/i.test(rawText)) throw new Error('このページはCloudflare保護により取得できませんでした。ハーメルン等は直接アクセスが必要な場合があります。');
   if (!rawText || rawText.length < 30) throw new Error('本文を取得できませんでした。URLを確認してください。');
-  return { title, novelTitle, text: rawText, nextUrl: nextPageUrl };
+  return { title, novelTitle, text: rawText, nextUrl: nextPageUrl, prevUrl: prevPageUrl };
 }
 function extractTitle(doc, pageUrl, preChapTitle) {
   try {
@@ -1234,7 +1275,7 @@ async function resumeBookmark() {
   await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId, chapNum, bk.novelTitle || '');
 }
 function displayPage(page, url, startSeg = 0, prevUrlHint) {
-  if (prevUrlHint !== undefined) prevUrl = prevUrlHint; else prevUrl = currentChapterUrl || null;
+  prevUrl = prevUrlHint || page.prevUrl || currentChapterUrl || null;
   currentChapterUrl = url;
   nextUrl = page.nextUrl || null;
   document.getElementById('chapTitle').textContent = page.title || url;
