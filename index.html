@@ -1275,7 +1275,10 @@ async function resumeBookmark() {
   await loadChapterUrl(bk.chapterUrl, bk.segIdx || 0, novelId, chapNum, bk.novelTitle || '');
 }
 function displayPage(page, url, startSeg = 0, prevUrlHint) {
-  prevUrl = prevUrlHint || page.prevUrl || currentChapterUrl || null;
+  // currentChapterUrl is intentionally NOT used as a fallback here: it may belong to a
+  // different novel (e.g. just loaded a fresh URL after reading something else), which
+  // would send "前話" to the wrong novel's chapter.
+  prevUrl = prevUrlHint || page.prevUrl || null;
   currentChapterUrl = url;
   nextUrl = page.nextUrl || null;
   document.getElementById('chapTitle').textContent = page.title || url;
