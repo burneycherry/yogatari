@@ -110,7 +110,7 @@
 #### その他の実測事項
 
 - Android Chrome では `SILENT_MP3` のデータURIがデコードできず、無音ループが再生されない（`MEDIA_ERR_SRC_NOT_SUPPORTED`）。`keepAudioSessionAlive()` はAndroidでは実質無効
-- Google TTSモードのAndroidでの挙動は未測定
+- **`volume` はiOSでは読み取り専用で無視されるが、Androidでは有効**。`unlockAudio()` が解除用の無音再生のために `volume=0` にする箇所があり、この復帰処理を成功時のみに書くとAndroidで全編無音になる。`startPlay()` は `unlockAudio()` の直後に `stopGoogleAudioFull()` を呼ぶため、解除用の `play()` は必ず中断され `AbortError` で終わる。iOSでは `volume` が無視されるためこの不具合は表面化しない
 
 ### テキスト処理
 

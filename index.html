@@ -1469,7 +1469,11 @@ function unlockAudio(){
   const el=getAudioEl();if(!el)return;
   el.src='data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjMyLjEwNAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSjATHQAAAN6AAAALMef+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
   el.volume=0;
-  el.play().then(()=>{_audioUnlocked=true;el.pause();el.src='';el.volume=1;const hint=document.getElementById('iosHint');if(hint)hint.classList.add('hidden');}).catch(()=>{});
+  // startPlay() calls stopGoogleAudioFull() right after this, which aborts the probe and
+  // rejects its promise. Restoring the volume only on success therefore left the element
+  // muted for the real playback — inaudible on Android, hidden on iOS where volume is
+  // read-only. Always unmute, whichever way the promise settles.
+  el.play().then(()=>{_audioUnlocked=true;el.pause();el.src='';const hint=document.getElementById('iosHint');if(hint)hint.classList.add('hidden');}).catch(()=>{}).finally(()=>{el.volume=1;});
 }
 const _prefetchCache=new Map();
 let _nextHtmlCache=null, _nextPageCache=null, _prefetchGeneration=0;
