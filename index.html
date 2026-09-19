@@ -924,6 +924,10 @@ const SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4L
 function keepAudioSessionAlive() {
   if (!playing) return;
   startSilentAudio();
+  // Where SILENT_MP3 cannot be decoded, bridging the segment gap with it would hand the
+  // main element an unplayable source at every transition — which is exactly where Android
+  // drops background playback. Leave the element alone and let the next segment load.
+  if (_silentUnsupported) return;
   try { const el = getAudioEl(); if (el && el.paused) { el.src = SILENT_MP3; el.play().catch(() => {}); } } catch(e) {}
 }
 let queue=[], qi=0;
