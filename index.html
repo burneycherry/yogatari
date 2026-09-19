@@ -23,6 +23,8 @@ body{height:100%;overflow:hidden;background:#000000;color:#ede0c6;font-family:'H
 .badge.on{color:#e8be50;border-color:rgba(200,153,30,0.4);background:rgba(200,153,30,0.1);box-shadow:0 0 12px rgba(200,153,30,0.15)}
 .bdot{width:7px;height:7px;border-radius:50%;background:#564838;transition:all 0.3s;flex-shrink:0}
 .badge.on .bdot{background:#e8be50;box-shadow:0 0 8px #e8be50;animation:pulse 2s ease-in-out infinite}
+.badge.warn{color:#f0a050;border-color:rgba(240,160,80,0.45);background:rgba(240,160,80,0.1)}
+.badge.warn .bdot{background:#f0a050;box-shadow:0 0 8px #f0a050}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
 .hist-btn{font-family:'Courier New',Consolas,monospace;font-size:11px;color:#9e8660;background:none;border:1px solid #302618;border-radius:8px;padding:5px 10px;cursor:pointer;transition:all 0.15s}
 .hist-btn:active{border-color:#c8991e;color:#c8991e}
@@ -240,12 +242,6 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 .rdict-input-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .usage-warn-bar{position:fixed;bottom:0;left:0;right:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));background:#3a2010;border-top:1px solid #8b4513;color:#f0a050;font-family:'Courier New',Consolas,monospace;font-size:12px;text-align:center;z-index:150;display:none}
 .usage-warn-bar.critical{background:#3a1010;border-top-color:#8b1513;color:#f05050}
-.dbg-hud{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px));bottom:0;background:#000000;border-top:1px solid #444444;z-index:400;display:none;flex-direction:column}
-.dbg-hud.show{display:flex}
-.dbg-head{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid #333333;flex-shrink:0}
-.dbg-state{flex:1;color:#7fd67f;font-family:'Courier New',Consolas,monospace;font-size:10px;line-height:1.35;word-break:break-all}
-.dbg-btn{background:#1a1a1a;border:1px solid #555555;color:#dddddd;font-size:11px;padding:6px 9px;border-radius:5px;flex-shrink:0}
-.dbg-log{flex:1;width:100%;background:#000000;border:0;border-top:1px solid #333333;color:#cccccc;font-family:'Courier New',Consolas,monospace;font-size:10px;line-height:1.45;padding:6px 8px;resize:none;-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
@@ -655,21 +651,11 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
   <div class="sleep-overlay-txt">画面をタップして復帰</div>
   <div class="sleep-overlay-txt" style="font-size:10px;margin-top:4px;color:#222">▶ で再生開始</div>
 </div>
-<div class="dbg-hud" id="dbgHud">
-  <div class="dbg-head">
-    <div class="dbg-state" id="dbgState"></div>
-    <button class="dbg-btn" id="dbgCopyBtn">コピー</button>
-    <button class="dbg-btn" id="dbgClearBtn">クリア</button>
-    <button class="dbg-btn" id="dbgCloseBtn">✕</button>
-  </div>
-  <textarea class="dbg-log" id="dbgLog" readonly></textarea>
-</div>
 <div class="toast" id="toast"></div>
 <div class="usage-warn-bar" id="usageWarnBar"></div>
 <script>
 const APP_VER = 'v171';
-const BG_RELOAD_KEY = 'yogatari_pending_bg_reload';
-let _actx = null, _silentOn = false, _bgSessionBroken = false;
+let _actx = null, _silentOn = false;
 let _audioSessionLost = false, _sessionLostNotice = false;
 let _progressTime = -1, _progressAt = 0;
 const SESSION_STALL_MS = 4000;
@@ -724,32 +710,20 @@ function rebuildAudioElements() {
   _gAudio = null; _silentOn = false; _audioUnlocked = false;
   if (_actx) { try { _actx.close(); } catch(e) {} _actx = null; }
   _audioSessionLost = false; _progressTime = -1; _progressAt = 0;
-  if (typeof dbgAttach === 'function') dbgAttach();
 }
 setInterval(checkAudioProgress, 2000);
 function resumeAudioContext() {
-  // iOS Safari sets state to 'interrupted' (distinct from 'suspended') after a phone call,
-  // Siri, or another app's audio interrupts this page's audio session.
+  // Measured on iOS: an interruption drives the context to 'suspended', not 'interrupted',
+  // so both are resumed here. 'suspended' alone does not mean the audio session was lost —
+  // checkAudioProgress() decides that from the media clock.
   if (_actx && (_actx.state === 'suspended' || _actx.state === 'interrupted')) return _actx.resume().catch(() => {});
   return Promise.resolve();
-}
-// Once iOS revokes this page's background-audio session (detected via AudioContext
-// 'interrupted' or repeated Google TTS play() failures), only a fresh page load
-// (not just resume()) re-establishes it. Stop cleanly here; the next ▶ press
-// reloads the page instead of just calling startPlay() (see togglePlay()).
-function markBgSessionBroken() {
-  if (_bgSessionBroken) return;
-  _bgSessionBroken = true;
-  if (playing) {
-    if (currentNovelId && segs.length) saveBookmarkCurrent(idx);
-    stop();
-  }
 }
 function startSilentAudio() {
   if (!_actx) {
     try {
       _actx = new (window.AudioContext || window.webkitAudioContext)();
-      _actx.onstatechange = () => { resumeAudioContext(); if (_actx.state === 'interrupted') markBgSessionBroken(); };
+      _actx.onstatechange = () => { if (_actx.state === 'interrupted') markAudioSessionLost(); resumeAudioContext(); };
     } catch(e) {}
   }
   try {
@@ -1595,7 +1569,7 @@ function speakIdx(i){
       el.play().catch(e=>{
         console.warn('play() failed:',e.name,e.message);clearWatchdog();_busy=false;_prefetchCache.delete(i);
         _playFailCount += 1;
-        if(_playFailCount>=PLAY_FAIL_LIMIT){markBgSessionBroken();return;}
+        if(_playFailCount>=PLAY_FAIL_LIMIT){markAudioSessionLost();return;}
         if(playing)setTimeout(()=>speakIdx(idx),600);
       });
       el.onplay=()=>{_playFailCount=0;msSetState('playing');};
@@ -1632,7 +1606,6 @@ function startPlay(){
 function togglePlay(){
   if(!segs.length)return;
   if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudioFull();updBtn();setBadge(false);msSetState('paused');}
-  else if(_bgSessionBroken&&currentNovelId){try{sessionStorage.setItem(BG_RELOAD_KEY,currentNovelId);}catch(e){}location.reload();}
   else{if(_audioSessionLost)rebuildAudioElements();startPlay();}
 }
 function stop(){
@@ -1919,15 +1892,6 @@ async function resumeFrom(novelId){
   // 待たずに、読み始めたタイミングで最新話数を確認しNEWバッジに反映する
   checkNewChapter(bk).catch(()=>{});
 }
-// バックグラウンド音声セッションが壊れた後、再生ボタン押下でリロードした場合の自動復帰。
-// リロード直前の▶タップをユーザーの再生意思とみなし、本文復元後に自動で再生を開始する
-// (自動再生禁止ルールの例外ではなく、直前のユーザー操作起点の継続として扱う)。
-(function resumeAfterBgReload(){
-  let novelId;
-  try { novelId = sessionStorage.getItem(BG_RELOAD_KEY); sessionStorage.removeItem(BG_RELOAD_KEY); } catch(e) {}
-  if (!novelId) return;
-  resumeFrom(novelId).then(() => { if (segs.length) startPlay(); });
-})();
 function delHist(novelId){bkDel(novelId);renderHistList();toast('削除しました');}
 function urlHash(str){let h=5381;for(let i=0;i<str.length;i++){h=((h<<5)+h)^str.charCodeAt(i);h=h>>>0;}return h.toString(16).padStart(8,'0');}
 function makePageCacheKey(url){return SS_PAGE_CACHE_PREFIX+urlHash(url)+'_'+urlHash(url.split('').reverse().join(''));}
@@ -2093,7 +2057,12 @@ function updProg(){
 }
 function updBtn(){const b=document.getElementById('bPlay');b.textContent=playing?'⏸':'▶';b.classList.toggle('on',playing);}
 function setBadge(on){
-  document.getElementById('badge').classList.toggle('on',on);document.getElementById('btext').textContent=on?'読み上げ中':'待機中';
+  // The interrupted state is driven off _audioSessionLost rather than set directly, so the
+  // warning survives every later setBadge(false) and clears only once playback resumes.
+  const warn=!on&&_audioSessionLost;
+  const bd=document.getElementById('badge');
+  bd.classList.toggle('on',on);bd.classList.toggle('warn',warn);
+  document.getElementById('btext').textContent=on?'読み上げ中':(warn?'⚠ 中断 ▶で再開':'待機中');
   const tz=document.getElementById('tapZones');
   if(tz){tz.style.display=on?'block':'none';tz.style.pointerEvents='none';const tl=document.getElementById('tapL');const tr=document.getElementById('tapR');if(tl)tl.style.pointerEvents=on?'auto':'none';if(tr)tr.style.pointerEvents=on?'auto':'none';}
 }
@@ -2170,129 +2139,6 @@ window.addEventListener('resize',()=>{if(_bgOn){bgResize();initStars(200);initCl
 window.addEventListener('offline', () => { toast('⚠ オフラインになりました'); });
 window.addEventListener('online', () => { toast('ネットワーク接続が回復しました'); });
 setTimeout(()=>{const btn=document.getElementById('bgToggleBtn');if(btn){btn.textContent=_bgOn?'ON':'OFF';btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn';}const st=document.getElementById('bgStatusTxt');if(st&&_bgOn)st.textContent='月齢・星・流れ星・オーロラ・ランダム天気';if(_bgOn)startBgEffect();},500);
-// Temporary diagnostic HUD for the iOS background-audio investigation. Observation only:
-// it subscribes to media events and wraps play/pause so app-initiated calls can be told
-// apart from ones iOS makes on its own. It must not alter playback behaviour.
-const DBG_LOG_KEY='yogatari_debug_log';
-const DBG_ON_KEY='yogatari_debug_hud';
-const DBG_MAX=220;
-let _dbgOn=false,_dbgLines=[],_dbgTick=null,_dbgCtxHooked=false;
-function dbgTime(){const d=new Date();const p=(n,w)=>String(n).padStart(w,'0');return p(d.getHours(),2)+':'+p(d.getMinutes(),2)+':'+p(d.getSeconds(),2)+'.'+p(d.getMilliseconds(),3);}
-function dbgSnap(){
-  const g=document.getElementById('gAudioEl'),s=document.getElementById('silentLoopEl');
-  const out=['vis='+document.visibilityState.charAt(0),'pl='+(playing?1:0),'busy='+(_busy?1:0)];
-  if(g)out.push('G[p'+(g.paused?1:0)+' e'+(g.ended?1:0)+' t'+(g.currentTime||0).toFixed(1)+' rs'+g.readyState+' ns'+g.networkState+']');
-  if(s)out.push('S[p'+(s.paused?1:0)+' t'+(s.currentTime||0).toFixed(1)+' rs'+s.readyState+']');
-  out.push('ctx='+(_actx?_actx.state:'-'));
-  out.push('ms='+((navigator.mediaSession&&navigator.mediaSession.playbackState)||'-'));
-  return out.join(' ');
-}
-let _dbgLastSave=0;
-// Persisting on every media event would put a synchronous write in the playback path,
-// so batch it; the flush points below cover backgrounding and reloads.
-function dbgFlush(){_dbgLastSave=Date.now();try{localStorage.setItem(DBG_LOG_KEY,JSON.stringify(_dbgLines));}catch(e){}}
-function dbgLog(tag,force){
-  _dbgLines.push(dbgTime()+' '+tag+' | '+dbgSnap());
-  if(_dbgLines.length>DBG_MAX)_dbgLines.splice(0,_dbgLines.length-DBG_MAX);
-  if(force||Date.now()-_dbgLastSave>1000)dbgFlush();
-  if(_dbgOn)dbgRender();
-}
-function dbgRender(){
-  const box=document.getElementById('dbgLog');if(box)box.value=_dbgLines.join('\n');
-  const st=document.getElementById('dbgState');if(st)st.textContent=dbgSnap();
-  if(box)box.scrollTop=box.scrollHeight;
-}
-function dbgWrap(el,name){
-  if(el.__dbgWrapped)return;
-  el.__dbgWrapped=true;
-  const origPlay=el.play.bind(el),origPause=el.pause.bind(el);
-  el.play=function(){
-    dbgLog(name+'.play() APP');
-    const p=origPlay();
-    if(p&&p.catch)p.catch(e=>dbgLog(name+'.play REJECT '+((e&&e.name)||'?')+' '+((e&&e.message)||'').slice(0,40)));
-    return p;
-  };
-  el.pause=function(){dbgLog(name+'.pause() APP');return origPause();};
-  ['play','playing','pause','ended','error','stalled','waiting','emptied','suspend'].forEach(ev=>{
-    el.addEventListener(ev,()=>{
-      let extra='';
-      if(ev==='error'&&el.error)extra=' code'+el.error.code;
-      if(ev==='pause'&&!el.ended)extra=' MID('+(el.currentTime||0).toFixed(2)+')';
-      dbgLog(name+':'+ev+extra);
-    });
-  });
-}
-// Failure mode B leaves the element reporting playing while iOS renders nothing, and it
-// fires no event at all. timeupdate is driven by the media pipeline rather than a timer,
-// so its last tick marks the exact moment audio really stopped; the interval below then
-// reports the frozen clock once throttling lets it run again.
-let _dbgTickAt=0,_dbgSeenTime=-1,_dbgSeenAt=0,_dbgStallLogged=false;
-function dbgWatchProgress(el){
-  if(el.__dbgProgress)return;
-  el.__dbgProgress=true;
-  el.addEventListener('timeupdate',()=>{
-    const now=Date.now();
-    if(_dbgStallLogged&&el.currentTime!==_dbgSeenTime)dbgLog('G:RESUMED');
-    _dbgStallLogged=false;
-    if(el.currentTime!==_dbgSeenTime){_dbgSeenTime=el.currentTime;_dbgSeenAt=now;}
-    if(now-_dbgTickAt>2000){_dbgTickAt=now;dbgLog('G:tick');}
-  });
-}
-// Looks the element up each tick so it keeps working after rebuildAudioElements().
-setInterval(()=>{
-  const el=document.getElementById('gAudioEl');
-  if(!el||!playing||el.paused||el.ended)return;
-  const now=Date.now();
-  if(el.currentTime!==_dbgSeenTime){_dbgSeenTime=el.currentTime;_dbgSeenAt=now;_dbgStallLogged=false;return;}
-  if(!_dbgStallLogged&&_dbgSeenAt&&now-_dbgSeenAt>3000){
-    _dbgStallLogged=true;
-    dbgLog('G:STALL frozen '+Math.round((now-_dbgSeenAt)/1000)+'s at t'+(el.currentTime||0).toFixed(2),true);
-  }
-},2000);
-function dbgAttach(){
-  const g=document.getElementById('gAudioEl'),s=document.getElementById('silentLoopEl');
-  if(g){dbgWrap(g,'G');dbgWatchProgress(g);}
-  if(s)dbgWrap(s,'S');
-  dbgLog('ATTACH',true);
-}
-function dbgInit(){
-  dbgAttach();
-  document.addEventListener('visibilitychange',()=>dbgLog('VIS '+document.visibilityState,true));
-  window.addEventListener('pagehide',()=>dbgLog('pagehide',true));
-  window.addEventListener('pageshow',()=>dbgLog('pageshow',true));
-  document.addEventListener('freeze',()=>dbgLog('freeze',true));
-  document.addEventListener('resume',()=>dbgLog('resume',true));
-  const ver=document.querySelector('.ver');
-  if(ver)ver.addEventListener('click',dbgToggle);
-  const cp=document.getElementById('dbgCopyBtn');
-  if(cp)cp.onclick=()=>{
-    const box=document.getElementById('dbgLog');if(!box)return;
-    const txt=box.value;
-    const fallback=()=>{box.removeAttribute('readonly');box.focus();box.setSelectionRange(0,txt.length);box.setAttribute('readonly','');toast('全選択しました。長押しでコピーしてください');};
-    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>toast('コピーしました')).catch(fallback);
-    else fallback();
-  };
-  const cl=document.getElementById('dbgClearBtn');
-  if(cl)cl.onclick=()=>{_dbgLines=[];try{localStorage.removeItem(DBG_LOG_KEY);}catch(e){}dbgRender();};
-  const cb=document.getElementById('dbgCloseBtn');
-  if(cb)cb.onclick=dbgToggle;
-  try{const saved=localStorage.getItem(DBG_LOG_KEY);if(saved)_dbgLines=JSON.parse(saved)||[];}catch(e){_dbgLines=[];}
-  dbgLog('--- page load ---',true);
-  // The AudioContext is created lazily, so attach once it shows up.
-  setInterval(()=>{
-    if(!_dbgCtxHooked&&_actx){_dbgCtxHooked=true;try{_actx.addEventListener('statechange',()=>dbgLog('CTX '+_actx.state));}catch(e){}}
-  },1000);
-  try{if(localStorage.getItem(DBG_ON_KEY)==='1')dbgToggle();}catch(e){}
-}
-function dbgToggle(){
-  _dbgOn=!_dbgOn;
-  const hud=document.getElementById('dbgHud');
-  if(hud)hud.classList.toggle('show',_dbgOn);
-  try{localStorage.setItem(DBG_ON_KEY,_dbgOn?'1':'0');}catch(e){}
-  if(_dbgOn){dbgRender();if(!_dbgTick)_dbgTick=setInterval(()=>{const st=document.getElementById('dbgState');if(st)st.textContent=dbgSnap();},500);}
-  else if(_dbgTick){clearInterval(_dbgTick);_dbgTick=null;}
-}
-dbgInit();
 </script>
 </body>
 </html>

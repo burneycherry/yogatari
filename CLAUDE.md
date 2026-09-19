@@ -64,7 +64,7 @@
 | `currentChapterTitle` / `currentNovelTitle` | 表示中のメタデータ |
 | `nextUrl` / `prevUrl` | 章間ナビゲーション |
 | `APP_VER` | アプリバージョン文字列。`<title>`と `<span class="ver">` に同期。バージョン管理プロトコル実行時のみ更新する |
-| `DATA_VERSION` | localStorageデータ構造のバージョン番号。起動時のマイグレーション判定に使用する |
+| `DATA_VERSION` | **未導入**。localStorageの破壊的変更を行う際に導入する想定の定数（「後方互換性」参照）。現在コード上に実体はない |
 
 ### 音声パイプライン
 
@@ -72,7 +72,22 @@
 1. **Web Speech API** (`speechSynthesis`): デフォルト。APIキー不要。`speakIdx()` で文単位再生。
 2. **Google Cloud TTS**: 高品質。APIキー必須。`fetchGoogleAudio()` で取得し `_prefetchCache` にキャッシュ、`<audio id="gAudioEl">` で再生。
 
-サイレント音声ループ（`<audio id="silentLoopEl">`）がiOSのバックグラウンド再生でAudioContextを維持するために使われる。
+サイレント音声ループ（`<audio id="silentLoopEl">`）はセグメント間の無音区間を埋めるために使われる。
+
+#### iOSバックグラウンド再生の実測挙動（重要）
+
+実機ログで確認済みの事実。推測で書き換えないこと。
+
+- iOSはバックグラウンド移行時に `silentLoopEl` を**必ず一時停止する**。これは正常動作であり、中断の兆候ではない
+- バックグラウンド再生のオーディオセッションを保持しているのは `gAudioEl` 単独である。無音ループはアンカーではない
+- バックグラウンドでの `src` 差し替えと `play()` は正常に機能する
+- 着信・他アプリの音声などで中断されると、iOSはこのページのバックグラウンド音声を拒否するようになる。**この拒否はJavaScriptから観測できない**
+  - `play()` はresolveし、`play` / `playing` イベントも発火する
+  - `error` は発生せず、`readyState` は4、`AudioContext` も `running` のまま
+  - **`currentTime` だけが進まなくなる。これが唯一の検出手段である**
+- 中断時の `AudioContext` の状態は `suspended` であり、`interrupted` ではない
+
+この検出と復旧は `checkAudioProgress()` / `markAudioSessionLost()` / `rebuildAudioElements()` が担う。復旧は音声要素を作り直してセッションを取り直す方式で、▶ 押下時（ユーザー操作の内側）にのみ実行する。
 
 ### テキスト処理
 
@@ -100,14 +115,19 @@
 | `yogatari_custom_words` | ユーザー定義スキップワード |
 | `yogatari_gkey` | Google TTS APIキー |
 | `yogatari_gvoice` | 選択中のGoogle TTS音声名 |
-| `yogatari_stat_*` | 読書統計（日数・作品数・話数・秒数） |
+| `yogatari_stats` | 読書統計（日数・作品数・話数・秒数） |
+| `yogatari_usage_<年>_<月>_<カテゴリ>` | Google TTS月間使用文字数 |
 | `yogatari_proxy_hist` | プロキシ選択履歴 |
+| `yogatari_rate` / `yogatari_pitch` | 読み上げ速度・ピッチ |
+| `yogatari_reading_dict` / `yogatari_rdict_on` | 読み間違い辞書とそのON/OFF |
+| `yogatari_ssml_dialogue` | 会話文ピッチ（SSML）のON/OFF |
+| `yogatari_bg` | 背景エフェクトのON/OFF |
 
 ### sessionStorageキー一覧
 
 | キー | 内容 |
 |------|------|
-| `yogatari_html_<url>` | `fetchHtml()` によるページHTMLキャッシュ（キーはURL文字列） |
+| `yogatari_pc_<hash>` | `fetchHtml()` によるページHTMLキャッシュ。キーは `makePageCacheKey()` が生成するURLハッシュ |
 
 > ※ sessionStorageはタブセッション中のみ有効。ページを閉じると消去される。
 
