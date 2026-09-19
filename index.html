@@ -670,6 +670,63 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 const APP_VER = 'v171';
 const BG_RELOAD_KEY = 'yogatari_pending_bg_reload';
 let _actx = null, _silentOn = false, _bgSessionBroken = false;
+let _audioSessionLost = false, _sessionLostNotice = false;
+let _progressTime = -1, _progressAt = 0;
+const SESSION_STALL_MS = 4000;
+// After an interruption (incoming call, another app taking audio) iOS stops honouring this
+// page's background audio but reports nothing: play() resolves, play/playing both fire,
+// readyState stays 4 and no error arrives — only the media clock never advances. A frozen
+// currentTime on an element that already holds data is therefore the sole observable
+// symptom. Normal backgrounding keeps the clock running, so healthy playback cannot trip it.
+function checkAudioProgress() {
+  if (!playing || _busy || _audioSessionLost) { _progressAt = 0; return; }
+  const el = getAudioEl();
+  if (!el || el.ended || el.readyState < 3) { _progressAt = 0; return; }
+  const now = Date.now();
+  if (el.currentTime !== _progressTime) { _progressTime = el.currentTime; _progressAt = now; return; }
+  if (!_progressAt) { _progressAt = now; return; }
+  if (now - _progressAt > SESSION_STALL_MS) markAudioSessionLost();
+}
+// Dropping back to the idle state is what makes the next ▶ a real user gesture, the only
+// moment iOS hands the page a fresh audio session (see rebuildAudioElements).
+function markAudioSessionLost() {
+  if (_audioSessionLost) return;
+  _audioSessionLost = true;
+  _sessionLostNotice = true;
+  if (currentNovelId && segs.length) saveBookmarkCurrent(idx);
+  stop();
+  showSessionLostNotice();
+}
+function showSessionLostNotice() {
+  if (!_sessionLostNotice || document.visibilityState !== 'visible') return;
+  _sessionLostNotice = false;
+  toast('音声が中断されました。▶ で再開します');
+}
+// Recreating the elements gives them a fresh media session without reloading the page.
+// Called only from the on-screen ▶ handler so the play() calls that follow stay inside the
+// user gesture; the Media Session handlers and chapter auto-advance have none.
+function rebuildAudioElements() {
+  try {
+    ['gAudioEl', 'silentLoopEl'].forEach(function(id) {
+      const old = document.getElementById(id);
+      if (!old) return;
+      try { old.pause(); old.removeAttribute('src'); old.load(); } catch(e) {}
+      old.remove();
+      const el = document.createElement('audio');
+      el.id = id;
+      el.setAttribute('playsinline', '');
+      el.setAttribute('webkit-playsinline', '');
+      el.style.display = 'none';
+      if (id === 'silentLoopEl') el.loop = true;
+      document.body.appendChild(el);
+    });
+  } catch(e) {}
+  _gAudio = null; _silentOn = false; _audioUnlocked = false;
+  if (_actx) { try { _actx.close(); } catch(e) {} _actx = null; }
+  _audioSessionLost = false; _progressTime = -1; _progressAt = 0;
+  if (typeof dbgAttach === 'function') dbgAttach();
+}
+setInterval(checkAudioProgress, 2000);
 function resumeAudioContext() {
   // iOS Safari sets state to 'interrupted' (distinct from 'suspended') after a phone call,
   // Siri, or another app's audio interrupts this page's audio session.
@@ -1576,7 +1633,7 @@ function togglePlay(){
   if(!segs.length)return;
   if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudioFull();updBtn();setBadge(false);msSetState('paused');}
   else if(_bgSessionBroken&&currentNovelId){try{sessionStorage.setItem(BG_RELOAD_KEY,currentNovelId);}catch(e){}location.reload();}
-  else startPlay();
+  else{if(_audioSessionLost)rebuildAudioElements();startPlay();}
 }
 function stop(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
@@ -2008,6 +2065,7 @@ function switchTab(name){
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
+    showSessionLostNotice();
     if(playing&&!_busy){if(hasGoogleKey()){const _ael=getAudioEl();if(!_ael||_ael.paused||_ael.ended){stopGoogleAudio();_busy=false;setTimeout(()=>speakIdx(idx),400);}}else if(!SS.speaking&&!SS.pending){SS.cancel();setTimeout(()=>speakIdx(idx),300);}}
     resumeAudioContext();
   }
@@ -2145,6 +2203,8 @@ function dbgRender(){
   if(box)box.scrollTop=box.scrollHeight;
 }
 function dbgWrap(el,name){
+  if(el.__dbgWrapped)return;
+  el.__dbgWrapped=true;
   const origPlay=el.play.bind(el),origPause=el.pause.bind(el);
   el.play=function(){
     dbgLog(name+'.play() APP');
@@ -2168,6 +2228,8 @@ function dbgWrap(el,name){
 // reports the frozen clock once throttling lets it run again.
 let _dbgTickAt=0,_dbgSeenTime=-1,_dbgSeenAt=0,_dbgStallLogged=false;
 function dbgWatchProgress(el){
+  if(el.__dbgProgress)return;
+  el.__dbgProgress=true;
   el.addEventListener('timeupdate',()=>{
     const now=Date.now();
     if(_dbgStallLogged&&el.currentTime!==_dbgSeenTime)dbgLog('G:RESUMED');
@@ -2175,20 +2237,26 @@ function dbgWatchProgress(el){
     if(el.currentTime!==_dbgSeenTime){_dbgSeenTime=el.currentTime;_dbgSeenAt=now;}
     if(now-_dbgTickAt>2000){_dbgTickAt=now;dbgLog('G:tick');}
   });
-  setInterval(()=>{
-    if(!playing||el.paused||el.ended)return;
-    const now=Date.now();
-    if(el.currentTime!==_dbgSeenTime){_dbgSeenTime=el.currentTime;_dbgSeenAt=now;_dbgStallLogged=false;return;}
-    if(!_dbgStallLogged&&_dbgSeenAt&&now-_dbgSeenAt>3000){
-      _dbgStallLogged=true;
-      dbgLog('G:STALL frozen '+Math.round((now-_dbgSeenAt)/1000)+'s at t'+(el.currentTime||0).toFixed(2),true);
-    }
-  },2000);
 }
-function dbgInit(){
+// Looks the element up each tick so it keeps working after rebuildAudioElements().
+setInterval(()=>{
+  const el=document.getElementById('gAudioEl');
+  if(!el||!playing||el.paused||el.ended)return;
+  const now=Date.now();
+  if(el.currentTime!==_dbgSeenTime){_dbgSeenTime=el.currentTime;_dbgSeenAt=now;_dbgStallLogged=false;return;}
+  if(!_dbgStallLogged&&_dbgSeenAt&&now-_dbgSeenAt>3000){
+    _dbgStallLogged=true;
+    dbgLog('G:STALL frozen '+Math.round((now-_dbgSeenAt)/1000)+'s at t'+(el.currentTime||0).toFixed(2),true);
+  }
+},2000);
+function dbgAttach(){
   const g=document.getElementById('gAudioEl'),s=document.getElementById('silentLoopEl');
   if(g){dbgWrap(g,'G');dbgWatchProgress(g);}
   if(s)dbgWrap(s,'S');
+  dbgLog('ATTACH',true);
+}
+function dbgInit(){
+  dbgAttach();
   document.addEventListener('visibilitychange',()=>dbgLog('VIS '+document.visibilityState,true));
   window.addEventListener('pagehide',()=>dbgLog('pagehide',true));
   window.addEventListener('pageshow',()=>dbgLog('pageshow',true));
