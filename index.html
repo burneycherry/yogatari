@@ -2153,17 +2153,41 @@ function dbgWrap(el,name){
     return p;
   };
   el.pause=function(){dbgLog(name+'.pause() APP');return origPause();};
-  ['play','playing','pause','ended','error','stalled','waiting','emptied'].forEach(ev=>{
+  ['play','playing','pause','ended','error','stalled','waiting','emptied','suspend'].forEach(ev=>{
     el.addEventListener(ev,()=>{
       let extra='';
       if(ev==='error'&&el.error)extra=' code'+el.error.code;
+      if(ev==='pause'&&!el.ended)extra=' MID('+(el.currentTime||0).toFixed(2)+')';
       dbgLog(name+':'+ev+extra);
     });
   });
 }
+// Failure mode B leaves the element reporting playing while iOS renders nothing, and it
+// fires no event at all. timeupdate is driven by the media pipeline rather than a timer,
+// so its last tick marks the exact moment audio really stopped; the interval below then
+// reports the frozen clock once throttling lets it run again.
+let _dbgTickAt=0,_dbgSeenTime=-1,_dbgSeenAt=0,_dbgStallLogged=false;
+function dbgWatchProgress(el){
+  el.addEventListener('timeupdate',()=>{
+    const now=Date.now();
+    if(_dbgStallLogged&&el.currentTime!==_dbgSeenTime)dbgLog('G:RESUMED');
+    _dbgStallLogged=false;
+    if(el.currentTime!==_dbgSeenTime){_dbgSeenTime=el.currentTime;_dbgSeenAt=now;}
+    if(now-_dbgTickAt>2000){_dbgTickAt=now;dbgLog('G:tick');}
+  });
+  setInterval(()=>{
+    if(!playing||el.paused||el.ended)return;
+    const now=Date.now();
+    if(el.currentTime!==_dbgSeenTime){_dbgSeenTime=el.currentTime;_dbgSeenAt=now;_dbgStallLogged=false;return;}
+    if(!_dbgStallLogged&&_dbgSeenAt&&now-_dbgSeenAt>3000){
+      _dbgStallLogged=true;
+      dbgLog('G:STALL frozen '+Math.round((now-_dbgSeenAt)/1000)+'s at t'+(el.currentTime||0).toFixed(2),true);
+    }
+  },2000);
+}
 function dbgInit(){
   const g=document.getElementById('gAudioEl'),s=document.getElementById('silentLoopEl');
-  if(g)dbgWrap(g,'G');
+  if(g){dbgWrap(g,'G');dbgWatchProgress(g);}
   if(s)dbgWrap(s,'S');
   document.addEventListener('visibilitychange',()=>dbgLog('VIS '+document.visibilityState,true));
   window.addEventListener('pagehide',()=>dbgLog('pagehide',true));
