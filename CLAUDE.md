@@ -89,6 +89,27 @@
 
 この検出と復旧は `checkAudioProgress()` / `markAudioSessionLost()` / `rebuildAudioElements()` が担う。復旧は音声要素を作り直してセッションを取り直す方式で、▶ 押下時（ユーザー操作の内側）にのみ実行する。
 
+#### Web Speech APIのバックグラウンド挙動（実測・重要）
+
+実機ログで確認済みの事実。推測で書き換えないこと。
+
+**Web Speech API（Kyoko）は iOS・Android いずれでもバックグラウンド再生できない。** 中断の有無は無関係で、画面を消した時点で停止する。止まり方はプラットフォームで異なる。
+
+| | 挙動 | アプリからの観測 |
+|------|------|------|
+| iOS | エンジンが無言で凍結。フォアグラウンド復帰時に未読部分を破棄して `end` を発火する | イベントが飛ばないため検出できない |
+| Android | バックグラウンド移行の約30ms後に `error: interrupted` で打ち切られる | エラーは飛ぶが `utt.onerror` が `interrupted` を無視するため停止に気付けない |
+
+- `utt.onerror` が `interrupted` / `canceled` を無視するのは、`SS.cancel()` でも同じエラーが出るため二重読み上げを防ぐ意図によるもの。この分岐を変更する場合は二重読み上げの再発に注意すること
+- 復帰は `visibilitychange` ハンドラが担い、フォアグラウンドに戻ると `speakIdx()` から再開する
+- Google TTSモードと異なり `<audio>` 要素が鳴っていないため、オーディオセッションを保持する主体が存在しない。無音ループを鳴らし直す対策は原理的に効かない
+- `checkAudioProgress()` は `gAudioEl` の再生位置のみを見るため、Web Speechモードでは動作しない（誤検知もしない）
+
+#### その他の実測事項
+
+- Android Chrome では `SILENT_MP3` のデータURIがデコードできず、無音ループが再生されない（`MEDIA_ERR_SRC_NOT_SUPPORTED`）。`keepAudioSessionAlive()` はAndroidでは実質無効
+- Google TTSモードのAndroidでの挙動は未測定
+
 ### テキスト処理
 
 - `splitText(html)` → DOMノードをプレーンテキストセグメント（段落単位）に変換
