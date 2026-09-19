@@ -681,7 +681,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 <div class="usage-warn-bar" id="usageWarnBar"></div>
 <script>
 const APP_VER = 'v171';
-let _actx = null, _silentOn = false;
+let _actx = null, _silentOn = false, _silentUnsupported = false;
 let _audioSessionLost = false, _sessionLostNotice = false;
 let _progressTime = -1, _progressAt = 0;
 const SESSION_STALL_MS = 4000;
@@ -753,9 +753,17 @@ function startSilentAudio() {
       _actx.onstatechange = () => { if (_actx.state === 'interrupted') markAudioSessionLost(); resumeAudioContext(); };
     } catch(e) {}
   }
+  if (_silentUnsupported) return;
   try {
     var _sl = document.getElementById('silentLoopEl');
     if (!_sl) return;
+    // Android Chrome cannot decode SILENT_MP3 (MEDIA_ERR_SRC_NOT_SUPPORTED), so the loop
+    // re-entered its error path at every segment boundary. It is not what keeps background
+    // audio alive — gAudioEl alone holds the session — so give up after the first failure.
+    if (!_sl.__silentWatch) {
+      _sl.__silentWatch = true;
+      _sl.addEventListener('error', function(){ _silentUnsupported = true; _silentOn = false; });
+    }
     // An interruption (incoming call, another app's audio) leaves this loop paused while
     // _silentOn stays true. Re-arm from the element's real state, not the flag: without a
     // playing element the page holds no audio session and iOS stops audio on backgrounding.
