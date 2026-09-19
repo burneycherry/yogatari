@@ -680,10 +680,14 @@ function startSilentAudio() {
       _actx.onstatechange = () => { resumeAudioContext(); if (_actx.state === 'interrupted') markBgSessionBroken(); };
     } catch(e) {}
   }
-  if (_silentOn) return;
   try {
     var _sl = document.getElementById('silentLoopEl');
-    if (_sl) { _sl.src = SILENT_MP3; _sl.volume = 0.01; _sl.play().catch(function(){}); _silentOn = true; }
+    if (!_sl) return;
+    // An interruption (incoming call, another app's audio) leaves this loop paused while
+    // _silentOn stays true. Re-arm from the element's real state, not the flag: without a
+    // playing element the page holds no audio session and iOS stops audio on backgrounding.
+    if (_silentOn && !_sl.paused && !_sl.ended) return;
+    _sl.src = SILENT_MP3; _sl.volume = 0.01; _sl.play().catch(function(){}); _silentOn = true;
   } catch(e) {}
 }
 function stopSilentAudio() {
@@ -838,10 +842,7 @@ let _goNextRunning = false;
 const SILENT_MP3 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAADhgCenp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6enp6e////////////////////////////////////////////////////////////////AAAAAExhdmYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB//sQRAAP8AAAaQAAAAgAAA0gAAABAAABpAAAACAAADSAAAAE==';
 function keepAudioSessionAlive() {
   if (!playing) return;
-  try {
-    const sl = document.getElementById('silentLoopEl');
-    if (sl && (sl.paused || sl.ended)) { sl.src = SILENT_MP3; sl.play().catch(()=>{}); }
-  } catch(e) {}
+  startSilentAudio();
   try { const el = getAudioEl(); if (el && el.paused) { el.src = SILENT_MP3; el.play().catch(() => {}); } } catch(e) {}
 }
 let queue=[], qi=0;
@@ -1554,7 +1555,7 @@ function startWatchdog(rate,isGoogle=false){
 }
 function clearWatchdog(){if(watchdog){clearTimeout(watchdog);watchdog=null;}}
 function startPlay(){
-  if(playing)return;unlockAudio();resumeAudioContext();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(hasGoogleKey()&&!isOverLimit())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
+  if(playing)return;unlockAudio();startSilentAudio();resumeAudioContext();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(hasGoogleKey()&&!isOverLimit())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
 }
 function togglePlay(){
   if(!segs.length)return;
