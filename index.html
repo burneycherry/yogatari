@@ -180,6 +180,8 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 .sett-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .sett-label{font-size:13px;color:#ede0c6;flex:1}
 .sett-sub{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;color:#564838;margin-top:3px;line-height:1.7}
+.sett-note-warn{display:none;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;line-height:1.8;color:#f0a050;background:rgba(240,160,80,0.08);border:1px solid rgba(240,160,80,0.35);border-radius:8px;padding:10px 12px;margin-bottom:10px}
+.sett-note-warn.show{display:block}
 .api-input{width:100%;background:#0d0d0d;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:'Courier New',Consolas,monospace;font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
 .api-input:focus{border-color:#c8991e}
 .api-input::placeholder{color:#564838}
@@ -411,7 +413,8 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
     </div>
     <div class="sett-section">
       <div class="sett-title">// Google Cloud TTS（高品質）</div>
-      <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">GoogleアカウントのAPIキーを入力すると<br>Kyokoより自然な日本語音声になります。</div>
+      <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">GoogleアカウントのAPIキーを入力すると<br>端末内蔵音声より自然な日本語音声になります。</div>
+      <div class="sett-note-warn" id="bgWarnNote">⚠ 現在は<b>端末内蔵の音声</b>で読み上げています。<br>この音声は<b>画面を消すと読み上げが停止します</b>。<br>iPhone・Androidとも端末側の仕様のため、アプリ側では回避できません。<br>画面を消したまま聴くにはGoogle TTSの設定が必要です。</div>
       <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
       <div class="api-status" id="apiStatus"></div>
       <input class="api-input" id="apiKeyInput" type="password" placeholder="AIzaSy…（APIキーを貼り付け）" autocomplete="off" autocorrect="off" spellcheck="false">
@@ -534,14 +537,20 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       <h3>// 基本の使い方</h3>
       <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt">小説家になろうなどの<b>目次URL</b>をコピーして「読む」タブに貼り付ける<br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#9e8660">例: https://ncode.syosetu.com/n1234ab/</span></div></div>
       <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt">「読込」を押すと<b>話一覧</b>が表示される。読みたい話をタップ</div></div>
-      <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>▶ボタン</b>をタップして読み上げ開始。話の終わりに<b>3秒カウント後、次の話へ自動進行</b></div></div>
+      <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>▶ボタン</b>をタップして読み上げ開始。話の終わりに<b>3秒カウント後、次の話へ自動進行</b><br><span style="font-size:11px;color:#9e8660">※ 画面を消したまま聴くには<b>Google TTSの設定が必要</b>です（下記参照）</span></div></div>
+      <div class="rdm-note" style="margin-bottom:10px;border-color:rgba(240,160,80,0.5);background:rgba(240,160,80,0.07)">
+        ⚠️ <b>端末内蔵の音声では画面を消すと停止します</b><br><br>
+        APIキー未設定のときは<b>端末内蔵の音声</b>（iPhoneは Kyoko、Androidは端末のTTSエンジン）で読み上げます。<br><br>
+        この音声は<b>画面を消すと読み上げが止まります</b>。iPhone・Androidとも端末側の仕様で、アプリ側では回避できません。<br><br>
+        画面を消したまま聴きたい場合は、下記の<b>「Google TTS 高品質音声」</b>を設定してください。
+      </div>
       <div class="rdm-note" style="margin-bottom:10px;border-color:rgba(200,153,30,0.5);background:rgba(200,153,30,0.07)">
         🍎 <b>iPhone / iPad をお使いの方へ（重要）</b><br><br>
         iOSのSafariは<b>ユーザーが直接タップしたときだけ</b>音声の再生を許可する仕様のため、<br>
         アプリを開いたら <b>必ず最初に▶ボタンを1回タップ</b> してください。<br><br>
         この操作でiOSの音声制限が解除され、以降は<br>
         <b>・次の話への自動進行</b><br>
-        <b>・バックグラウンドでの継続再生</b><br>
+        <b>・バックグラウンドでの継続再生（Google TTS設定時のみ）</b><br>
         が正常に動作します。<br><br>
         ⚠️ アプリを閉じて開き直した場合は、再度▶を1回タップする必要があります。
       </div>
@@ -579,10 +588,12 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <li><b>画面右1/3タップ</b> → 5秒進む</li>
         <li><b>画面中央</b> → 通常スクロール</li>
       </ul>
-      <h3>// バックグラウンド再生（iPhone）</h3>
+      <h3>// バックグラウンド再生</h3>
       <ul>
-        <li>再生中は画面が消えない仕様のため、自動ロック設定の変更は不要</li>
-        <li>止まったら<b>▶ボタン</b>をタップすると再開</li>
+        <li><b>Google TTS を設定している場合のみ</b>、画面を消しても読み上げが続く</li>
+        <li><b>端末内蔵の音声</b>（iPhoneは Kyoko、Androidは端末のTTSエンジン）では<b>画面を消すと停止する</b>。端末側の仕様のため回避できない</li>
+        <li>電話や他アプリの音声で中断されると、その後バックグラウンド再生が止まることがある</li>
+        <li>止まったときは画面上部の表示が <b>⚠ 中断 ▶で再開</b> に変わる。<b>▶ボタン</b>をタップすれば元通りになる</li>
         <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
       </ul>
       <div class="rdm-note" style="margin-top:4px">
@@ -1710,6 +1721,10 @@ function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if
 function updModeDisplay(){
   const el=document.getElementById('modeDisplay');
   const row=document.getElementById('voiceRowKyoko');const rowG=document.getElementById('voiceRowGoogle');const badge=document.getElementById('googleBadge');
+  // The device voice (Web Speech) cannot play in the background on either platform, so warn
+  // whenever it is what will actually be used — including the over-quota fallback.
+  const bgWarn=document.getElementById('bgWarnNote');
+  if(bgWarn)bgWarn.classList.toggle('show',!hasGoogleKey()||isOverLimit());
   if(hasGoogleKey()){const fname=friendlyVoiceName(_gVoice);const lim=(USAGE_LIMIT()/10000).toFixed(0)+'万文字/月無料';if(isOverLimit()){if(el)el.innerHTML='<span class="mode-badge">🔊 Kyoko（制限中フォールバック）</span>';if(badge)badge.textContent='🔊 Kyoko（制限中）';}else{if(el)el.innerHTML='<span class="mode-badge google">🎙 '+fname+'<br><span style="font-size:9px;opacity:0.7">'+lim+'</span></span>';if(badge)badge.textContent='🎙 '+fname;}if(row)row.style.display='none';if(rowG)rowG.style.display='flex';}
   else{if(el)el.innerHTML='<span class="mode-badge">🔊 Kyoko（デフォルト）</span>';if(row)row.style.display='flex';if(rowG)rowG.style.display='none';}
   updSsmlSection();
