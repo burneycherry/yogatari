@@ -240,6 +240,12 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 .rdict-input-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .usage-warn-bar{position:fixed;bottom:0;left:0;right:0;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));background:#3a2010;border-top:1px solid #8b4513;color:#f0a050;font-family:'Courier New',Consolas,monospace;font-size:12px;text-align:center;z-index:150;display:none}
 .usage-warn-bar.critical{background:#3a1010;border-top-color:#8b1513;color:#f05050}
+.dbg-hud{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px));bottom:0;background:#000000;border-top:1px solid #444444;z-index:400;display:none;flex-direction:column}
+.dbg-hud.show{display:flex}
+.dbg-head{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid #333333;flex-shrink:0}
+.dbg-state{flex:1;color:#7fd67f;font-family:'Courier New',Consolas,monospace;font-size:10px;line-height:1.35;word-break:break-all}
+.dbg-btn{background:#1a1a1a;border:1px solid #555555;color:#dddddd;font-size:11px;padding:6px 9px;border-radius:5px;flex-shrink:0}
+.dbg-log{flex:1;width:100%;background:#000000;border:0;border-top:1px solid #333333;color:#cccccc;font-family:'Courier New',Consolas,monospace;font-size:10px;line-height:1.45;padding:6px 8px;resize:none;-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
@@ -648,6 +654,15 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 <div class="sleep-overlay" id="sleepOverlay" onclick="dismissSleepOverlay()">
   <div class="sleep-overlay-txt">画面をタップして復帰</div>
   <div class="sleep-overlay-txt" style="font-size:10px;margin-top:4px;color:#222">▶ で再生開始</div>
+</div>
+<div class="dbg-hud" id="dbgHud">
+  <div class="dbg-head">
+    <div class="dbg-state" id="dbgState"></div>
+    <button class="dbg-btn" id="dbgCopyBtn">コピー</button>
+    <button class="dbg-btn" id="dbgClearBtn">クリア</button>
+    <button class="dbg-btn" id="dbgCloseBtn">✕</button>
+  </div>
+  <textarea class="dbg-log" id="dbgLog" readonly></textarea>
 </div>
 <div class="toast" id="toast"></div>
 <div class="usage-warn-bar" id="usageWarnBar"></div>
@@ -2097,6 +2112,95 @@ window.addEventListener('resize',()=>{if(_bgOn){bgResize();initStars(200);initCl
 window.addEventListener('offline', () => { toast('⚠ オフラインになりました'); });
 window.addEventListener('online', () => { toast('ネットワーク接続が回復しました'); });
 setTimeout(()=>{const btn=document.getElementById('bgToggleBtn');if(btn){btn.textContent=_bgOn?'ON':'OFF';btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn';}const st=document.getElementById('bgStatusTxt');if(st&&_bgOn)st.textContent='月齢・星・流れ星・オーロラ・ランダム天気';if(_bgOn)startBgEffect();},500);
+// Temporary diagnostic HUD for the iOS background-audio investigation. Observation only:
+// it subscribes to media events and wraps play/pause so app-initiated calls can be told
+// apart from ones iOS makes on its own. It must not alter playback behaviour.
+const DBG_LOG_KEY='yogatari_debug_log';
+const DBG_ON_KEY='yogatari_debug_hud';
+const DBG_MAX=220;
+let _dbgOn=false,_dbgLines=[],_dbgTick=null,_dbgCtxHooked=false;
+function dbgTime(){const d=new Date();const p=(n,w)=>String(n).padStart(w,'0');return p(d.getHours(),2)+':'+p(d.getMinutes(),2)+':'+p(d.getSeconds(),2)+'.'+p(d.getMilliseconds(),3);}
+function dbgSnap(){
+  const g=document.getElementById('gAudioEl'),s=document.getElementById('silentLoopEl');
+  const out=['vis='+document.visibilityState.charAt(0),'pl='+(playing?1:0),'busy='+(_busy?1:0)];
+  if(g)out.push('G[p'+(g.paused?1:0)+' e'+(g.ended?1:0)+' t'+(g.currentTime||0).toFixed(1)+' rs'+g.readyState+' ns'+g.networkState+']');
+  if(s)out.push('S[p'+(s.paused?1:0)+' t'+(s.currentTime||0).toFixed(1)+' rs'+s.readyState+']');
+  out.push('ctx='+(_actx?_actx.state:'-'));
+  out.push('ms='+((navigator.mediaSession&&navigator.mediaSession.playbackState)||'-'));
+  return out.join(' ');
+}
+let _dbgLastSave=0;
+// Persisting on every media event would put a synchronous write in the playback path,
+// so batch it; the flush points below cover backgrounding and reloads.
+function dbgFlush(){_dbgLastSave=Date.now();try{localStorage.setItem(DBG_LOG_KEY,JSON.stringify(_dbgLines));}catch(e){}}
+function dbgLog(tag,force){
+  _dbgLines.push(dbgTime()+' '+tag+' | '+dbgSnap());
+  if(_dbgLines.length>DBG_MAX)_dbgLines.splice(0,_dbgLines.length-DBG_MAX);
+  if(force||Date.now()-_dbgLastSave>1000)dbgFlush();
+  if(_dbgOn)dbgRender();
+}
+function dbgRender(){
+  const box=document.getElementById('dbgLog');if(box)box.value=_dbgLines.join('\n');
+  const st=document.getElementById('dbgState');if(st)st.textContent=dbgSnap();
+  if(box)box.scrollTop=box.scrollHeight;
+}
+function dbgWrap(el,name){
+  const origPlay=el.play.bind(el),origPause=el.pause.bind(el);
+  el.play=function(){
+    dbgLog(name+'.play() APP');
+    const p=origPlay();
+    if(p&&p.catch)p.catch(e=>dbgLog(name+'.play REJECT '+((e&&e.name)||'?')+' '+((e&&e.message)||'').slice(0,40)));
+    return p;
+  };
+  el.pause=function(){dbgLog(name+'.pause() APP');return origPause();};
+  ['play','playing','pause','ended','error','stalled','waiting','emptied'].forEach(ev=>{
+    el.addEventListener(ev,()=>{
+      let extra='';
+      if(ev==='error'&&el.error)extra=' code'+el.error.code;
+      dbgLog(name+':'+ev+extra);
+    });
+  });
+}
+function dbgInit(){
+  const g=document.getElementById('gAudioEl'),s=document.getElementById('silentLoopEl');
+  if(g)dbgWrap(g,'G');
+  if(s)dbgWrap(s,'S');
+  document.addEventListener('visibilitychange',()=>dbgLog('VIS '+document.visibilityState,true));
+  window.addEventListener('pagehide',()=>dbgLog('pagehide',true));
+  window.addEventListener('pageshow',()=>dbgLog('pageshow',true));
+  document.addEventListener('freeze',()=>dbgLog('freeze',true));
+  document.addEventListener('resume',()=>dbgLog('resume',true));
+  const ver=document.querySelector('.ver');
+  if(ver)ver.addEventListener('click',dbgToggle);
+  const cp=document.getElementById('dbgCopyBtn');
+  if(cp)cp.onclick=()=>{
+    const box=document.getElementById('dbgLog');if(!box)return;
+    const txt=box.value;
+    const fallback=()=>{box.removeAttribute('readonly');box.focus();box.setSelectionRange(0,txt.length);box.setAttribute('readonly','');toast('全選択しました。長押しでコピーしてください');};
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(()=>toast('コピーしました')).catch(fallback);
+    else fallback();
+  };
+  const cl=document.getElementById('dbgClearBtn');
+  if(cl)cl.onclick=()=>{_dbgLines=[];try{localStorage.removeItem(DBG_LOG_KEY);}catch(e){}dbgRender();};
+  const cb=document.getElementById('dbgCloseBtn');
+  if(cb)cb.onclick=dbgToggle;
+  try{const saved=localStorage.getItem(DBG_LOG_KEY);if(saved)_dbgLines=JSON.parse(saved)||[];}catch(e){_dbgLines=[];}
+  dbgLog('--- page load ---',true);
+  // The AudioContext is created lazily, so attach once it shows up.
+  setInterval(()=>{
+    if(!_dbgCtxHooked&&_actx){_dbgCtxHooked=true;try{_actx.addEventListener('statechange',()=>dbgLog('CTX '+_actx.state));}catch(e){}}
+  },1000);
+  try{if(localStorage.getItem(DBG_ON_KEY)==='1')dbgToggle();}catch(e){}
+}
+function dbgToggle(){
+  _dbgOn=!_dbgOn;
+  const hud=document.getElementById('dbgHud');
+  if(hud)hud.classList.toggle('show',_dbgOn);
+  try{localStorage.setItem(DBG_ON_KEY,_dbgOn?'1':'0');}catch(e){}
+  if(_dbgOn){dbgRender();if(!_dbgTick)_dbgTick=setInterval(()=>{const st=document.getElementById('dbgState');if(st)st.textContent=dbgSnap();},500);}
+  else if(_dbgTick){clearInterval(_dbgTick);_dbgTick=null;}
+}
+dbgInit();
 </script>
 </body>
 </html>
