@@ -655,7 +655,6 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 const APP_VER = 'v171';
 const BG_RELOAD_KEY = 'yogatari_pending_bg_reload';
 let _actx = null, _silentOn = false, _bgSessionBroken = false;
-let _audioSessionStale = false, _slWatchBound = false;
 function resumeAudioContext() {
   // iOS Safari sets state to 'interrupted' (distinct from 'suspended') after a phone call,
   // Siri, or another app's audio interrupts this page's audio session.
@@ -674,63 +673,20 @@ function markBgSessionBroken() {
     stop();
   }
 }
-// An interruption (incoming call, another app taking audio) revokes this page's iOS audio
-// session. The media elements keep their old PlatformMediaSession, so every later play()
-// succeeds in the foreground yet iOS still drops audio on backgrounding — which is why only
-// a reload used to recover. Drop back to the idle state so playback is not silently resumed
-// without a user gesture, and let the next ▶ rebuild the elements (see rebuildAudioElements).
-function markAudioSessionStale() {
-  if (_audioSessionStale) return;
-  _audioSessionStale = true;
-  if (playing) {
-    if (currentNovelId && segs.length) saveBookmarkCurrent(idx);
-    stop();
-    toast('音声が中断されました。▶ で再開します');
-  }
-}
-function bindSilentLoopWatch(el) {
-  if (_slWatchBound || !el) return;
-  el.addEventListener('pause', function(){ if (_silentOn) markAudioSessionStale(); });
-  _slWatchBound = true;
-}
-// Recreating the elements gives them a fresh PlatformMediaSession, which is what a reload
-// used to provide. Only ever called from the on-screen ▶ handler so the follow-up play()
-// calls still sit inside the user gesture that iOS requires to grant background audio —
-// never from the Media Session handlers or chapter auto-advance, which have no gesture.
-function rebuildAudioElements() {
-  try {
-    ['gAudioEl', 'silentLoopEl'].forEach(function(id) {
-      var old = document.getElementById(id);
-      if (!old) return;
-      try { old.pause(); old.removeAttribute('src'); old.load(); } catch(e) {}
-      old.remove();
-      var el = document.createElement('audio');
-      el.id = id;
-      el.setAttribute('playsinline', '');
-      el.setAttribute('webkit-playsinline', '');
-      el.style.display = 'none';
-      if (id === 'silentLoopEl') el.loop = true;
-      document.body.appendChild(el);
-    });
-  } catch(e) {}
-  _gAudio = null; _silentOn = false; _audioUnlocked = false; _slWatchBound = false;
-  if (_actx) { try { _actx.close(); } catch(e) {} _actx = null; }
-  _audioSessionStale = false;
-}
 function startSilentAudio() {
   if (!_actx) {
     try {
       _actx = new (window.AudioContext || window.webkitAudioContext)();
-      _actx.onstatechange = () => { if (_actx.state === 'interrupted') markAudioSessionStale(); resumeAudioContext(); };
+      _actx.onstatechange = () => { resumeAudioContext(); if (_actx.state === 'interrupted') markBgSessionBroken(); };
     } catch(e) {}
   }
   try {
     var _sl = document.getElementById('silentLoopEl');
     if (!_sl) return;
-    bindSilentLoopWatch(_sl);
+    // An interruption (incoming call, another app's audio) leaves this loop paused while
+    // _silentOn stays true. Re-arm from the element's real state, not the flag: without a
+    // playing element the page holds no audio session and iOS stops audio on backgrounding.
     if (_silentOn && !_sl.paused && !_sl.ended) return;
-    // Clear the flag first so the src assignment below cannot trip the pause watcher.
-    _silentOn = false;
     _sl.src = SILENT_MP3; _sl.volume = 0.01; _sl.play().catch(function(){}); _silentOn = true;
   } catch(e) {}
 }
@@ -1605,7 +1561,7 @@ function togglePlay(){
   if(!segs.length)return;
   if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudioFull();updBtn();setBadge(false);msSetState('paused');}
   else if(_bgSessionBroken&&currentNovelId){try{sessionStorage.setItem(BG_RELOAD_KEY,currentNovelId);}catch(e){}location.reload();}
-  else{rebuildAudioElements();startPlay();}
+  else startPlay();
 }
 function stop(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
@@ -2037,10 +1993,6 @@ function switchTab(name){
 }
 document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible'){
-    // The pause event can be missed while hidden, so re-check the loop on the way back in:
-    // a silent loop we never stopped but that is no longer running means iOS interrupted us.
-    const _slv=document.getElementById('silentLoopEl');
-    if(_silentOn&&_slv&&(_slv.paused||_slv.ended)){markAudioSessionStale();return;}
     if(playing&&!_busy){if(hasGoogleKey()){const _ael=getAudioEl();if(!_ael||_ael.paused||_ael.ended){stopGoogleAudio();_busy=false;setTimeout(()=>speakIdx(idx),400);}}else if(!SS.speaking&&!SS.pending){SS.cancel();setTimeout(()=>speakIdx(idx),300);}}
     resumeAudioContext();
   }
