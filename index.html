@@ -179,9 +179,10 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 .sett-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;letter-spacing:0.04em;color:#c8991e;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #302618}
 .sett-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .sett-label{font-size:13px;color:#ede0c6;flex:1}
-.sett-sub{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;color:#564838;margin-top:3px;line-height:1.7}
-.sett-note-warn{display:none;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;line-height:1.8;color:#f0a050;background:rgba(240,160,80,0.08);border:1px solid rgba(240,160,80,0.35);border-radius:8px;padding:10px 12px;margin-bottom:10px}
-.sett-note-warn.show{display:block}
+.sett-sub{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;color:#564838;margin-top:3px;line-height:1.8}
+.sett-note{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;color:#564838;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+.sett-note.warn{display:none;color:#f0a050;background:rgba(240,160,80,0.08);border-color:rgba(240,160,80,0.35)}
+.sett-note.warn.show{display:block}
 .api-input{width:100%;background:#0d0d0d;border:1px solid #302618;border-radius:10px;color:#ede0c6;font-family:'Courier New',Consolas,monospace;font-size:12px;padding:11px 14px;outline:none;-webkit-appearance:none;transition:border-color 0.2s;margin-bottom:8px}
 .api-input:focus{border-color:#c8991e}
 .api-input::placeholder{color:#564838}
@@ -346,7 +347,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <div class="usage-track"><div class="usage-fill" id="usageFill" style="width:0%"></div></div>
         <button class="usage-reset-btn" onclick="resetUsage()">カウントをリセット</button>
       </div>
-      <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：400万文字、Neural2：100万文字、Chirp 3 HD：100万文字。合計600万文字。<br>各上限の90%で警告、98%でKyokoに自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
+      <div class="sett-sub" style="margin-bottom:10px">Standard / WaveNet：400万文字、Neural2：100万文字、Chirp 3 HD：100万文字。合計600万文字。<br>各上限の90%で警告、98%で端末内蔵音声に自動切替。<br>カウントは毎月1日に自動リセットされます。</div>
     </div>
     <div class="sett-section" id="googleVoiceSection" style="display:none">
       <div class="sett-title">// Google音声を選ぶ</div>
@@ -406,15 +407,15 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
     </div>
     <div class="sett-section">
       <div class="sett-title">// Google側での使用量・請求確認</div>
-      <div class="sett-sub" style="margin-bottom:8px;line-height:1.9">実際の使用量や請求額はGoogle Cloud Consoleで確認できます。</div>
+      <div class="sett-sub" style="margin-bottom:8px">実際の使用量や請求額はGoogle Cloud Consoleで確認できます。</div>
       <a class="howto-link" href="https://console.cloud.google.com/apis/api/texttospeech.googleapis.com/metrics" target="_blank">📊 TTS API 使用量グラフを見る</a>
       <a class="howto-link" href="https://console.cloud.google.com/billing" target="_blank">💳 請求・料金を確認する（課金防止設定）</a>
-      <div class="sett-sub" style="margin-bottom:14px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">⭐ 予算アラートを <b>¥1</b> で設定しておくと<br>万が一の課金時にメールで通知が届いて安心です。</div>
+      <div class="sett-note">⭐ 予算アラートを <b>¥1</b> で設定しておくと<br>万が一の課金時にメールで通知が届いて安心です。</div>
     </div>
     <div class="sett-section">
       <div class="sett-title">// Google Cloud TTS（高品質）</div>
-      <div class="sett-sub" style="margin-bottom:10px;line-height:1.7">GoogleアカウントのAPIキーを入力すると<br>端末内蔵音声より自然な日本語音声になります。</div>
-      <div class="sett-note-warn" id="bgWarnNote">⚠ 現在は<b>端末内蔵の音声</b>で読み上げています。<br>この音声は<b>画面を消すと読み上げが停止します</b>。<br>iPhone・Androidとも端末側の仕様のため、アプリ側では回避できません。<br>画面を消したまま聴くにはGoogle TTSの設定が必要です。</div>
+      <div class="sett-sub" style="margin-bottom:10px">GoogleアカウントのAPIキーを入力すると<br>端末内蔵音声より自然な日本語音声になります。</div>
+      <div class="sett-note warn" id="bgWarnNote">⚠ <b>端末内蔵の音声では画面を消すと停止します</b><br>現在この音声で読み上げています。iPhone・Androidとも端末側の仕様のため、アプリ側では回避できません。<br>画面を消したまま聴くにはGoogle TTSの設定が必要です。</div>
       <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
       <div class="api-status" id="apiStatus"></div>
       <input class="api-input" id="apiKeyInput" type="password" placeholder="AIzaSy…（APIキーを貼り付け）" autocomplete="off" autocorrect="off" spellcheck="false">
@@ -426,20 +427,20 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
     <div class="sett-section" id="ssmlOptsSection" style="display:none">
       <div class="sett-title">// 読み上げ演出（Google TTS）</div>
       <div class="sett-row">
-        <span class="sett-label">会話文の速度・ピッチ変更<br><span class="sett-sub" style="font-size:11px">「」内を設定速度-0.1・設定ピッチ+0.2で読む</span></span>
+        <span class="sett-label">会話文の速度・ピッチ変更<br><span class="sett-sub">「」内を設定速度-0.1・設定ピッチ+0.2で読む</span></span>
         <button class="sett-btn" id="ssmlDialogueBtn" onclick="toggleSsmlDialogue()">OFF</button>
       </div>
       <div class="sett-sub" style="margin-top:4px">Chirp3 HD は非対応。5000文字超のセグメントは自動でフォールバック。<br>⚠ ONにするとSSMLタグ分の文字数が上乗せされ、TTS使用量カウントが増えます。節約したい場合はOFF推奨。</div>
     </div>
     <div class="sett-section">
       <div class="sett-title">// 省略設定</div>
-      <div class="sett-sub" style="margin-bottom:12px;line-height:1.8;background:rgba(200,153,30,0.07);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:10px 12px;">
-        📖 <b>省略をONにした項目</b>は、その言葉や形式を含む段落を<b>読み上げから自動でスキップ</b>します。<br>
-        <span style="color:#564838;font-size:11px">設定は次の話の読み込みから反映されます。</span>
+      <div class="sett-note">
+        📖 省略をONにした項目は、その言葉や形式を含む段落を読み上げから自動でスキップします。<br>
+        設定は次の話の読み込みから反映されます。
       </div>
       <div id="skipFilterList"></div>
     </div>
-    <div class="sett-sub" style="font-size:10px;color:#564838;margin:4px 0 4px">— カスタムフィルター</div>
+    <div class="sett-sub" style="margin:4px 0">— カスタムフィルター</div>
     <div class="filter-item" style="border-bottom:none">
       <div class="filter-desc"><div class="filter-label">省略単語</div><div class="filter-note">段落に含まれていたらスキップ（次話読み込みから反映）</div></div>
       <button class="sett-btn" onclick="openCustomWordModal()">管理 →</button>
@@ -450,7 +451,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <span class="sett-label">辞書を使う</span>
         <button class="sett-btn sett-btn-save" id="rdictToggleBtn" onclick="toggleRdictOn()">ON</button>
       </div>
-      <div class="sett-sub" style="margin-bottom:10px">Google TTS / Kyokoへの送信前にテキストを置換します。長い単語が優先適用されます。</div>
+      <div class="sett-sub" style="margin-bottom:10px">Google TTS / 端末内蔵音声への送信前にテキストを置換します。長い単語が優先適用されます。</div>
       <button class="sett-btn" onclick="openRdictModal()" style="width:100%">単語を管理 →</button>
     </div>
     <div class="sett-section">
@@ -459,11 +460,11 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <span class="sett-label">夜空アニメーション</span>
         <button class="sett-btn" id="bgToggleBtn" onclick="toggleBgEffect()">OFF</button>
       </div>
-      <div class="sett-sub" id="bgStatusTxt" style="margin-bottom:4px;color:#564838">月齢・星・流れ星・オーロラ・ランダム天気</div>
+      <div class="sett-sub" id="bgStatusTxt" style="margin-bottom:4px">月齢・星・流れ星・オーロラ・ランダム天気</div>
     </div>
     <div class="sett-section">
       <div class="sett-title">// データ管理</div>
-      <div class="sett-sub" style="margin-bottom:12px;line-height:1.8">しおり・設定・統計をファイルに書き出し／読み込みできます。<br><span style="font-size:11px;color:#564838">※ APIキーはセキュリティ上バックアップに含まれません。リストア後に再入力してください。</span></div>
+      <div class="sett-sub" style="margin-bottom:12px">しおり・設定・統計をファイルに書き出し／読み込みできます。<br>※ APIキーはセキュリティ上バックアップに含まれません。リストア後に再入力してください。</div>
       <div class="api-btns">
         <button class="sett-btn sett-btn-save" onclick="backupData()" style="flex:1">バックアップ</button>
         <button class="sett-btn sett-btn-clear" onclick="restoreData()" style="flex:1">リストア</button>
@@ -1422,8 +1423,8 @@ function toggleSkipFilter(i) {
 }
 function renderSkipFilters() {
   var el=document.getElementById('skipFilterList'); if(!el)return;
-  var basicHtml='<div class="sett-sub" style="font-size:10px;color:#564838;margin-bottom:6px">— 基本フィルター（ページ数・更新日・ナビ等）</div>';
-  var customHtml='<div class="sett-sub" style="font-size:10px;color:#564838;margin:4px 0 4px">— 後書き・お願い系フィルター</div>';
+  var basicHtml='<div class="sett-sub" style="margin:4px 0">— 基本フィルター（ページ数・更新日・ナビ等）</div>';
+  var customHtml='<div class="sett-sub" style="margin:4px 0">— 後書き・お願い系フィルター</div>';
   CONFIGURABLE_FILTERS.forEach(function(def,i){
     var on=isFilterOn(def.key);
     var row='<div class="filter-item"><div class="filter-desc"><div class="filter-label">'+def.label+'</div><div class="filter-note">'+def.desc+'</div></div><button class="filter-toggle '+(on?'on':'off')+'" onclick="toggleSkipFilter('+i+')">'+(on?'ON':'OFF')+'</button></div>';
@@ -1713,7 +1714,7 @@ function saveApiKey(){
 function clearApiKey(){
   _gApiKey='';localStorage.removeItem('yogatari_gkey');document.getElementById('apiKeyInput').value='';
   clearPrefetchCache();
-  document.getElementById('googleVoiceSection').style.display='none';updSsmlSection();showApiStatus('ng','クリアしました — Kyokoに戻ります');updModeDisplay();updUsageWarnBar();toast('Kyokoに戻しました');
+  document.getElementById('googleVoiceSection').style.display='none';updSsmlSection();showApiStatus('ng','クリアしました — 端末内蔵音声に戻ります');updModeDisplay();updUsageWarnBar();toast('端末内蔵音声に戻しました');
 }
 function showApiStatus(type,msg){const el=document.getElementById('apiStatus');el.textContent=msg;el.className='api-status show '+type;}
 function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if(mc)return 'Chirp3-'+mc[1];const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
