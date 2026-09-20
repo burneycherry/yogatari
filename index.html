@@ -596,6 +596,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <li>アプリを起動するたび、3秒後に履歴の作品を1つずつ自動チェック</li>
         <li>未読の話があると履歴に <span style="background:#c8340c;color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;">NEW +3話</span> などと表示。<br>(数字は最新話数 − 現在読んでる話数)</li>
         <li>最新話まで読み進めるとNEWは消える。</li>
+        <li>エブリスタは作品全体のページ番号で位置を数えるため、「第Nページ」「NEW +Nページ」と表示される</li>
       </ul>
       <h3>// 対応サイト</h3>
       <ul>
@@ -958,6 +959,10 @@ function siteMarkOf(url) {
     for (const m of SITE_MARKS) { if (h.indexOf(m.host) >= 0) return m; }
   } catch(e) {}
   return null;
+}
+// Estar numbers a work by whole-work page (?page=N), not by episode, so its counters read "ページ".
+function chapUnitOf(url) {
+  try { return new URL(url).hostname.indexOf('estar.jp') >= 0 ? 'ページ' : '話'; } catch(e) { return '話'; }
 }
 let segs=[], idx=0, playing=false;
 let nextUrl=null, prevUrl=null, nextTimer=null, nextCount=0;
@@ -1424,7 +1429,7 @@ async function pickChapter(i) {
 function closeModal(e) { if(e&&e.target!==document.getElementById('chapModal'))return; document.getElementById('chapModal').classList.remove('show'); }
 function showResumeBanner(bk) {
   document.getElementById('resumeTitle').textContent = bk.chapterTitle || 'しおりから再開';
-  document.getElementById('resumeSub').textContent = '第' + (bk.chapterNum||'?') + '話 · 段落 ' + (bk.segIdx+1);
+  document.getElementById('resumeSub').textContent = '第' + (bk.chapterNum||'?') + chapUnitOf(bk.chapterUrl||'') + ' · 段落 ' + (bk.segIdx+1);
   document.getElementById('resumeBanner').classList.add('show');
 }
 function hideResumeBanner() { document.getElementById('resumeBanner').classList.remove('show'); }
@@ -1958,14 +1963,15 @@ function renderHistList(){
     const d=new Date(bk.ts);const dateStr=d.getMonth()+1+'/'+d.getDate()+' '+d.getHours()+':'+String(d.getMinutes()).padStart(2,'0');
     const newInfo=_newChapCache[bk.novelId];const latestTotal=(newInfo&&newInfo.total)||bk.totalChap||0;
     const diff=Math.max(0,latestTotal-(bk.chapterNum||0));
-    const newBadge=diff>0?'<span class="hist-new">NEW +'+diff+'話</span>':'';
+    const unit=chapUnitOf(bk.chapterUrl||'');
+    const newBadge=diff>0?'<span class="hist-new">NEW +'+diff+unit+'</span>':'';
     const sm=siteMarkOf(bk.chapterUrl||bk.tocUrl||'');
     return '<div class="hist-item" id="hi-'+esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_')+'" onclick="resumeFrom(\''+esc(bk.novelId)+'\')">' +
       '<div class="hist-thumb"><div class="hist-thumb-icon'+(sm?' site-mark '+sm.cls:'')+'" title="'+esc(sm?sm.title:'')+'">'+esc(sm?sm.label:'📖')+'</div><a class="hist-thumb-link" href="'+esc(tocHrefFor(bk))+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="目次ページを開く">🔗</a></div>' +
       '<div class="hist-main"><div class="hist-title">'+esc(bk.novelTitle||bk.chapterTitle)+'</div>' +
       (function(){var ct=bk.chapterTitle||'',nt=bk.novelTitle||'';if(!ct||ct===nt||/^第\d+話?$/.test(ct.trim()))return '';return '<div class="hist-chap-title">'+esc(ct)+'</div>';})() +
       '<div class="hist-meta">'+(newBadge?newBadge+' ':'')+
-      '<span>第'+(bk.chapterNum||'?')+'話</span><span>段落'+(bk.segIdx+1)+'</span><span>'+dateStr+'</span></div></div>' +
+      '<span>第'+(bk.chapterNum||'?')+unit+'</span><span>段落'+(bk.segIdx+1)+'</span><span>'+dateStr+'</span></div></div>' +
       '<button class="hist-del" onclick="event.stopPropagation();delHist(\''+esc(bk.novelId)+'\')">✕</button></div>';
   }).join('');
 }
@@ -2005,9 +2011,14 @@ async function _checkNewChapterImpl(bk){
   try{
     const html=await fetchHtml(tocUrl);
     if(bk.chapterUrl&&bk.chapterUrl.indexOf('estar.jp')>=0){
-      // Estar has no TOC parser of its own; its index page states the count as "全61エピソード"
-      var _em=html.match(/全\s*([\d,]+)\s*エピソード/);
-      var _etotal=_em?parseInt(_em[1].replace(/,/g,'')):0;
+      // Estar has no TOC parser of its own. Its "全61エピソード" count is per episode while
+      // bk.chapterNum comes from ?page=, which is a whole-work page number, so the two cannot be
+      // compared. Read the page total ("2648ページ") instead and take the largest match.
+      var _etotal=0;
+      (html.match(/([\d,]+)\s*ページ/g)||[]).forEach(function(_pm){
+        var _pn=parseInt(_pm.replace(/[^\d]/g,''));
+        if(_pn>_etotal)_etotal=_pn;
+      });
       if(_etotal>0){
         const _eFinal=Math.max(_etotal,bk.totalChap||0);
         _newChapCache[bk.novelId]={total:_eFinal,checkedAt:Date.now()};
