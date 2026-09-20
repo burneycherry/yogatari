@@ -1062,7 +1062,9 @@ const SITE_RULES = [
   // #novelBoby is Alphapolis' own spelling of the body container - not a typo on our side
   { host:'alphapolis.co.jp',    body:'#novelBoby,.content-text,.novel_text', next:'a.next,a[href*="next"]', prev:'a.prev,a[href*="prev"]' },
   { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0', next:'', prev:'' },
-  { host:'estar.jp',            body:'#novel-content,.novel-content', next:'.pager-next a', prev:'.pager-prev a' },
+  // Estar puts the text in .content; a chapter cover page has only the .subject heading inside
+  // .body, and its whole text can be as short as "第1章　資産家殺人事件", hence minText
+  { host:'estar.jp',            body:'.mainBody .content,.mainBody .body', next:'.pager-next a', prev:'.pager-prev a', minText:8 },
   { host:'aozora.gr.jp',        body:'.main_text', next:'', prev:'' },
 ];
 const NEXT_TEXTS = ['次の話','次話','次章','次のページ','次へ','次話へ','次のエピソード','次のページへ','>>','→','next','次回'];
@@ -1274,7 +1276,15 @@ function extractPage(html, pageUrl) {
     try { doc.querySelectorAll(s).forEach(el=>el.remove()); } catch(e) {}
   });
   let bodyEl = null;
-  if (rule) bodyEl = doc.querySelector(rule.body);
+  // Take the rule's selectors as a priority list. querySelector() with a comma-separated list
+  // returns whichever element comes first in the document, which on Estar is the wrapper that
+  // also holds the episode heading rather than the text itself.
+  if (rule && rule.body) {
+    for (const sel of rule.body.split(',')) {
+      const el = doc.querySelector(sel.trim());
+      if (el && el.textContent.trim()) { bodyEl = el; break; }
+    }
+  }
   if (!bodyEl) { for (const sel of ['#novel_honbun','#novel-body','.episode-content','.widget-episodeBody','.novel_text','article','main','#main','#content','.content']) { const el=doc.querySelector(sel); if(el&&el.textContent.trim().length>100){bodyEl=el;break;} } }
   if (!bodyEl) { let max=0; doc.querySelectorAll('div,section,article').forEach(el=>{const l=el.textContent.trim().length;if(l>max&&l<80000){max=l;bodyEl=el;}}); }
   function domToText(el) {
@@ -1289,7 +1299,8 @@ function extractPage(html, pageUrl) {
   if(isFilterOn('decosym'))title=stripDecoSym(title)||title;
   if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) throw new Error('本文を取得できませんでした（最終話の可能性があります）');
   if (/Enable JavaScript and cookies to continue|Just a moment|Cloudflare Ray ID/i.test(rawText)) throw new Error('このページはCloudflare保護により取得できませんでした。ハーメルン等は直接アクセスが必要な場合があります。');
-  if (!rawText || rawText.length < 30) throw new Error('本文を取得できませんでした。URLを確認してください。');
+  const minText = (rule && rule.minText) ? rule.minText : 30;
+  if (!rawText || rawText.length < minText) throw new Error('本文を取得できませんでした。URLを確認してください。');
   return { title, novelTitle, text: rawText, nextUrl: nextPageUrl, prevUrl: prevPageUrl };
 }
 function extractTitle(doc, pageUrl, preChapTitle) {
