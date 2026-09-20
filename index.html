@@ -553,18 +553,26 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         この音声は画面を消すと読み上げが止まります。iPhone・Androidとも端末側の仕様で、アプリ側では回避できません。<br><br>
         画面を消したまま聴きたい場合は、下記の「Google TTS 高品質音声」を設定してください。
       </div>
-      <h3>// しおり・履歴</h3>
+      <h3>// Google TTS 高品質音声（任意）</h3>
+      <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt"><b>Google Cloud Consoleを開く</b><br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#c8991e">console.cloud.google.com</span></div></div>
+      <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt"><b>プロジェクトを作成</b> → 名前は何でもOK</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>Text-to-Speech APIを有効化</b> → APIとサービス → ライブラリ → text to speech</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt"><b>請求先を設定</b>（無料枠あり。詳細は設定タブで確認）</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">5</div><div class="rdm-step-txt"><b>APIキーを発行</b> → 認証情報 → APIキー作成 → <b>AIzaSy…</b> をコピー</div></div>
+      <div class="rdm-step"><div class="rdm-step-num">6</div><div class="rdm-step-txt"><b>設定タブに貼り付け</b> → 保存して使う → 完了！</div></div>
+      <div class="rdm-note">🔒 キーはこの端末にのみ保存。外部サーバーには送信しません。</div>
+      <h3>// バックグラウンド再生</h3>
       <ul>
-        <li>読み上げ中は5段落ごとに自動でしおり保存</li>
-        <li>次回同じURLを入力すると「🔖 読みかけ」バナーが出る</li>
-        <li>「履歴」タブから過去に読んだ小説を再開できる（<b>▶</b> で再生開始）</li><li><b>🔗</b> でその作品の目次ページをブラウザで開く</li>
+        <li>Google TTS を設定している場合のみ、画面を消しても読み上げが続く</li>
+        <li>端末内蔵の音声（iPhoneは Kyoko、Androidは端末のTTSエンジン）では画面を消すと停止する。端末側の仕様のため回避できない</li>
+        <li>電話や他アプリの音声で中断されると、その後バックグラウンド再生が止まることがある</li>
+        <li>止まったときは画面上部の表示が <b>⚠ 中断 ▶で再開</b> に変わる。<b>▶</b> をタップすれば元通りになる</li>
+        <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
       </ul>
-      <h3>// 新着話の自動検出</h3>
-      <ul>
-        <li>アプリを起動するたび、3秒後に履歴の作品を1つずつ自動チェック</li>
-        <li>未読の話があると履歴に <span style="background:#c8340c;color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;">NEW +3話</span> などと表示。<br>(数字は最新話数 − 現在読んでる話数)</li>
-        <li>最新話まで読み進めるとNEWは消える。</li>
-      </ul>
+      <div class="rdm-note" style="margin-top:4px">
+        📌 再生が止まった・次の話に進まない場合は<br>
+        まず <b>▶</b> を1回タップしてみてください。
+      </div>
       <h3>// 再生コントロール</h3>
       <ul>
         <li><b>⏮</b> で1段落戻る ／ <b>⏭</b> で1段落進む</li>
@@ -583,26 +591,18 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <li>復帰するには画面をタップ。再生は <b>▶</b> で再開</li>
         <li><b>✕</b> でキャンセル、🌙 を再タップで行を隠せる</li>
       </ul>
-      <h3>// バックグラウンド再生</h3>
+      <h3>// しおり・履歴</h3>
       <ul>
-        <li>Google TTS を設定している場合のみ、画面を消しても読み上げが続く</li>
-        <li>端末内蔵の音声（iPhoneは Kyoko、Androidは端末のTTSエンジン）では画面を消すと停止する。端末側の仕様のため回避できない</li>
-        <li>電話や他アプリの音声で中断されると、その後バックグラウンド再生が止まることがある</li>
-        <li>止まったときは画面上部の表示が <b>⚠ 中断 ▶で再開</b> に変わる。<b>▶</b> をタップすれば元通りになる</li>
-        <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
+        <li>読み上げ中は5段落ごとに自動でしおり保存</li>
+        <li>次回同じURLを入力すると「🔖 読みかけ」バナーが出る</li>
+        <li>「履歴」タブから過去に読んだ小説を再開できる（<b>▶</b> で再生開始）</li><li><b>🔗</b> でその作品の目次ページをブラウザで開く</li>
       </ul>
-      <div class="rdm-note" style="margin-top:4px">
-        📌 再生が止まった・次の話に進まない場合は<br>
-        まず <b>▶</b> を1回タップしてみてください。
-      </div>
-      <h3>// Google TTS 高品質音声（任意）</h3>
-      <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt"><b>Google Cloud Consoleを開く</b><br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#c8991e">console.cloud.google.com</span></div></div>
-      <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt"><b>プロジェクトを作成</b> → 名前は何でもOK</div></div>
-      <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>Text-to-Speech APIを有効化</b> → APIとサービス → ライブラリ → text to speech</div></div>
-      <div class="rdm-step"><div class="rdm-step-num">4</div><div class="rdm-step-txt"><b>請求先を設定</b>（無料枠あり。詳細は設定タブで確認）</div></div>
-      <div class="rdm-step"><div class="rdm-step-num">5</div><div class="rdm-step-txt"><b>APIキーを発行</b> → 認証情報 → APIキー作成 → <b>AIzaSy…</b> をコピー</div></div>
-      <div class="rdm-step"><div class="rdm-step-num">6</div><div class="rdm-step-txt"><b>設定タブに貼り付け</b> → 保存して使う → 完了！</div></div>
-      <div class="rdm-note">🔒 キーはこの端末にのみ保存。外部サーバーには送信しません。</div>
+      <h3>// 新着話の自動検出</h3>
+      <ul>
+        <li>アプリを起動するたび、3秒後に履歴の作品を1つずつ自動チェック</li>
+        <li>未読の話があると履歴に <span style="background:#c8340c;color:#fff;font-size:10px;padding:1px 5px;border-radius:4px;">NEW +3話</span> などと表示。<br>(数字は最新話数 − 現在読んでる話数)</li>
+        <li>最新話まで読み進めるとNEWは消える。</li>
+      </ul>
       <h3>// 対応サイト</h3>
       <ul>
         <li>小説家になろう（ncode.syosetu.com）</li>
