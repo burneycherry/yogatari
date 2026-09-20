@@ -131,9 +131,20 @@ const int kMinimumContentDurationSecs = 5;
 - しきい値は「5秒**超**」なので、ちょうど5秒では不足する
 - 対策後、Androidで停止しなくなり、章をまたぐ自動進行も動作。**Chromeのメディア通知が表示されるようになる**（`kPersistent` として認識された証拠）
 
+#### デバッグモード（計測用）
+
+設定タブ最下部のトグルで切り替える。バックグラウンド再生の不具合調査で使った計測機能であり、**既定はOFF**。
+
+- ONのときだけ、音声要素の `play` / `pause` のラッパー、メディアイベントの購読、計測タイマーを生成する。**OFFの間はこれらを一切生成しないため、再生経路に計測処理が入らない**
+- ONにすると、トップバーのバージョン表記のタップで計測ログ画面を開閉できる。OFFのときタップしても反応しない
+- ログは `currentTime` の進行、アプリ起点の操作（`G.play() APP` 等）とプラットフォーム起点のイベント（`G:pause` 等）の区別、Media Sessionの各ハンドラ呼び出しを記録する
+- **この機能を削除・簡略化しないこと。** 画面に出ないため未使用コードに見えるが、iOS・Androidのバックグラウンド再生の問題はいずれもこのログでしか原因を特定できなかった
+
 #### その他の実測事項
 
 - Android Chrome では `SILENT_MP3` のデータURIがデコードできない（`MEDIA_ERR_SRC_NOT_SUPPORTED`）。このため `keepAudioSessionAlive()` が段落間を埋めるために `gAudioEl` へ同じ音源を渡す処理は、Android では行わない（`_silentMode !== 'mp3'` で抑止）
+- **一時停止時は無音ループも必ず止めること。** 鳴らしたままだとページは音を出し続けている扱いになり、プラットフォームはメディアセッションを再生中のままにする。ロック画面のボタンは見た目が ▶ でも実体は一時停止のままで、押すと `play` ではなく `pause` ハンドラが呼ばれ再生できない
+- `stopSilentAudio()` で `src` を空にしてはならない。空srcはページURLの読み込みとして失敗し、そのエラーが `startSilentAudio()` のデコード判定に届いて `_silentMode` を誤って切り替える
 - **`volume` はiOSでは読み取り専用で無視されるが、Androidでは有効**。`unlockAudio()` が解除用の無音再生のために `volume=0` にする箇所があり、この復帰処理を成功時のみに書くとAndroidで全編無音になる。`startPlay()` は `unlockAudio()` の直後に `stopGoogleAudioFull()` を呼ぶため、解除用の `play()` は必ず中断され `AbortError` で終わる。iOSでは `volume` が無視されるためこの不具合は表面化しない
 
 ### テキスト処理
@@ -169,6 +180,9 @@ const int kMinimumContentDurationSecs = 5;
 | `yogatari_reading_dict` / `yogatari_rdict_on` | 読み間違い辞書とそのON/OFF |
 | `yogatari_ssml_dialogue` | 会話文ピッチ（SSML）のON/OFF |
 | `yogatari_bg` | 背景エフェクトのON/OFF |
+| `yogatari_debug_mode` | デバッグモードのON/OFF（既定OFF） |
+| `yogatari_debug_hud` | 計測ログ画面の開閉状態 |
+| `yogatari_debug_log` | 計測ログの本文（最大220行） |
 
 ### sessionStorageキー一覧
 
