@@ -173,8 +173,6 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 .test-voice-btn{width:100%;padding:10px;margin:6px 0 8px;background:rgba(200,153,30,0.15);border:1px solid rgba(200,153,30,0.4);color:#c8991e;border-radius:10px;font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:13px;cursor:pointer;letter-spacing:.05em}
 .test-voice-btn:active{background:rgba(200,153,30,0.3)}
 .test-voice-btn.testing{opacity:0.6;pointer-events:none}
-.ios-hint{font-size:11px;color:#564838;background:rgba(200,153,30,0.06);border:1px solid rgba(200,153,30,0.2);border-radius:8px;padding:8px 12px;margin:8px 0 0;line-height:1.7;text-align:center;transition:opacity 0.5s}
-.ios-hint.hidden{opacity:0;pointer-events:none}
 .sett-section{margin-bottom:20px}
 .sett-title{font-family:'Hiragino Mincho ProN','YuMincho',serif;font-size:11px;letter-spacing:0.04em;color:#c8991e;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #302618}
 .sett-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -282,9 +280,6 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
     <div class="fetch-box" id="fetchBox">
       <div class="spin" id="spin"></div>
       <span id="fetchMsg">取得中…</span>
-    </div>
-    <div class="ios-hint" id="iosHint">
-      🍎 iPhoneは最初に <b>▶を1回タップ</b> すると次の話への自動進行が有効になります
     </div>
     <div class="resume-banner" id="resumeBanner" onclick="resumeBookmark()">
       <div class="resume-icon">🔖</div>
@@ -546,12 +541,12 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       <h3>// 基本の使い方</h3>
       <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt">小説家になろうなどの目次URLをコピーして「読む」タブに貼り付ける<br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#9e8660">例: https://ncode.syosetu.com/n1234ab/</span></div></div>
       <div class="rdm-step"><div class="rdm-step-num">2</div><div class="rdm-step-txt">「読込」を押すと話一覧が表示される。読みたい話をタップ</div></div>
-      <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>▶</b> をタップして読み上げ開始。話の終わりに3秒カウント後、次の話へ自動進行<br><span style="font-size:11px;color:#9e8660">※ 画面を消したまま聴くにはGoogle TTSの設定が必要です（下記参照）</span></div></div>
+      <div class="rdm-step"><div class="rdm-step-num">3</div><div class="rdm-step-txt"><b>▶</b> をタップして読み上げ開始。話の終わりに3秒カウント後、次の話へ自動進行<br><span style="font-size:11px;color:#9e8660">※ 画面を消したまま聴くにはGoogle音声の設定・選択が必要です（下記参照）</span></div></div>
       <div class="rdm-note" style="margin-bottom:10px;border-color:rgba(240,160,80,0.5);background:rgba(240,160,80,0.07)">
         ⚠️ <b>端末内蔵の音声では画面を消すと停止します</b><br><br>
-        APIキー未設定のときは端末内蔵の音声（iPhoneは Kyoko、Androidは端末のTTSエンジン）で読み上げます。<br><br>
+        設定タブの「// 再生音声を選ぶ」で<b>端末内蔵音声</b>を選んでいるときは、端末に搭載された音声で読み上げます（APIキー未設定のときも同じです）。<br><br>
         この音声は画面を消すと読み上げが止まります。iPhone・Androidとも端末側の仕様で、アプリ側では回避できません。<br><br>
-        画面を消したまま聴きたい場合は、下記の「Google TTS 高品質音声」を設定してください。
+        画面を消したまま聴きたい場合は、下記の「Google TTS 高品質音声」を設定し、「// 再生音声を選ぶ」でGoogle音声を選んでください。
       </div>
       <h3>// Google TTS 高品質音声（任意）</h3>
       <div class="rdm-step"><div class="rdm-step-num">1</div><div class="rdm-step-txt"><b>Google Cloud Consoleを開く</b><br><span style="font-family:'Courier New',Consolas,monospace;font-size:10px;color:#c8991e">console.cloud.google.com</span></div></div>
@@ -563,8 +558,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       <div class="rdm-note">🔒 キーはこの端末にのみ保存。外部サーバーには送信しません。</div>
       <h3>// バックグラウンド再生</h3>
       <ul>
-        <li>Google TTS を設定している場合のみ、画面を消しても読み上げが続く</li>
-        <li>端末内蔵の音声（iPhoneは Kyoko、Androidは端末のTTSエンジン）では画面を消すと停止する。端末側の仕様のため回避できない</li>
+        <li>APIキーを保存し、設定タブの「// 再生音声を選ぶ」で<b>Google音声</b>を選んでいる場合のみ、画面を消しても読み上げが続く（端末内蔵音声では端末側の仕様により停止する）</li>
         <li>電話や他アプリの音声で中断されると、その後バックグラウンド再生が止まることがある</li>
         <li>止まったときは画面上部の表示が <b>⚠ 中断 ▶で再開</b> に変わる。<b>▶</b> をタップすれば元通りになる</li>
         <li>ホーム画面に追加（共有→ホーム画面に追加）すると安定</li>
@@ -578,9 +572,8 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <li><b>⏮</b> で1段落戻る ／ <b>⏭</b> で1段落進む</li>
         <li>←前話 ／ 次話→ で話をまたいで移動</li>
         <li>速度・ピッチは − ＋ で0.1ずつ調整</li>
-        <li>画面左1/3タップ → 5秒戻る（再生中のみ）</li>
-        <li>画面右1/3タップ → 5秒進む（再生中のみ）</li>
-        <li>画面中央タップ → 通常スクロール</li>
+        <li>再生中は画面の左寄りタップで5秒戻る ／ 右寄りタップで5秒進む<br><span style="font-size:11px;color:#9e8660">※ 5秒単位で動くのはGoogle音声のとき。端末内蔵音声では1段落単位の移動になります</span></li>
+        <li>画面中央と下部はタップしても反応せず、通常どおりスクロールできる</li>
       </ul>
       <h3>// 睡眠タイマー</h3>
       <ul>
@@ -649,7 +642,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       <button class="modal-close" onclick="closeRdictModal()">✕</button>
     </div>
     <div style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px">
-      <div class="filter-note" style="margin-bottom:12px">Google TTS / Kyokoへの送信前にテキストを置換します。長い単語が優先適用されます。</div>
+      <div class="filter-note" style="margin-bottom:12px">Google TTS / 端末内蔵音声への送信前にテキストを置換します。長い単語が優先適用されます。</div>
       <div class="rdict-input-grid">
         <input class="custom-word-input" id="rdictFrom" type="text" placeholder="原文（例: 夜語り）" maxlength="20">
         <input class="custom-word-input" id="rdictTo" type="text" placeholder="読み（例: よがたり）" maxlength="30">
@@ -1527,7 +1520,7 @@ function unlockAudio(){
   // rejects its promise. Restoring the volume only on success therefore left the element
   // muted for the real playback — inaudible on Android, hidden on iOS where volume is
   // read-only. Always unmute, whichever way the promise settles.
-  el.play().then(()=>{_audioUnlocked=true;el.pause();el.src='';const hint=document.getElementById('iosHint');if(hint)hint.classList.add('hidden');}).catch(()=>{}).finally(()=>{el.volume=1;});
+  el.play().then(()=>{_audioUnlocked=true;el.pause();el.src='';}).catch(()=>{}).finally(()=>{el.volume=1;});
 }
 const _prefetchCache=new Map();
 let _nextHtmlCache=null, _nextPageCache=null, _prefetchGeneration=0;
@@ -2116,7 +2109,7 @@ function updUsageWarnBar(){
   const bar=document.getElementById('usageWarnBar');if(!bar)return;
   if(!useGoogleTts()){bar.style.display='none';return;}
   const cur=getUsage();const lim=USAGE_LIMIT(),warn=USAGE_WARN();const switchAt=Math.floor(lim*0.98);
-  if(cur>=switchAt){bar.textContent='⚠ 使用量が98%に達しました。Kyokoに切り替え中。';bar.className='usage-warn-bar critical';bar.style.display='block';}
+  if(cur>=switchAt){bar.textContent='⚠ 使用量が98%に達しました。端末内蔵音声に切り替え中。';bar.className='usage-warn-bar critical';bar.style.display='block';}
   else if(cur>=warn){bar.textContent='△ 使用量が'+(warn/10000).toFixed(0)+'万文字を超えました。残り'+Math.round((lim-cur)/10000)+'万文字';bar.className='usage-warn-bar';bar.style.display='block';}
   else{bar.style.display='none';}
 }
