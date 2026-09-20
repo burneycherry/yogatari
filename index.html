@@ -1283,7 +1283,8 @@ function extractPage(html, pageUrl) {
     return el.textContent || '';
   }
   const rawText = domToText(bodyEl || doc.body).trim();
-  const title = extractTitle(doc, pageUrl, preChapTitle);
+  let title = extractTitle(doc, pageUrl, preChapTitle);
+  if(isFilterOn('decosym'))title=stripDecoSym(title)||title;
   if (rawText && rawText.length < 200 && rawText.includes('作品が見つかりません')) throw new Error('本文を取得できませんでした（最終話の可能性があります）');
   if (/Enable JavaScript and cookies to continue|Just a moment|Cloudflare Ray ID/i.test(rawText)) throw new Error('このページはCloudflare保護により取得できませんでした。ハーメルン等は直接アクセスが必要な場合があります。');
   if (!rawText || rawText.length < 30) throw new Error('本文を取得できませんでした。URLを確認してください。');
@@ -1468,8 +1469,13 @@ const CONFIGURABLE_FILTERS = [
   { key:'postmsg',   group:'basic',  label:'投稿・更新のあいさつ文', desc:'「久しぶりの投稿」「更新が遅れ」「お久しぶりです」等の冒頭・末尾あいさつ', pattern:/久しぶりの投稿|お久しぶりです|更新が遅れ|投稿が遅|遅筆で申し訳|しばらく間が|ご無沙汰|遅くなりまし|ご覧いただき|ご覧くださり|連載|よろしくお願いいたします|評価.*よろしく|応援.*よろしく/ },
   { key:'errreport', group:'custom', label:'誤字脱字報告', desc:'「誤字」「脱字」「修正」等の報告を含む段落', pattern:/誤字|脱字|誤植|ご報告|修正しま|訂正/ },
   { key:'divider',   group:'basic', label:'区切り記号行（◆◇＊ーなど）', desc:'◆◆◆ や ◇◇◇ や ＊＊＊ や ─── など記号だけの行', pattern:/^[\s\u3000\u25c7\u25c6\u25a1\u25a0\u25cb\u25cf\u00d7\uff0a\u203b\u25ef\u25b3\u25b2\u25bd\u25bc\u25ce\uff5e\u301c\u30fc\u2500\u2501\u003d\uff0d\uff3f\u30fb\u2026\u2020\u2021\u2666\u2662\u2663\u2660\u2665\u2661\u2605\u2606\u25b7\u25c1\*\-\=_~]+$/ },
+  { key:'decosym', group:'basic', label:'飾り記号（◆★など）', desc:'行頭・行末の飾り記号を除去（◆付きの話タイトル等）。次話読み込みから反映', pattern:null },
   { key:'ruby', group:'basic', label:'ルビ（ふりがな）', desc:'漢字のふりがなを除去して読み上げ（スライムコア等を省略）。次話読み込みから反映', pattern:null },
 ];
+// Ornamental markers some sites prefix episode titles with. Trimmed from both ends only,
+// never from inside a line, so no sentence character (ー、・、…) is ever touched.
+var DECO_SYM_RE = /^[\s\u3000\u25c6\u25c7\u25a0\u25a1\u25cb\u25cf\u25ce\u25ef\u2605\u2606\u25b2\u25b3\u25bc\u25bd\u25b7\u25c1\u2666\u2662\u2663\u2660\u2665\u2661\u203b\uff0a\u2020\u2021\u2756\u25c8\*]+|[\s\u3000\u25c6\u25c7\u25a0\u25a1\u25cb\u25cf\u25ce\u25ef\u2605\u2606\u25b2\u25b3\u25bc\u25bd\u25b7\u25c1\u2666\u2662\u2663\u2660\u2665\u2661\u203b\uff0a\u2020\u2021\u2756\u25c8\*]+$/g;
+function stripDecoSym(s) { return s.replace(DECO_SYM_RE, '').trim(); }
 function loadSkipFilters() { try{return JSON.parse(localStorage.getItem('yogatari_skip_filters')||'{}');}catch(e){return{};} }
 function saveSkipFilters(data) { try{localStorage.setItem('yogatari_skip_filters',JSON.stringify(data));}catch(e){} }
 function isFilterOn(key) { var f=loadSkipFilters(); return f[key]!==false; }
@@ -1495,8 +1501,10 @@ function splitText(t) {
   var _chapRe = /^(?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u7ae0/;
   var _epRe   = /((?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71.*)/;
   var _epHeadRe = /^(?:(?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71|\u9592\u8a71|\u5e55\u9593|\u756a\u5916)/;
+  var _decoOn = isFilterOn('decosym');
   return t.replace(/\r\n/g,'\n').split(/\n+/).map(function(s){
     s=s.trim(); if(!s.length)return null;
+    if(_decoOn){s=stripDecoSym(s); if(!s.length)return null;}
     if(isFilterOn('chaphead')&&_chapRe.test(s)){var _m=_epRe.exec(s);var _extracted=_m?_m[1]:null;if(_extracted&&!_pendingEpTitle)_pendingEpTitle=_extracted;return _extracted||null;}
     if(isFilterOn('chaphead')&&_epHeadRe.test(s)&&s.length<=60){if(!_pendingEpTitle)_pendingEpTitle=s;return s;}
     return s;
