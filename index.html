@@ -923,7 +923,9 @@ function bkSetToc(novelId, tocUrl, totalChap) {
   if (!all[novelId]) return;
   // ページ番号付きURL(?p=13等)がそのまま渡された場合に備え、素のTOC URLとして保存する
   all[novelId].tocUrl = (tocUrl || '').split('?')[0].split('#')[0];
-  if (totalChap) all[novelId].totalChap = totalChap;
+  // A TOC page can report fewer episodes than we already know (Kakuyomu ships only the first
+  // few episodes in the HTML), so never lower a known total.
+  if (totalChap) all[novelId].totalChap = Math.max(totalChap, all[novelId].totalChap || 0);
   bkSave(all);
 }
 function inferTocUrl(chapterUrl) {
@@ -1172,6 +1174,31 @@ function parseKakuyomuToc(html, baseUrl) {
   });
   return items;
 }
+function kakuyomuTotalFromToc(html) {
+  // Kakuyomu's work page ships only the first few episodes of the opened chapter in its HTML; the
+  // rest is fetched when the reader taps "つづきを表示". Counting the episode links therefore
+  // undercounts the work. Each chapter row carries its own episode count ("30話"), so add those
+  // labels up instead.
+  // Labels are grouped by tag + class so that a stand-alone count elsewhere on the page (a work
+  // summary, for instance) is not added on top of the chapter rows: each group is summed and the
+  // largest group wins. Returns 0 when no such label exists (a work without chapters).
+  try {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const groups = {};
+    doc.querySelectorAll('*').forEach(el => {
+      if (el.children.length) return;
+      const m = (el.textContent || '').trim().match(/^([\d,]+)話$/);
+      if (!m) return;
+      const n = parseInt(m[1].replace(/,/g, ''));
+      if (!(n > 0) || n > 100000) return;
+      const key = el.tagName + '|' + (typeof el.className === 'string' ? el.className : '');
+      groups[key] = (groups[key] || 0) + n;
+    });
+    let total = 0;
+    Object.keys(groups).forEach(k => { if (groups[k] > total) total = groups[k]; });
+    return total;
+  } catch(e) { return 0; }
+}
 function findInObj(obj, key, depth = 0) {
   if (depth > 8 || !obj || typeof obj !== 'object') return null;
   if (Array.isArray(obj)) { for (const v of obj) { const r = findInObj(v, key, depth + 1); if (r) return r; } return null; }
@@ -1365,7 +1392,9 @@ async function go() {
       hideFetch();
       const doc = new DOMParser().parseFromString(html, 'text/html');
       const nTitle = parseTocTitle(url, doc);
-      bkSetToc(novelId, url, items.length);
+      let tocTotal = items.length;
+      if (url.includes('kakuyomu.jp')) { const kt = kakuyomuTotalFromToc(html); if (kt > tocTotal) tocTotal = kt; }
+      bkSetToc(novelId, url, tocTotal);
       openChapPicker(nTitle, items, novelId, bk);
     } catch(e) {
       const errMsg = e.message || '';
@@ -2031,6 +2060,10 @@ async function _checkNewChapterImpl(bk){
     const items=isKakuyomuBk?parseKakuyomuToc(html,tocUrl):parseSyosetuToc(html,tocUrl);
     if(!items.length)return;
     var current=items.length;
+    if(isKakuyomuBk){
+      var _ktotal=kakuyomuTotalFromToc(html);
+      if(_ktotal>current)current=_ktotal;
+    }
     if(!isKakuyomuBk){
       // 目次1ページ目の取得だけでは100話超の作品を過小カウントしてしまうため、
       // ページネーションの最終ページ番号を調べ、その最終ページも取得して
