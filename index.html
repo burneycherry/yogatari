@@ -2007,7 +2007,9 @@ async function _goNextImpl(autoPlay=true){
       for(var _try=0;_try<2&&!page;_try++){
         if(_try>0){showFetch('load','取得に失敗。少し待って再試行中…');await new Promise(r=>setTimeout(r,4000));if(_navGeneration!==myGen)return;}
         try{page=await fetchHtml(url).then(html=>extractPage(html,url));}
-        catch(_fe){if(_try>=1||(_fe.message||'').indexOf('取得失敗')<0)throw _fe;}
+        // A 404 is the end of the work (Syosetu's next URL is just the number incremented), not a
+        // transient proxy failure, so it is reported at once instead of being retried.
+        catch(_fe){var _fm=_fe.message||'';if(_try>=1||_fm.indexOf('取得失敗')<0||_fm.indexOf('HTTP 404')>=0)throw _fe;}
       }
     }
     if(_navGeneration!==myGen)return;
