@@ -600,12 +600,13 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       <ul>
         <li>小説家になろう（ncode.syosetu.com）</li>
         <li>カクヨム（kakuyomu.jp）</li>
+        <li>エブリスタ（estar.jp）— 話のURLを貼って読み込む。目次からの話選択には非対応</li>
+        <li>青空文庫（www.aozora.gr.jp）— 本文ファイル（/files/〜.html）のURLを貼る。図書カードのページには本文が無い</li>
       </ul>
       <h3>// 非対応サイト</h3>
       <ul>
-        <li>アルファポリス — サイト側がクローラーアクセスをブロック</li>
+        <li>アルファポリス — 本文がJavaScriptで後から読み込まれるため取得できない。コピー防止機能も実装されている</li>
         <li>ハーメルン — Cloudflare保護により本文取得不可</li>
-        <li>エブリスタ — 1話が複数ページに分割される構造のため非対応</li>
       </ul>
     </div>
   </div>
@@ -1059,8 +1060,7 @@ const SITE_RULES = [
   { host:'ncode.syosetu.com',   body:'#novel_honbun', next:'.novel_bn a:last-of-type', prev:'.novel_bn a:first-of-type', toc:'#novel_color', tocItem:'.novel_sublist2 a, dd a' },
   { host:'novel18.syosetu.com', body:'#novel_honbun', next:'.novel_bn a:last-of-type', prev:'.novel_bn a:first-of-type' },
   { host:'kakuyomu.jp',         body:'.p-novel__body,.widget-episodeBody,.js-episode-body', next:'a.widget-episodeNavigation-button-next,a[rel="next"]', prev:'a.widget-episodeNavigation-button-prev,a[rel="prev"]' },
-  // #novelBoby is Alphapolis' own spelling of the body container - not a typo on our side
-  { host:'alphapolis.co.jp',    body:'#novelBoby,.content-text,.novel_text', next:'a.next,a[href*="next"]', prev:'a.prev,a[href*="prev"]' },
+  { host:'alphapolis.co.jp',    body:'.content-text,.novel_text', next:'a.next,a[href*="next"]', prev:'a.prev,a[href*="prev"]' },
   { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0', next:'', prev:'' },
   // Estar puts the text in .content; a chapter cover page has only the .subject heading inside
   // .body, and its whole text can be as short as "序章", hence the low minText. The selectors
