@@ -805,7 +805,9 @@ function stopSilentAudio() {
   _silentOn = false;
   try {
     var _sl = document.getElementById('silentLoopEl');
-    if (_sl) { _sl.pause(); _sl.src = ''; }
+    // Only pause: clearing src makes the element load the page URL instead, and the failure
+    // would reach the decode watcher above and switch _silentMode for the wrong reason.
+    if (_sl) _sl.pause();
   } catch(e) {}
 }
 const _msSupported = ('mediaSession' in navigator);
@@ -1678,12 +1680,14 @@ function startPlay(){
 }
 function togglePlay(){
   if(!segs.length)return;
-  if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudioFull();updBtn();setBadge(false);msSetState('paused');}
+  // The silent loop has to stop too: while it plays the page still counts as sounding, so
+  // the platform keeps the media session in the playing state and its control sends pause.
+  if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudioFull();stopSilentAudio();updBtn();setBadge(false);msSetState('paused');}
   else{if(_audioSessionLost)rebuildAudioElements();startPlay();}
 }
 function stop(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
-  playing=false;_busy=false;SS.cancel();stopGoogleAudioFull();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();msSetState('none');
+  playing=false;_busy=false;SS.cancel();stopGoogleAudioFull();stopSilentAudio();clearWatchdog();clearPrefetchCache();updBtn();setBadge(false);cancelNext();msSetState('none');
 }
 function stopForChapterTransition(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
