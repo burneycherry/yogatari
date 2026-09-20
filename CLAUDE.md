@@ -16,7 +16,7 @@
 
 ## プロジェクト概要
 
-**夜語り (Yogatari)** は日本語Web小説のテキスト読み上げPWA。小説家になろう・カクヨムなどのプラットフォームからCORSプロキシ経由でコンテンツを取得し、Web Speech APIまたはGoogle Cloud TTSで読み上げる。
+**夜語り (Yogatari)** は日本語Web小説のテキスト読み上げPWA。小説家になろう・カクヨム・エブリスタ・青空文庫からCORSプロキシ経由でコンテンツを取得し、Web Speech APIまたはGoogle Cloud TTSで読み上げる。アルファポリスとハーメルンは非対応（「小説サイトパーサー」参照）。
 
 ---
 
@@ -59,7 +59,8 @@
 | `playing` | 再生状態（Boolean） |
 | `queue` | バッチ/キュー再生用の章URL配列 |
 | `selVoice` | 選択中のWeb Speech API音声 |
-| `_gApiKey` | Google Cloud TTS APIキー |
+| `_gApiKey` | Google Cloud TTS APIキー。**APIキーの有無であり、再生エンジンの判定ではない** |
+| `_ttsEngine` | 再生エンジンの選択状態（`'google'` / `'device'`）。localStorageキー `yogatari_engine` と同期。**再生経路の判定には `useGoogleTts()`（`_ttsEngine === 'google' && hasGoogleKey()`）を使うこと。`hasGoogleKey()` は「APIキーが保存されているか」の判定にのみ使う** |
 | `_prefetchCache` | Google TTS音声BLOBのキャッシュMap |
 | `currentChapterTitle` / `currentNovelTitle` | 表示中のメタデータ |
 | `nextUrl` / `prevUrl` | 章間ナビゲーション |
@@ -150,6 +151,7 @@ const int kMinimumContentDurationSecs = 5;
 ### テキスト処理
 
 - `splitText(html)` → DOMノードをプレーンテキストセグメント（段落単位）に変換
+  - **フィルター後に1段落も残らなかった場合に限り、フィルター前の行を返す安全弁がある。削除しないこと。** エブリスタの章扉ページは見出し1行のみで構成され、既定ONの `chaphead`（章・話タイトル行）に一致して全段落が消え、セグメント0件となり再生できなくなるため。影響は全行がフィルターに一致するページのみで、通常の話の省略挙動は変わらない
 - `splitSentences(text)` → 日本語句読点（`。！？…」』`）で分割
 - `domToText(node)` → インライン要素を考慮した再帰的DOM→テキスト変換
 
@@ -160,9 +162,33 @@ const int kMinimumContentDurationSecs = 5;
 - `inferTocUrl(url)` — サイト判定とTOC URL構築
 - `toNovelId(url)` — URLから小説IDを抽出
 
+#### SITE_RULES の仕様（重要）
+
+サイトごとの抽出ルールは `SITE_RULES` 配列で定義する。`host` で照合し、本文は `body`、章間リンクは `next` / `prev` を使う。
+
+- **`rule.body` のカンマ区切りは「優先順位リスト」として先頭から順に試す。** `querySelector()` にカンマ区切りをそのまま渡してはならない。**CSSセレクタのカンマ区切りは文書順で最初にマッチした要素を返す仕様であり、記述順は優先度にならない。** エブリスタでは本文 `.content` の親が `.body` であるため、そのまま渡すと常に `.body` が選ばれ、話タイトル（`h1.subject`）が本文の先頭に重複して混入する
+- テキストが空の要素は採用しない。アルファポリスの `#novelBody` のように、実在するが中身が空の要素を避けるため
+- `minText` は本文の最小文字数（既定30）。エブリスタは章扉の見出しが「序章」のように短いため 2 を指定している。下げるほど取得失敗の検知は粗くなるため、本文セレクタが具体的なサイトに限って使う
+
+#### 対応サイトの実測事項
+
+- **エブリスタ（estar.jp）** — 本文は `.mainBody .content`。章扉ページには `.content` が無いため `.mainBody .body`（見出しのみ）へフォールバックする。作品タイトルはビューアページの `<title>`「`【本文】<作品名>｜<N>ページ - 小説投稿エブリスタ`」から抽出する。話数は `?page=` から読む（末尾が数字でないため既定の抽出では常に1話目になる）。新着話数は目次ページの「全NNエピソード」から取得する。**目次からの話選択には非対応**（目次解析はなろう専用）
+- **青空文庫（www.aozora.gr.jp）** — 本文は `.main_text`。**Shift_JISで配信される**（「CORSプロキシシステム」参照）。1作品1ファイルのため章間ナビゲーションは無い。本文ファイル（`/files/〜.html`）のURLを指定する。図書カードのページには本文が無い
+- **アルファポリス — 非対応。** HTMLの取得自体は成功するが、本文コンテナ `<div id="novelBody">` は空で、本文はページ表示後にJavaScriptが別途取得して埋める構造のため静的HTMLからは得られない。1話がさらに18ページ程度に分割される。また `content-viewer.js` がコピー・選択・右クリックの禁止、フォーカス喪失時の本文非表示、スクリーンショット阻止といったコンテンツ保護を実装しており、**これを迂回する実装は行わない方針**
+- **ハーメルン（syosetu.org） — 非対応。** プロキシ経由でページ自体には到達するが、返るのはCloudflareのチャレンジページで `tryProxy()` のブロック検出が働く。自前Workerのホワイトリストにも追加していない
+
 ### CORSプロキシシステム
 
 `PROXIES` 配列に複数のフォールバックサービスを列挙（実数はコード内の `PROXIES` 配列を参照）。`tryProxy(proxy, url)` はタイムアウト付きfetchをラップ。`fetchHtml(url)` はプロキシをローテーションしながら結果を `sessionStorage` にキャッシュする。プロキシ選択履歴は `localStorage` キー `yogatari_proxy_hist` に保存。
+
+最優先は自前のCloudflare Workersプロキシ（対象ホストを限定したホワイトリスト方式）。**Worker側のコードはこのリポジトリの管理外**であり、新しいサイトに対応する際はホワイトリストへの追加が別途必要になる。Workerは本文をデコードせずバイトのまま転送し、元の `Content-Type` を引き継ぐ。
+
+#### Shift_JISページの扱い（重要）
+
+- `needsSjisDecode(url)` が真のとき、`tryProxy()` は `r.text()` ではなく `arrayBuffer()` を `TextDecoder('shift_jis')` でデコードする。**`Response.text()` は仕様上つねにUTF-8としてデコードするため、Shift_JISのページは全文が `U+FFFD` に潰れて復元不能になる**
+- `fetchHtml()` は Shift_JIS のページでは**JSONで包むプロキシ（`isJson: true`）を対象から外す**。UTF-8デコード済みの文字列しか返さず復元不能なため。失敗件数の判定も除外後の件数で行う
+- Cloudflare Workers の `TextDecoder` はUTF-8（とWindows-1252）しか保証されないため、Shift_JISの変換はWorker側ではなくクライアント側で行う
+- **この経路を知らずに `tryProxy()` / `fetchHtml()` を変更すると青空文庫が壊れる。**
 
 ### localStorageキー一覧
 
@@ -173,6 +199,7 @@ const int kMinimumContentDurationSecs = 5;
 | `yogatari_custom_words` | ユーザー定義スキップワード |
 | `yogatari_gkey` | Google TTS APIキー |
 | `yogatari_gvoice` | 選択中のGoogle TTS音声名 |
+| `yogatari_engine` | 再生エンジンの選択（`'google'` / `'device'`）。未設定時はAPIキーの有無から導出する |
 | `yogatari_stats` | 読書統計（日数・作品数・話数・秒数） |
 | `yogatari_usage_<年>_<月>_<カテゴリ>` | Google TTS月間使用文字数 |
 | `yogatari_proxy_hist` | プロキシ選択履歴 |
