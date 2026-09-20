@@ -1680,9 +1680,11 @@ function startPlay(){
 }
 function togglePlay(){
   if(!segs.length)return;
-  // The silent loop has to stop too: while it plays the page still counts as sounding, so
-  // the platform keeps the media session in the playing state and its control sends pause.
-  if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudioFull();stopSilentAudio();updBtn();setBadge(false);msSetState('paused');}
+  // Pausing keeps the loaded audio on gAudioEl: it owns the media session, and clearing its
+  // src leaves an empty element that iOS drops from Now Playing, so its play control then
+  // never reaches this page. The silent loop must stop though — while it plays the page
+  // still counts as sounding and the platform's control sends pause instead of play.
+  if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudio();stopSilentAudio();updBtn();setBadge(false);msSetState('paused');}
   else{if(_audioSessionLost)rebuildAudioElements();startPlay();}
 }
 function stop(){
