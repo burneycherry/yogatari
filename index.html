@@ -539,7 +539,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
 <div class="rdm-overlay" id="rdmOverlay" onclick="if(event.target===this)closeReadme()">
   <div class="rdm-sheet">
     <div class="rdm-head">
-      <div class="rdm-title">夜語り — 使い方</div>
+      <div class="rdm-title">使い方</div>
       <button class="rdm-close" onclick="closeReadme()">✕</button>
     </div>
     <div class="rdm-body">
@@ -552,16 +552,6 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         APIキー未設定のときは端末内蔵の音声（iPhoneは Kyoko、Androidは端末のTTSエンジン）で読み上げます。<br><br>
         この音声は画面を消すと読み上げが止まります。iPhone・Androidとも端末側の仕様で、アプリ側では回避できません。<br><br>
         画面を消したまま聴きたい場合は、下記の「Google TTS 高品質音声」を設定してください。
-      </div>
-      <div class="rdm-note" style="margin-bottom:10px;border-color:rgba(200,153,30,0.5);background:rgba(200,153,30,0.07)">
-        🍎 <b>iPhone / iPad をお使いの方へ（重要）</b><br><br>
-        iOSのSafariはユーザーが直接タップしたときだけ音声の再生を許可する仕様のため、<br>
-        アプリを開いたら最初に <b>▶</b> を1回タップしてください。<br><br>
-        この操作でiOSの音声制限が解除され、以降は<br>
-        ・次の話への自動進行<br>
-        ・バックグラウンドでの継続再生（Google TTS設定時のみ）<br>
-        が正常に動作します。<br><br>
-        ⚠️ アプリを閉じて開き直した場合は、再度 <b>▶</b> を1回タップする必要があります。
       </div>
       <h3>// しおり・履歴</h3>
       <ul>
@@ -580,6 +570,9 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <li><b>⏮</b> で1段落戻る ／ <b>⏭</b> で1段落進む</li>
         <li>←前話 ／ 次話→ で話をまたいで移動</li>
         <li>速度・ピッチは − ＋ で0.1ずつ調整</li>
+        <li>画面左1/3タップ → 5秒戻る（再生中のみ）</li>
+        <li>画面右1/3タップ → 5秒進む（再生中のみ）</li>
+        <li>画面中央タップ → 通常スクロール</li>
       </ul>
       <h3>// 睡眠タイマー</h3>
       <ul>
@@ -589,12 +582,6 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <li>自動ロックを設定している場合は画面が消灯し、バッテリーを節約できる</li>
         <li>復帰するには画面をタップ。再生は <b>▶</b> で再開</li>
         <li><b>✕</b> でキャンセル、🌙 を再タップで行を隠せる</li>
-      </ul>
-      <h3>// 画面タップで5秒スキップ（再生中のみ）</h3>
-      <ul>
-        <li>画面左1/3タップ → 5秒戻る</li>
-        <li>画面右1/3タップ → 5秒進む</li>
-        <li>画面中央 → 通常スクロール</li>
       </ul>
       <h3>// バックグラウンド再生</h3>
       <ul>
