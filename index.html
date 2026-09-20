@@ -1004,7 +1004,9 @@ let _navGeneration=0;
 let _startupCheckRunning=false;
 let _resumeActive=false;
 const PROXIES = [
-  { build: u=>'https://yogatari-proxy.burneycherry.workers.dev/?url='+encodeURIComponent(u), isJson:false, ms:8000 },
+  // The own Worker retries a blocked request on its side, so it is given a longer budget than the
+  // public proxies. The others start anyway while it runs, so waiting costs no fallback time.
+  { build: u=>'https://yogatari-proxy.burneycherry.workers.dev/?url='+encodeURIComponent(u), isJson:false, ms:15000 },
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
   { build: u=>'https://cors.eu.org/'+u, isJson:false, ms:7000 },
