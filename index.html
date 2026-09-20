@@ -1004,9 +1004,7 @@ let _navGeneration=0;
 let _startupCheckRunning=false;
 let _resumeActive=false;
 const PROXIES = [
-  // The own Worker retries a blocked request on its side, so it is given a longer budget than the
-  // public proxies. The others start anyway while it runs, so waiting costs no fallback time.
-  { build: u=>'https://yogatari-proxy.burneycherry.workers.dev/?url='+encodeURIComponent(u), isJson:false, ms:15000 },
+  { build: u=>'https://yogatari-proxy.burneycherry.workers.dev/?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
   { build: u=>'https://cors.eu.org/'+u, isJson:false, ms:7000 },
@@ -1082,12 +1080,6 @@ async function fetchHtml(url) {
       }, delay);
     });
   });
-}
-function proxyErr404Count(msg) {
-  // The rejection message lists what each proxy reported. A lone "HTTP 404" is usually a dead
-  // proxy answering for itself, so only several of them mean the page is really gone.
-  const body = (String(msg || '').split('📋')[1] || '');
-  return (body.match(/HTTP 404/g) || []).length;
 }
 const SITE_RULES = [
   { host:'ncode.syosetu.com',   body:'#novel_honbun', next:'.novel_bn a:last-of-type', prev:'.novel_bn a:first-of-type', toc:'#novel_color', tocItem:'.novel_sublist2 a, dd a' },
@@ -2015,12 +2007,7 @@ async function _goNextImpl(autoPlay=true){
       for(var _try=0;_try<2&&!page;_try++){
         if(_try>0){showFetch('load','取得に失敗。少し待って再試行中…');await new Promise(r=>setTimeout(r,4000));if(_navGeneration!==myGen)return;}
         try{page=await fetchHtml(url).then(html=>extractPage(html,url));}
-        // A 404 is the end of the work (Syosetu's next URL is just the number incremented), not a
-        // transient proxy failure, so it is reported at once instead of being retried.
-        // Several 404s mean the end of the work (Syosetu's next URL is just the number
-        // incremented), which is not worth retrying. One is just a dead proxy, and skipping the
-        // retry for it left the reader with an error a second attempt would have avoided.
-        catch(_fe){var _fm=_fe.message||'';if(_try>=1||_fm.indexOf('取得失敗')<0||proxyErr404Count(_fm)>=2)throw _fe;}
+        catch(_fe){if(_try>=1||(_fe.message||'').indexOf('取得失敗')<0)throw _fe;}
       }
     }
     if(_navGeneration!==myGen)return;
@@ -2034,7 +2021,7 @@ async function _goNextImpl(autoPlay=true){
     await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){
     const msg=e.message||'';
-    const isTrulyFinal=msg.includes('最終話の可能性')||proxyErr404Count(msg)>=2;
+    const isTrulyFinal=msg.includes('最終話の可能性')||msg.includes('HTTP 404');
     const isNetErr=msg.includes('取得失敗')||msg.includes('HTTP')||msg.includes('Load failed')||msg.includes('全プロキシ');
     if(isTrulyFinal){nextUrl=null;clearNextChapterCache();document.getElementById('bNext').disabled=true;showFetch('err','📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');}
     else if(isNetErr){
