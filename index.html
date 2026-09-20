@@ -1063,8 +1063,9 @@ const SITE_RULES = [
   { host:'alphapolis.co.jp',    body:'#novelBoby,.content-text,.novel_text', next:'a.next,a[href*="next"]', prev:'a.prev,a[href*="prev"]' },
   { host:'pixiv.net',           body:'.novel-text-block,.sc-1bqysi4-0', next:'', prev:'' },
   // Estar puts the text in .content; a chapter cover page has only the .subject heading inside
-  // .body, and its whole text can be as short as "第1章　資産家殺人事件", hence minText
-  { host:'estar.jp',            body:'.mainBody .content,.mainBody .body', next:'.pager-next a', prev:'.pager-prev a', minText:8 },
+  // .body, and its whole text can be as short as "序章", hence the low minText. The selectors
+  // above are specific enough that a short match still means a real page.
+  { host:'estar.jp',            body:'.mainBody .content,.mainBody .body', next:'.pager-next a', prev:'.pager-prev a', minText:2 },
   { host:'aozora.gr.jp',        body:'.main_text', next:'', prev:'' },
 ];
 const NEXT_TEXTS = ['次の話','次話','次章','次のページ','次へ','次話へ','次のエピソード','次のページへ','>>','→','next','次回'];
