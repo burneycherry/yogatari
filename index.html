@@ -100,7 +100,7 @@ body{height:100%;overflow:hidden;background:#000000;color:#ede0c6;font-family:'H
 .hist-item{display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid #302618;cursor:pointer}
 .hist-item:active .hist-main{color:#c8991e}
 .hist-thumb{width:36px;display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}.hist-thumb-icon{width:36px;height:36px;border-radius:8px;background:#111111;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:18px}.hist-thumb-link{width:36px;height:28px;border-radius:8px;background:#0d0d0d;border:1px solid #302618;display:flex;align-items:center;justify-content:center;font-size:14px;text-decoration:none;transition:all 0.15s}.hist-thumb-link:active{border-color:#c8991e;background:rgba(200,153,30,0.12)}
-.hist-thumb-icon.site-mark{font-size:16px;font-weight:700}.hist-thumb-icon.site-narou{color:#5cc3f0;border-color:#2b5f7a;background:rgba(92,195,240,0.10)}.hist-thumb-icon.site-kakuyomu{color:#6d8ef2;border-color:#2f3f7a;background:rgba(109,142,242,0.10)}.hist-thumb-icon.site-estar{color:#f07aa8;border-color:#7a3352;background:rgba(240,122,168,0.10)}.hist-thumb-icon.site-aozora{color:#7fd2b8;border-color:#2f6355;background:rgba(127,210,184,0.10)}
+.hist-thumb-icon.site-logo{border:0;background:transparent;padding:0;overflow:hidden}.hist-thumb-icon.site-logo svg{display:block;width:36px;height:36px;border-radius:6px}
 .hist-main{flex:1;min-width:0}
 .hist-title{font-size:14px;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hist-chap-title{font-size:11px;color:#9e8660;margin-bottom:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Hiragino Mincho ProN','YuMincho',serif}
@@ -947,11 +947,12 @@ function toNovelId(url) {
   } catch(e) { return url; }
 }
 // Site mark shown on the history thumbnail so the source site is recognizable at a glance.
+// Simplified marks drawn after each site's own logo, inline so no image file is needed.
 const SITE_MARKS = [
-  { host:'syosetu.com',  cls:'site-narou',    label:'な', title:'小説家になろう' },
-  { host:'kakuyomu.jp',  cls:'site-kakuyomu', label:'カ', title:'カクヨム' },
-  { host:'estar.jp',     cls:'site-estar',    label:'エ', title:'エブリスタ' },
-  { host:'aozora.gr.jp', cls:'site-aozora',   label:'青', title:'青空文庫' }
+  { host:'syosetu.com',  title:'小説家になろう', svg:'<svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><rect width="36" height="36" fill="#ffffff"/><rect y="28" width="36" height="8" fill="#4cc0da"/><text x="18" y="21" text-anchor="middle" font-family="serif" font-size="19" font-weight="700" fill="#2b9ebd">な</text></svg>' },
+  { host:'kakuyomu.jp',  title:'カクヨム',           svg:'<svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><rect width="36" height="36" fill="#4590c9"/><path d="M9 8h9v3.2h-5.8v7H9z" fill="#ffffff"/><path d="M27 28h-9v-3.2h5.8v-7H27z" fill="#ffffff"/></svg>' },
+  { host:'estar.jp',     title:'エブリスタ',         svg:'<svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><rect width="36" height="36" fill="#ffffff"/><rect x="1.4" y="1.4" width="33.2" height="33.2" rx="4.5" fill="none" stroke="#3d9ad6" stroke-width="2.2"/><circle cx="20" cy="15" r="8" fill="none" stroke="#3d9ad6" stroke-width="2.6"/><circle cx="11.5" cy="25" r="3" fill="none" stroke="#3d9ad6" stroke-width="2.2"/><circle cx="7" cy="30" r="1.4" fill="none" stroke="#3d9ad6" stroke-width="1.6"/></svg>' },
+  { host:'aozora.gr.jp', title:'青空文庫',         svg:'<svg viewBox="0 0 36 36" width="36" height="36" aria-hidden="true"><rect width="36" height="36" fill="#0b1668"/><g stroke="#ffffff" stroke-width="1.4" fill="none"><rect x="3" y="3" width="30" height="30"/><path d="M18 3v30M3 18h30"/></g><g fill="#ffffff" font-family="serif" font-size="11" text-anchor="middle"><text x="10.5" y="14.5">文</text><text x="10.5" y="29.5">庫</text><text x="25.5" y="14.5">青</text><text x="25.5" y="29.5">空</text></g></svg>' }
 ];
 function siteMarkOf(url) {
   try {
@@ -1967,7 +1968,7 @@ function renderHistList(){
     const newBadge=diff>0?'<span class="hist-new">NEW +'+diff+unit+'</span>':'';
     const sm=siteMarkOf(bk.chapterUrl||bk.tocUrl||'');
     return '<div class="hist-item" id="hi-'+esc(bk.novelId).replace(/[^a-zA-Z0-9]/g,'_')+'" onclick="resumeFrom(\''+esc(bk.novelId)+'\')">' +
-      '<div class="hist-thumb"><div class="hist-thumb-icon'+(sm?' site-mark '+sm.cls:'')+'" title="'+esc(sm?sm.title:'')+'">'+esc(sm?sm.label:'📖')+'</div><a class="hist-thumb-link" href="'+esc(tocHrefFor(bk))+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="目次ページを開く">🔗</a></div>' +
+      '<div class="hist-thumb"><div class="hist-thumb-icon'+(sm?' site-logo':'')+'" title="'+esc(sm?sm.title:'')+'">'+(sm?sm.svg:'📖')+'</div><a class="hist-thumb-link" href="'+esc(tocHrefFor(bk))+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="目次ページを開く">🔗</a></div>' +
       '<div class="hist-main"><div class="hist-title">'+esc(bk.novelTitle||bk.chapterTitle)+'</div>' +
       (function(){var ct=bk.chapterTitle||'',nt=bk.novelTitle||'';if(!ct||ct===nt||/^第\d+話?$/.test(ct.trim()))return '';return '<div class="hist-chap-title">'+esc(ct)+'</div>';})() +
       '<div class="hist-meta">'+(newBadge?newBadge+' ':'')+
