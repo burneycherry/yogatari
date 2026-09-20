@@ -1049,7 +1049,27 @@ function setProxyCacheIdx(hostKey, idx) {
 function clearProxyCacheIdx(hostKey) {
   try { var c = JSON.parse(localStorage.getItem('yogatari_proxy_hist') || '{}'); delete c[hostKey]; localStorage.setItem('yogatari_proxy_hist', JSON.stringify(c)); } catch(e) {}
 }
+// Kakuyomu blocks an address that fetches many pages in quick succession: its episode pages then
+// answer 403 while its work pages still load. Requests to it are therefore spaced out. Each caller
+// reserves the next slot, so a prefetch and a tap on 次話 cannot leave together.
+const HOST_MIN_INTERVAL_MS = { 'kakuyomu.jp': 2000 };
+const _hostNextFetchAt = {};
+function hostGateDelay(url) {
+  let host;
+  try { host = new URL(url).hostname; } catch(e) { return 0; }
+  let wait = 0;
+  Object.keys(HOST_MIN_INTERVAL_MS).forEach(h => {
+    if (host.indexOf(h) < 0) return;
+    const now = Date.now();
+    const slot = Math.max(now, _hostNextFetchAt[h] || 0);
+    _hostNextFetchAt[h] = slot + HOST_MIN_INTERVAL_MS[h];
+    wait = slot - now;
+  });
+  return wait;
+}
 async function fetchHtml(url) {
+  const gate = hostGateDelay(url);
+  if (gate > 0) await new Promise(r => setTimeout(r, gate));
   const hostKey = getHostKey(url);
   const cachedIdx = getProxyCacheIdx(hostKey);
   // A Shift_JIS page has to be decoded from the raw bytes, so the JSON-wrapping proxies are
