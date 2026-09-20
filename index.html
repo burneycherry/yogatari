@@ -1168,28 +1168,76 @@ function tocHrefFor(bk) {
   }
   return _tu;
 }
+function kakuyomuApolloState(doc) {
+  // Kakuyomu's work page renders only the first few episodes of the opened chapter as links, but
+  // the page embeds the whole table of contents in its Apollo store, so the full list is read from
+  // there instead of from the markup.
+  const nd = doc.querySelector('script#__NEXT_DATA__');
+  if (!nd) return null;
+  try {
+    const json = JSON.parse(nd.textContent);
+    return (json && json.props && json.props.pageProps && json.props.pageProps.__APOLLO_STATE__) || null;
+  } catch(e) { return null; }
+}
+function kakuyomuTocFromState(state, baseUrl, workId) {
+  // The store keeps every entity under its own key and holds the reading order only in the
+  // reference lists, so the order is taken from those: the chapter list first, then the episodes
+  // each chapter references. Key order alone would scramble the chapters.
+  const ordered = [];
+  const seen = new Set();
+  const addId = id => {
+    if (!id || seen.has(id)) return;
+    const ep = state['Episode:' + id];
+    if (!ep) return;
+    // An episode scheduled for a later date is listed here but cannot be read yet.
+    const at = ep.publishedAt ? Date.parse(ep.publishedAt) : 0;
+    if (at && at > Date.now()) return;
+    seen.add(id);
+    ordered.push({ id: id, title: (ep.title ? String(ep.title).trim() : '') });
+  };
+  const walk = (val, depth) => {
+    if (!val || typeof val !== 'object' || depth > 6) return;
+    if (Array.isArray(val)) { val.forEach(v => walk(v, depth + 1)); return; }
+    if (typeof val.__ref === 'string') {
+      if (val.__ref.indexOf('Episode:') === 0) addId(val.__ref.slice(8));
+      else if (val.__ref.indexOf('TableOfContentsChapter:') === 0) walk(state[val.__ref], depth + 1);
+      return;
+    }
+    Object.keys(val).forEach(k => walk(val[k], depth + 1));
+  };
+  let chapterRefs = null;
+  const findChapterList = (val, depth) => {
+    if (!val || typeof val !== 'object' || depth > 6) return;
+    if (Array.isArray(val)) {
+      const refs = val.filter(v => v && typeof v.__ref === 'string' && v.__ref.indexOf('TableOfContentsChapter:') === 0);
+      if (refs.length && (!chapterRefs || refs.length > chapterRefs.length)) chapterRefs = refs.map(v => v.__ref);
+      val.forEach(v => findChapterList(v, depth + 1));
+      return;
+    }
+    Object.keys(val).forEach(k => findChapterList(val[k], depth + 1));
+  };
+  Object.keys(state).forEach(k => findChapterList(state[k], 0));
+  if (chapterRefs) chapterRefs.forEach(ref => walk(state[ref], 0));
+  else Object.keys(state).forEach(k => { if (k.indexOf('TableOfContentsChapter:') === 0) walk(state[k], 0); });
+  // A work without chapters, or an episode no chapter references, keeps the store's own order.
+  Object.keys(state).forEach(k => { if (k.indexOf('Episode:') === 0) addId(k.slice(8)); });
+  return ordered.map((e, i) => ({
+    title: e.title || ('第' + (i + 1) + '話'),
+    url: new URL('/works/' + workId + '/episodes/' + e.id, baseUrl).href,
+    num: i + 1,
+  }));
+}
 function parseKakuyomuToc(html, baseUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const items = []; const seen = new Set(); let num = 0;
   try {
-    const nd = doc.querySelector('script#__NEXT_DATA__');
-    if (nd) {
-      const json = JSON.parse(nd.textContent);
-      const eps = findInObj(json, 'episodes') || findInObj(json, 'episodeUnions');
-      if (eps && Array.isArray(eps) && eps.length > 0) {
-        eps.forEach((ep, i) => {
-          const epId = ep.id || ep.node?.id || ep.__id;
-          const epTitle = ep.title || ep.node?.title || ('第' + (i+1) + '話');
-          if (!epId) return;
-          // Use the work id the page itself states: a pasted or stored URL can carry a different
-          // one, and Kakuyomu then answers the built episode URL with its "page not found" screen.
-          const wid = kakuyomuWorkIdOf(doc, baseUrl); if (!wid) return;
-          const epUrl = new URL('/works/' + wid + '/episodes/' + epId, baseUrl).href;
-          if (seen.has(epUrl)) return; seen.add(epUrl); num += 1;
-          items.push({ title: epTitle.trim(), url: epUrl, num });
-        });
-        if (items.length > 0) return items;
-      }
+    const state = kakuyomuApolloState(doc);
+    // Use the work id the page itself states: a pasted or stored URL can carry a different one, and
+    // Kakuyomu then answers the built episode URL with its "page not found" screen.
+    const wid = state ? kakuyomuWorkIdOf(doc, baseUrl) : null;
+    if (state && wid) {
+      const fromState = kakuyomuTocFromState(state, baseUrl, wid);
+      if (fromState.length > 0) return fromState;
     }
   } catch(e) {}
   doc.querySelectorAll('a[href]').forEach(a => {
