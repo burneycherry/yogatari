@@ -1996,7 +1996,16 @@ async function _goNextImpl(autoPlay=true){
   try{
     let page=null;
     if(_nextPageCache&&_nextPageCache.url===url){page=_nextPageCache.page;showFetch('load','✓ 先読み済み — 即開始');await new Promise(r=>setTimeout(r,300));}
-    else{if(_nextHtmlCache&&_nextHtmlCache.url===url){showFetch('load','先読み中… しばらくお待ちください');page=await _nextHtmlCache.promise;}if(!page){page=await fetchHtml(url).then(html=>extractPage(html,url));}}
+    else{
+      if(_nextHtmlCache&&_nextHtmlCache.url===url){showFetch('load','先読み中… しばらくお待ちください');page=await _nextHtmlCache.promise;}
+      // The public CORS proxies fail in bursts (rate limits, timeouts), and pressing 次話 again a
+      // moment later succeeds. Retry once here so the reader does not have to.
+      for(var _try=0;_try<2&&!page;_try++){
+        if(_try>0){showFetch('load','取得に失敗。再試行中…');await new Promise(r=>setTimeout(r,1500));if(_navGeneration!==myGen)return;}
+        try{page=await fetchHtml(url).then(html=>extractPage(html,url));}
+        catch(_fe){if(_try>=1||(_fe.message||'').indexOf('取得失敗')<0)throw _fe;}
+      }
+    }
     if(_navGeneration!==myGen)return;
     if(!page)throw new Error('ページ取得失敗');
     if(queue[qi])queue[qi].title=page.title;currentChapterTitle=page.title;
@@ -2011,7 +2020,13 @@ async function _goNextImpl(autoPlay=true){
     const isTrulyFinal=msg.includes('最終話の可能性')||msg.includes('HTTP 404');
     const isNetErr=msg.includes('取得失敗')||msg.includes('HTTP')||msg.includes('Load failed')||msg.includes('全プロキシ');
     if(isTrulyFinal){nextUrl=null;clearNextChapterCache();document.getElementById('bNext').disabled=true;showFetch('err','📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');}
-    else if(isNetErr){clearNextChapterCache();showFetch('err','⚠ ページ取得に失敗しました。「次話→」で再試行できます');document.getElementById('bNext').disabled=!nextUrl;}
+    else if(isNetErr){
+      clearNextChapterCache();
+      // Keep the per-proxy reason visible: it is the only way to tell a rate limit from a timeout.
+      const detail=(msg.split('📋')[1]||'').trim().slice(0,70);
+      showFetch('err','⚠ ページ取得に失敗しました。「次話→」で再試行できます'+(detail?' ／ 📋 '+detail:''));
+      document.getElementById('bNext').disabled=!nextUrl;
+    }
     else{showFetch('err',msg.slice(0,80));document.getElementById('bNext').disabled=!nextUrl;}
   }
   disable(false);
