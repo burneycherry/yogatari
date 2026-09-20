@@ -1155,8 +1155,10 @@ function parseKakuyomuToc(html, baseUrl) {
           const epId = ep.id || ep.node?.id || ep.__id;
           const epTitle = ep.title || ep.node?.title || ('第' + (i+1) + '話');
           if (!epId) return;
-          const wm = new URL(baseUrl).pathname.match(/\/works\/([^/]+)/); if (!wm) return;
-          const epUrl = new URL('/works/' + wm[1] + '/episodes/' + epId, baseUrl).href;
+          // Use the work id the page itself states: a pasted or stored URL can carry a different
+          // one, and Kakuyomu then answers the built episode URL with its "page not found" screen.
+          const wid = kakuyomuWorkIdOf(doc, baseUrl); if (!wid) return;
+          const epUrl = new URL('/works/' + wid + '/episodes/' + epId, baseUrl).href;
           if (seen.has(epUrl)) return; seen.add(epUrl); num += 1;
           items.push({ title: epTitle.trim(), url: epUrl, num });
         });
@@ -1223,20 +1225,50 @@ function parseTocTitle(url, doc) {
   try { const u = new URL(url); if (u.hostname.includes('kakuyomu.jp')) return doc.querySelector('h1')?.textContent?.trim() || doc.querySelector('.WorkTitle')?.textContent?.trim() || '小説'; } catch(e) {}
   return doc.querySelector('.novel_title,.title,h1')?.textContent?.trim() || '小説';
 }
+function kakuyomuWorkIdOf(doc, pageUrl) {
+  // The work id in the address bar can differ from the one Kakuyomu itself uses (a pasted or stored
+  // URL, a work that moved). /works/<wrong id>/episodes/<right id> answers with the "page not
+  // found" screen, so take the work id from the page instead of from the URL we were given.
+  const srcs = [];
+  const can = doc.querySelector('link[rel="canonical"]'); if (can) srcs.push(can.getAttribute('href'));
+  const og = doc.querySelector('meta[property="og:url"]'); if (og) srcs.push(og.getAttribute('content'));
+  const cur = pageUrl.match(/\/episodes\/(\d+)/);
+  if (cur) { const a = doc.querySelector('a[href*="/episodes/' + cur[1] + '"]'); if (a) srcs.push(a.getAttribute('href')); }
+  srcs.push(pageUrl);
+  for (let i = 0; i < srcs.length; i++) {
+    const m = (srcs[i] || '').match(/\/works\/(\d+)/);
+    if (m) return m[1];
+  }
+  return null;
+}
+function kakuyomuEpisodeUrl(doc, pageUrl, epId, workId) {
+  // Prefer the link the page itself carries: its href holds the matching work id. Only fall back to
+  // building the URL when no such link exists.
+  if (!epId || !/^\d{6,}$/.test(String(epId))) return null;
+  const a = doc.querySelector('a[href*="/episodes/' + epId + '"]');
+  if (a) { const r = resolveUrl(a.getAttribute('href'), pageUrl); if (r) return r; }
+  return workId ? 'https://kakuyomu.jp/works/' + workId + '/episodes/' + epId : null;
+}
 function extractPage(html, pageUrl) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
   const phost = new URL(pageUrl).hostname.replace('www.','');
   const rule = SITE_RULES.find(r => phost.includes(r.host.replace('www.','')));
+  const kWorkId = phost.includes('kakuyomu.jp') ? kakuyomuWorkIdOf(doc, pageUrl) : null;
+  const kEpRe = kWorkId ? new RegExp('^https?://kakuyomu\\.jp/works/' + kWorkId + '/episodes/\\d+/?$') : null;
+  // Kakuyomu lists every episode of the work on the page, so only an explicit "next/previous
+  // episode" label may be followed; a bare arrow would pick an arbitrary episode from that list.
+  const kNextRe = /次の(エピソード|話|ページ)|次話|次へ/;
+  const kPrevRe = /前の(エピソード|話|ページ)|前話|前へ/;
   let nextPageUrl = null;
   if (rule && rule.next) { const a = doc.querySelector(rule.next); if (a) nextPageUrl = resolveUrl(a.getAttribute('href'), pageUrl); }
-  if (!nextPageUrl && !phost.includes('kakuyomu.jp')) {
+  if (!nextPageUrl) {
     for (const a of doc.querySelectorAll('a')) {
       const t = (a.textContent||'').trim();
       if (NEXT_TEXTS.some(p=>t.includes(p))) {
         const href = a.getAttribute('href');
         if (href && !href.startsWith('javascript') && !href.startsWith('#')) {
           const r = resolveUrl(href, pageUrl);
-          if (r && r !== pageUrl) { if (phost.includes('kakuyomu.jp')) { const wm = pageUrl.match(/\/works\/([^/]+)\//); if (wm && !r.includes('/works/' + wm[1] + '/')) continue; } nextPageUrl = r; break; }
+          if (r && r !== pageUrl) { if (phost.includes('kakuyomu.jp') && (!kEpRe || !kEpRe.test(r) || !kNextRe.test(t))) continue; nextPageUrl = r; break; }
         }
       }
     }
@@ -1246,7 +1278,7 @@ function extractPage(html, pageUrl) {
     if (rn) {
       const rnUrl = resolveUrl(rn.getAttribute('href'), pageUrl);
       if (rnUrl) {
-        if (phost.includes('kakuyomu.jp')) { const wmR = pageUrl.match(/\/works\/([^/]+)\//); if (wmR && rnUrl.includes('/works/'+wmR[1]+'/episodes/') && rnUrl!==pageUrl) nextPageUrl=rnUrl; }
+        if (phost.includes('kakuyomu.jp')) { if (kEpRe && kEpRe.test(rnUrl) && rnUrl!==pageUrl) nextPageUrl=rnUrl; }
         else { nextPageUrl=rnUrl; }
       }
     }
@@ -1259,9 +1291,8 @@ function extractPage(html, pageUrl) {
         const json = JSON.parse(nd.textContent);
         const nextEp = findInObj(json, 'nextEpisode') || findInObj(json, 'nextEpisodeId');
         if (nextEp) {
-          const wm = pageUrl.match(/\/works\/([^/]+)\//);
           const epId = (typeof nextEp === 'object') ? (nextEp.id || nextEp.slug || nextEp.__id || nextEp.episodeId || null) : String(nextEp);
-          if (wm && epId && epId.length > 5) nextPageUrl = 'https://kakuyomu.jp/works/' + wm[1] + '/episodes/' + epId;
+          nextPageUrl = kakuyomuEpisodeUrl(doc, pageUrl, epId, kWorkId);
         }
       }
     } catch(e) {}
@@ -1269,14 +1300,14 @@ function extractPage(html, pageUrl) {
   let prevPageUrl = null;
   if (rule && rule.prev) { const a = doc.querySelector(rule.prev); if (a) prevPageUrl = resolveUrl(a.getAttribute('href'), pageUrl); }
   if (prevPageUrl && prevPageUrl === nextPageUrl) prevPageUrl = null; // e.g. chapter 1 has only one nav link, which is "next"
-  if (!prevPageUrl && !phost.includes('kakuyomu.jp')) {
+  if (!prevPageUrl) {
     for (const a of doc.querySelectorAll('a')) {
       const t = (a.textContent||'').trim();
       if (PREV_TEXTS.some(p=>t.includes(p))) {
         const href = a.getAttribute('href');
         if (href && !href.startsWith('javascript') && !href.startsWith('#')) {
           const r = resolveUrl(href, pageUrl);
-          if (r && r !== pageUrl && r !== nextPageUrl) { if (phost.includes('kakuyomu.jp')) { const wm = pageUrl.match(/\/works\/([^/]+)\//); if (wm && !r.includes('/works/' + wm[1] + '/')) continue; } prevPageUrl = r; break; }
+          if (r && r !== pageUrl && r !== nextPageUrl) { if (phost.includes('kakuyomu.jp') && (!kEpRe || !kEpRe.test(r) || !kPrevRe.test(t))) continue; prevPageUrl = r; break; }
         }
       }
     }
@@ -1286,7 +1317,7 @@ function extractPage(html, pageUrl) {
     if (rp) {
       const rpUrl = resolveUrl(rp.getAttribute('href'), pageUrl);
       if (rpUrl && rpUrl !== nextPageUrl) {
-        if (phost.includes('kakuyomu.jp')) { const wmR = pageUrl.match(/\/works\/([^/]+)\//); if (wmR && rpUrl.includes('/works/'+wmR[1]+'/episodes/') && rpUrl!==pageUrl) prevPageUrl=rpUrl; }
+        if (phost.includes('kakuyomu.jp')) { if (kEpRe && kEpRe.test(rpUrl) && rpUrl!==pageUrl) prevPageUrl=rpUrl; }
         else { prevPageUrl=rpUrl; }
       }
     }
@@ -1299,9 +1330,9 @@ function extractPage(html, pageUrl) {
         const json = JSON.parse(nd.textContent);
         const prevEp = findInObj(json, 'previousEpisode') || findInObj(json, 'previousEpisodeId');
         if (prevEp) {
-          const wm = pageUrl.match(/\/works\/([^/]+)\//);
           const epId = (typeof prevEp === 'object') ? (prevEp.id || prevEp.slug || prevEp.__id || prevEp.episodeId || null) : String(prevEp);
-          if (wm && epId && epId.length > 5) prevPageUrl = 'https://kakuyomu.jp/works/' + wm[1] + '/episodes/' + epId;
+          const r = kakuyomuEpisodeUrl(doc, pageUrl, epId, kWorkId);
+          if (r && r !== nextPageUrl) prevPageUrl = r;
         }
       }
     } catch(e) {}
