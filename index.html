@@ -470,6 +470,14 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <button class="sett-btn sett-btn-clear" onclick="restoreData()" style="flex:1">リストア</button>
       </div>
     </div>
+    <div class="sett-section">
+      <div class="sett-title">// デバッグモード</div>
+      <div class="sett-row">
+        <span class="sett-label">音声の計測ログ</span>
+        <button class="sett-btn" id="dbgModeBtn" onclick="toggleDbgMode()">OFF</button>
+      </div>
+      <div class="sett-sub" style="margin-bottom:4px">ONにすると、画面左上の<b>バージョン表記</b>をタップして計測ログを開けます。再生が止まる・音が出ないなどを調べるための機能です。<br>OFFの間は計測処理そのものが動かないため、通常はOFFのままで構いません。</div>
+    </div>
   </div>
 </div>
 <div class="ctrl-bar">
@@ -1686,6 +1694,7 @@ function prevSegFull(){prevSeg();}
 function nextSegFull(){nextSeg();}
 function initSettings(){
   renderSkipFilters();
+  updDbgModeBtn();
   (function(){
     var _lcw=function(){try{return JSON.parse(localStorage.getItem('yogatari_custom_words')||'[]');}catch(e){return[];}};
     var _scw=function(a){try{localStorage.setItem('yogatari_custom_words',JSON.stringify(a));}catch(e){}};
@@ -2212,8 +2221,13 @@ setTimeout(()=>{const btn=document.getElementById('bgToggleBtn');if(btn){btn.tex
 // be told apart from ones the platform makes on its own. It must not alter playback.
 const DBG_LOG_KEY='yogatari_debug_log';
 const DBG_ON_KEY='yogatari_debug_hud';
+const DBG_MODE_KEY='yogatari_debug_mode';
 const DBG_MAX=220;
+// Nothing is instrumented until debug mode is switched on, so the normal playback path
+// carries no wrappers, listeners or timers from this module.
+let _dbgEnabled=false,_dbgAttached=false;
 let _dbgOn=false,_dbgLines=[],_dbgTick=null,_dbgCtxHooked=false;
+function isDbgMode(){try{return localStorage.getItem(DBG_MODE_KEY)==='1';}catch(e){return false;}}
 let _dbgUttAt=0,_dbgUttExp=0,_dbgCharIndex=-1,_dbgBoundaryAt=0,_dbgSpeechStallLogged=false;
 function dbgTime(){const d=new Date();const p=(n,w)=>String(n).padStart(w,'0');return p(d.getHours(),2)+':'+p(d.getMinutes(),2)+':'+p(d.getSeconds(),2)+'.'+p(d.getMilliseconds(),3);}
 function dbgSnap(){
@@ -2234,6 +2248,7 @@ function dbgSnap(){
 let _dbgLastSave=0;
 function dbgFlush(){_dbgLastSave=Date.now();try{localStorage.setItem(DBG_LOG_KEY,JSON.stringify(_dbgLines));}catch(e){}}
 function dbgLog(tag,force){
+  if(!_dbgEnabled)return;
   _dbgLines.push(dbgTime()+' '+tag+' | '+dbgSnap());
   if(_dbgLines.length>DBG_MAX)_dbgLines.splice(0,_dbgLines.length-DBG_MAX);
   if(force||Date.now()-_dbgLastSave>1000)dbgFlush();
@@ -2307,7 +2322,7 @@ function dbgWatchProgress(el){
     if(now-_dbgTickAt>2000){_dbgTickAt=now;dbgLog('G:tick');}
   });
 }
-setInterval(()=>{
+function dbgPoll(){
   const el=document.getElementById('gAudioEl');
   const now=Date.now();
   if(el&&playing&&!el.paused&&!el.ended){
@@ -2326,22 +2341,31 @@ setInterval(()=>{
       dbgLog('SS:STALL '+elapsed+'ms elapsed, exp'+_dbgUttExp+'ms, speaking='+(SS.speaking?1:0),true);
     }
   }
-},2000);
+}
 function dbgAttach(){
+  if(!_dbgEnabled)return;
   const g=document.getElementById('gAudioEl'),s=document.getElementById('silentLoopEl');
   if(g){dbgWrap(g,'G');dbgWatchProgress(g);}
   if(s)dbgWrap(s,'S');
   dbgWrapSpeech();
-}
-function dbgInit(){
-  dbgAttach();
+  if(_dbgAttached)return;
+  _dbgAttached=true;
   document.addEventListener('visibilitychange',()=>dbgLog('VIS '+document.visibilityState,true));
   window.addEventListener('pagehide',()=>dbgLog('pagehide',true));
   window.addEventListener('pageshow',()=>dbgLog('pageshow',true));
   document.addEventListener('freeze',()=>dbgLog('freeze',true));
   document.addEventListener('resume',()=>dbgLog('resume',true));
+  setInterval(dbgPoll,2000);
+  setInterval(()=>{
+    if(!_dbgCtxHooked&&_actx){_dbgCtxHooked=true;try{_actx.addEventListener('statechange',()=>dbgLog('CTX '+_actx.state));}catch(e){}}
+  },1000);
+  try{const saved=localStorage.getItem(DBG_LOG_KEY);if(saved)_dbgLines=JSON.parse(saved)||[];}catch(e){_dbgLines=[];}
+  dbgLog('--- attach --- mode='+(hasGoogleKey()?'google':'webspeech')+' '+navigator.userAgent.slice(0,110),true);
+}
+function dbgInit(){
+  _dbgEnabled=isDbgMode();
   const ver=document.querySelector('.ver');
-  if(ver)ver.addEventListener('click',dbgToggle);
+  if(ver)ver.addEventListener('click',()=>{if(_dbgEnabled)dbgToggle();});
   const cp=document.getElementById('dbgCopyBtn');
   if(cp)cp.onclick=()=>{
     const box=document.getElementById('dbgLog');if(!box)return;
@@ -2354,12 +2378,28 @@ function dbgInit(){
   if(cl)cl.onclick=()=>{_dbgLines=[];try{localStorage.removeItem(DBG_LOG_KEY);}catch(e){}dbgRender();};
   const cb=document.getElementById('dbgCloseBtn');
   if(cb)cb.onclick=dbgToggle;
-  try{const saved=localStorage.getItem(DBG_LOG_KEY);if(saved)_dbgLines=JSON.parse(saved)||[];}catch(e){_dbgLines=[];}
-  dbgLog('--- page load --- mode='+(hasGoogleKey()?'google':'webspeech')+' '+navigator.userAgent.slice(0,110),true);
-  setInterval(()=>{
-    if(!_dbgCtxHooked&&_actx){_dbgCtxHooked=true;try{_actx.addEventListener('statechange',()=>dbgLog('CTX '+_actx.state));}catch(e){}}
-  },1000);
+  updDbgModeBtn();
+  if(!_dbgEnabled)return;
+  dbgAttach();
   try{if(localStorage.getItem(DBG_ON_KEY)==='1')dbgToggle();}catch(e){}
+}
+function updDbgModeBtn(){
+  const b=document.getElementById('dbgModeBtn');if(!b)return;
+  const on=isDbgMode();
+  b.textContent=on?'ON':'OFF';
+  b.className='sett-btn'+(on?' sett-btn-save':'');
+}
+function toggleDbgMode(){
+  const next=!isDbgMode();
+  try{localStorage.setItem(DBG_MODE_KEY,next?'1':'0');}catch(e){}
+  _dbgEnabled=next;
+  updDbgModeBtn();
+  if(next){dbgAttach();toast('ON: バージョン表記をタップでログを表示');}
+  else{
+    if(_dbgOn)dbgToggle();
+    try{localStorage.removeItem(DBG_ON_KEY);}catch(e){}
+    toast('デバッグモードをOFFにしました');
+  }
 }
 function dbgToggle(){
   _dbgOn=!_dbgOn;
