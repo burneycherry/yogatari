@@ -72,7 +72,7 @@
 1. **Web Speech API** (`speechSynthesis`): デフォルト。APIキー不要。`speakIdx()` で文単位再生。
 2. **Google Cloud TTS**: 高品質。APIキー必須。`fetchGoogleAudio()` で取得し `_prefetchCache` にキャッシュ、`<audio id="gAudioEl">` で再生。
 
-サイレント音声ループ（`<audio id="silentLoopEl">`）はセグメント間の無音区間を埋めるために使われる。
+サイレント音声ループ（`<audio id="silentLoopEl">`）はセグメント間の無音区間を埋めるために使われる。Androidではこれに加えて、ページがオーディオフォーカスを保持し続けるための役割を持つ（「Androidバックグラウンド再生の実測挙動」参照）。
 
 #### iOSバックグラウンド再生の実測挙動（重要）
 
@@ -107,9 +107,33 @@
 - Google TTSモードと異なり `<audio>` 要素が鳴っていないため、オーディオセッションを保持する主体が存在しない。無音ループを鳴らし直す対策は原理的に効かない
 - `checkAudioProgress()` は `gAudioEl` の再生位置のみを見るため、Web Speechモードでは動作しない（誤検知もしない）
 
+#### Androidバックグラウンド再生の実測挙動（解決済み・重要）
+
+実機ログとChromiumのソースで確認済みの事実。推測で書き換えないこと。
+
+**原因は「5秒以下の音声は一時音として扱われる」というChromiumの仕様。** `media/base/media_content_type.cc` に規定がある。
+
+```cpp
+const int kMinimumContentDurationSecs = 5;
+// duration > 5秒 → kPersistent（完全なオーディオフォーカス・バックグラウンド維持）
+// duration ≤ 5秒 → kTransient（通知音と同じ一時音扱い・維持しない）
+```
+
+- 本アプリは段落ごとに別の音声ファイルを再生するため、**段落ごとに新しいオーディオフォーカス要求が発生する**。段落の多くは5秒以下のため一時音に分類され、バックグラウンド再生権が維持されなかった
+- 症状は**画面消灯から15.5〜17.7秒で停止**。停止は必ず**新しい段落の開始時**（フォーカスを要求し直す瞬間）に起きる。段落の途中で止まることはない
+- 停止の現れ方はiOSと同じ2種類。`G:playing` 直後に `currentTime` が凍結するか、`pause` イベントが `ended=false` で飛ぶ
+- 検出は `checkAudioProgress()` がそのまま機能する。一方 **`rebuildAudioElements()` による▶復旧はAndroidでは効かない**（フォーカスの問題であり要素の問題ではないため）
+
+**対策**: `silentLoopEl` の音源を、MP3のデコードに失敗した環境でのみ**実行時生成の6秒無音WAV**へ切り替える（`silentWavSrc()` / `_silentMode`）。5秒を超えるためChromeが `kPersistent` と判定し、ページが完全なオーディオフォーカスを保持し続ける。
+
+- WAVはPCMのためコーデックを要さず、MP3が再生できない環境でも確実に鳴る
+- 判定はUA判定ではなく**デコード失敗の検知**で行う。MP3が再生できるiOSは従来どおりMP3を使い、挙動は一切変わらない
+- しきい値は「5秒**超**」なので、ちょうど5秒では不足する
+- 対策後、Androidで停止しなくなり、章をまたぐ自動進行も動作。**Chromeのメディア通知が表示されるようになる**（`kPersistent` として認識された証拠）
+
 #### その他の実測事項
 
-- Android Chrome では `SILENT_MP3` のデータURIがデコードできず、無音ループが再生されない（`MEDIA_ERR_SRC_NOT_SUPPORTED`）。`keepAudioSessionAlive()` はAndroidでは実質無効
+- Android Chrome では `SILENT_MP3` のデータURIがデコードできない（`MEDIA_ERR_SRC_NOT_SUPPORTED`）。このため `keepAudioSessionAlive()` が段落間を埋めるために `gAudioEl` へ同じ音源を渡す処理は、Android では行わない（`_silentMode !== 'mp3'` で抑止）
 - **`volume` はiOSでは読み取り専用で無視されるが、Androidでは有効**。`unlockAudio()` が解除用の無音再生のために `volume=0` にする箇所があり、この復帰処理を成功時のみに書くとAndroidで全編無音になる。`startPlay()` は `unlockAudio()` の直後に `stopGoogleAudioFull()` を呼ぶため、解除用の `play()` は必ず中断され `AbortError` で終わる。iOSでは `volume` が無視されるためこの不具合は表面化しない
 
 ### テキスト処理
