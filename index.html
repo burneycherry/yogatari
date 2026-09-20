@@ -1519,9 +1519,12 @@ function splitText(t) {
   var _epRe   = /((?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71.*)/;
   var _epHeadRe = /^(?:(?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71|\u9592\u8a71|\u5e55\u9593|\u756a\u5916)/;
   var _decoOn = isFilterOn('decosym');
-  return t.replace(/\r\n/g,'\n').split(/\n+/).map(function(s){
+  var _raw = t.replace(/\r\n/g,'\n').split(/\n+/).map(function(s){
     s=s.trim(); if(!s.length)return null;
     if(_decoOn){s=stripDecoSym(s); if(!s.length)return null;}
+    return s;
+  }).filter(function(s){ return !!s; });
+  var _kept = _raw.map(function(s){
     if(isFilterOn('chaphead')&&_chapRe.test(s)){var _m=_epRe.exec(s);var _extracted=_m?_m[1]:null;if(_extracted&&!_pendingEpTitle)_pendingEpTitle=_extracted;return _extracted||null;}
     if(isFilterOn('chaphead')&&_epHeadRe.test(s)&&s.length<=60){if(!_pendingEpTitle)_pendingEpTitle=s;return s;}
     return s;
@@ -1531,6 +1534,11 @@ function splitText(t) {
     for (var _ci = 0; _ci < _cw.length; _ci++) { if (s.indexOf(_cw[_ci]) >= 0) return false; }
     return true;
   });
+  // Safety valve: a page whose every line is filtered out leaves nothing to read, which happens
+  // on a chapter cover page holding only its heading (Estar splits chapters into such pages).
+  // Fall back to the unfiltered lines so the page can still be played.
+  if (!_kept.length && _raw.length) return _raw;
+  return _kept;
 }
 function renderText() {
   const box=document.getElementById('novelText');
