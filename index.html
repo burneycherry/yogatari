@@ -1005,6 +1005,10 @@ let _startupCheckRunning=false;
 let _resumeActive=false;
 const PROXIES = [
   { build: u=>'https://yogatari-proxy.burneycherry.workers.dev/?url='+encodeURIComponent(u), isJson:false, ms:8000 },
+  // Second own proxy, on Deno Deploy rather than Cloudflare. Kakuyomu serves its work pages to the
+  // Cloudflare Worker but answers its episode pages with 403 there, so this one covers the reading
+  // pages. It retries a blocked page on its side, hence the longer budget.
+  { build: u=>'https://wise-bluebird-8764.burneycherry.deno.net/?url='+encodeURIComponent(u), isJson:false, ms:12000 },
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
   { build: u=>'https://cors.eu.org/'+u, isJson:false, ms:7000 },
