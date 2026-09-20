@@ -1085,7 +1085,10 @@ async function fetchHtml(url) {
       // the hits the site saw per page, and Kakuyomu answers a burst of them with HTTP 403.
       // A proxy that already answered is tried first, so the usual case still resolves at once.
       const normalDelay = i * 500;
-      const delay = (i === cachedIdx) ? 0 : normalDelay;
+      // The proxy that answered for this host last time gets a head start: while it is still
+      // running, the others stay idle, so a page costs the novel site one hit instead of two. They
+      // start on their own if it does not answer in time.
+      const delay = (i === cachedIdx) ? 0 : (cachedIdx >= 0 ? 1500 + normalDelay : normalDelay);
       setTimeout(() => {
         if (settled) return;
         const label = p.build(url).replace(/https?:\/\/([^/]+).*/, '$1');
