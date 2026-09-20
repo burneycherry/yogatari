@@ -1196,6 +1196,15 @@ function kakuyomuTotalFromToc(html) {
     });
     let total = 0;
     Object.keys(groups).forEach(k => { if (groups[k] > total) total = groups[k]; });
+    // Works without chapters have no chapter rows, but the page still states the work total as
+    // "全138話". The pattern is anchored so that a number inside the synopsis cannot match.
+    doc.querySelectorAll('*').forEach(el => {
+      if (el.children.length) return;
+      const m = (el.textContent || '').trim().match(/^(?:連載中|完結済)?\s*全\s*([\d,]+)\s*話$/);
+      if (!m) return;
+      const n = parseInt(m[1].replace(/,/g, ''));
+      if (n > total && n <= 100000) total = n;
+    });
     return total;
   } catch(e) { return 0; }
 }
@@ -1575,9 +1584,13 @@ function splitText(t) {
     if(_decoOn){s=stripDecoSym(s); if(!s.length)return null;}
     return s;
   }).filter(function(s){ return !!s; });
-  var _kept = _raw.map(function(s){
-    if(isFilterOn('chaphead')&&_chapRe.test(s)){var _m=_epRe.exec(s);var _extracted=_m?_m[1]:null;if(_extracted&&!_pendingEpTitle)_pendingEpTitle=_extracted;return _extracted||null;}
-    if(isFilterOn('chaphead')&&_epHeadRe.test(s)&&s.length<=60){if(!_pendingEpTitle)_pendingEpTitle=s;return s;}
+  // A heading only ever sits at the very top of a page, so only the first lines may supply the
+  // episode title. An "第一話読んでくださりありがとうございます！" style greeting further down the
+  // body matches the same pattern and used to replace the title the site itself provided.
+  var _headMax = 3;
+  var _kept = _raw.map(function(s, _li){
+    if(isFilterOn('chaphead')&&_chapRe.test(s)){var _m=_epRe.exec(s);var _extracted=_m?_m[1]:null;if(_extracted&&!_pendingEpTitle&&_li<_headMax)_pendingEpTitle=_extracted;return _extracted||null;}
+    if(isFilterOn('chaphead')&&_epHeadRe.test(s)&&s.length<=60){if(!_pendingEpTitle&&_li<_headMax)_pendingEpTitle=s;return s;}
     return s;
   }).filter(function(s){
     if(!s||!s.length)return false;
