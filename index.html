@@ -1057,8 +1057,10 @@ async function fetchHtml(url) {
     let settled = false, failCount = 0;
     const errors = [];
     entries.forEach(({ p, i }) => {
-      const wave = Math.floor(i / 2);
-      const normalDelay = wave * 400;
+      // One proxy at a time. Every proxy fetches the novel site itself, so a wave of two doubled
+      // the hits the site saw per page, and Kakuyomu answers a burst of them with HTTP 403.
+      // A proxy that already answered is tried first, so the usual case still resolves at once.
+      const normalDelay = i * 500;
       const delay = (i === cachedIdx) ? 0 : normalDelay;
       setTimeout(() => {
         if (settled) return;
@@ -1072,7 +1074,7 @@ async function fetchHtml(url) {
           if (failCount === entries.length && !settled) {
             settled = true;
             const isKakuyomu = url.includes('kakuyomu.jp');
-            reject(new Error('ページ取得失敗。' + (isKakuyomu ? 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。' : 'なろう等は直接取得できない場合があります。') + '\n📋 ' + errors.slice(0,4).join(' ／ ')));
+            reject(new Error('ページ取得失敗。' + (isKakuyomu ? 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。' : 'なろう等は直接取得できない場合があります。') + '\n📋 ' + errors.slice(0,6).join(' ／ ')));
           }
         });
       }, delay);
@@ -1550,7 +1552,9 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
   renderQueue();
   if (nextUrl) {
     clearNextChapterCache();
-    const prefetchDelay = (nextUrl && nextUrl.includes('kakuyomu.jp')) ? 500 : 3000;
+    // Kakuyomu throttles bursts, and prefetching 0.5s after the page fetch is exactly that. The
+    // chapter takes minutes to read, so the next one is still cached long before it is needed.
+    const prefetchDelay = (nextUrl && nextUrl.includes('kakuyomu.jp')) ? 12000 : 3000;
     setTimeout(() => prefetchNextChapter(nextUrl), prefetchDelay);
   } else if (currentChapterUrl && currentChapterUrl.includes('kakuyomu.jp')) {
     setTimeout(async () => {
@@ -2001,7 +2005,7 @@ async function _goNextImpl(autoPlay=true){
       // The public CORS proxies fail in bursts (rate limits, timeouts), and pressing 次話 again a
       // moment later succeeds. Retry once here so the reader does not have to.
       for(var _try=0;_try<2&&!page;_try++){
-        if(_try>0){showFetch('load','取得に失敗。再試行中…');await new Promise(r=>setTimeout(r,1500));if(_navGeneration!==myGen)return;}
+        if(_try>0){showFetch('load','取得に失敗。少し待って再試行中…');await new Promise(r=>setTimeout(r,4000));if(_navGeneration!==myGen)return;}
         try{page=await fetchHtml(url).then(html=>extractPage(html,url));}
         catch(_fe){if(_try>=1||(_fe.message||'').indexOf('取得失敗')<0)throw _fe;}
       }
@@ -2023,7 +2027,7 @@ async function _goNextImpl(autoPlay=true){
     else if(isNetErr){
       clearNextChapterCache();
       // Keep the per-proxy reason visible: it is the only way to tell a rate limit from a timeout.
-      const detail=(msg.split('📋')[1]||'').trim().slice(0,70);
+      const detail=(msg.split('📋')[1]||'').trim().slice(0,160);
       showFetch('err','⚠ ページ取得に失敗しました。「次話→」で再試行できます'+(detail?' ／ 📋 '+detail:''));
       document.getElementById('bNext').disabled=!nextUrl;
     }
