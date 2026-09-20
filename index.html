@@ -827,12 +827,13 @@ function msSetState(state) {
 function msRegisterHandlers() {
   if (!_msSupported) return;
   try {
-    navigator.mediaSession.setActionHandler('play', () => { if (!playing && segs.length) startPlay(); });
-    navigator.mediaSession.setActionHandler('pause', () => { if (playing) togglePlay(); });
-    navigator.mediaSession.setActionHandler('previoustrack', () => { if (prevUrl) goPrev(false); else prevSeg(); });
-    navigator.mediaSession.setActionHandler('nexttrack', () => { if (nextUrl) goNext(false); else nextSeg(); });
-    navigator.mediaSession.setActionHandler('seekbackward', (d) => { skipSec(-(d?.seekOffset || 10)); });
-    navigator.mediaSession.setActionHandler('seekforward', (d) => { skipSec(d?.seekOffset || 10); });
+    // dbgLog is a no-op unless debug mode is on, so these markers cost nothing normally.
+    navigator.mediaSession.setActionHandler('play', () => { dbgLog('MS:play handler'); if (!playing && segs.length) startPlay(); });
+    navigator.mediaSession.setActionHandler('pause', () => { dbgLog('MS:pause handler'); if (playing) togglePlay(); });
+    navigator.mediaSession.setActionHandler('previoustrack', () => { dbgLog('MS:prev handler'); if (prevUrl) goPrev(false); else prevSeg(); });
+    navigator.mediaSession.setActionHandler('nexttrack', () => { dbgLog('MS:next handler'); if (nextUrl) goNext(false); else nextSeg(); });
+    navigator.mediaSession.setActionHandler('seekbackward', (d) => { dbgLog('MS:seekback handler'); skipSec(-(d?.seekOffset || 10)); });
+    navigator.mediaSession.setActionHandler('seekforward', (d) => { dbgLog('MS:seekfwd handler'); skipSec(d?.seekOffset || 10); });
   } catch(e) {}
 }
 let _msHandlersRegistered = false;
