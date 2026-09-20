@@ -1083,6 +1083,12 @@ async function fetchHtml(url) {
     });
   });
 }
+function proxyErr404Count(msg) {
+  // The rejection message lists what each proxy reported. A lone "HTTP 404" is usually a dead
+  // proxy answering for itself, so only several of them mean the page is really gone.
+  const body = (String(msg || '').split('📋')[1] || '');
+  return (body.match(/HTTP 404/g) || []).length;
+}
 const SITE_RULES = [
   { host:'ncode.syosetu.com',   body:'#novel_honbun', next:'.novel_bn a:last-of-type', prev:'.novel_bn a:first-of-type', toc:'#novel_color', tocItem:'.novel_sublist2 a, dd a' },
   { host:'novel18.syosetu.com', body:'#novel_honbun', next:'.novel_bn a:last-of-type', prev:'.novel_bn a:first-of-type' },
@@ -2011,7 +2017,10 @@ async function _goNextImpl(autoPlay=true){
         try{page=await fetchHtml(url).then(html=>extractPage(html,url));}
         // A 404 is the end of the work (Syosetu's next URL is just the number incremented), not a
         // transient proxy failure, so it is reported at once instead of being retried.
-        catch(_fe){var _fm=_fe.message||'';if(_try>=1||_fm.indexOf('取得失敗')<0||_fm.indexOf('HTTP 404')>=0)throw _fe;}
+        // Several 404s mean the end of the work (Syosetu's next URL is just the number
+        // incremented), which is not worth retrying. One is just a dead proxy, and skipping the
+        // retry for it left the reader with an error a second attempt would have avoided.
+        catch(_fe){var _fm=_fe.message||'';if(_try>=1||_fm.indexOf('取得失敗')<0||proxyErr404Count(_fm)>=2)throw _fe;}
       }
     }
     if(_navGeneration!==myGen)return;
@@ -2025,7 +2034,7 @@ async function _goNextImpl(autoPlay=true){
     await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){
     const msg=e.message||'';
-    const isTrulyFinal=msg.includes('最終話の可能性')||msg.includes('HTTP 404');
+    const isTrulyFinal=msg.includes('最終話の可能性')||proxyErr404Count(msg)>=2;
     const isNetErr=msg.includes('取得失敗')||msg.includes('HTTP')||msg.includes('Load failed')||msg.includes('全プロキシ');
     if(isTrulyFinal){nextUrl=null;clearNextChapterCache();document.getElementById('bNext').disabled=true;showFetch('err','📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');}
     else if(isNetErr){
