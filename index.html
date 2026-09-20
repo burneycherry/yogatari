@@ -406,6 +406,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         </optgroup>
       </select>
       <button class="test-voice-btn" onclick="testVoice()" id="testVoiceBtn">🔊 この声を試聴する</button>
+      <div class="sett-note warn" id="bgWarnNote">⚠ <b>端末内蔵の音声では画面を消すと停止します</b><br>現在この音声で読み上げています。iPhone・Androidとも端末側の仕様のため、アプリ側では回避できません。<br>画面を消したまま聴くにはGoogle TTSの設定が必要です。</div>
       <div class="sett-note warn" id="gvKeyNote">⚠ Googleの音声を使うには、下の「Google Cloud TTS」でAPIキーを保存してください。保存するまでは端末内蔵音声で読み上げます。</div>
       <div class="chirp-warn" id="chirpWarn">⚠ Chirp 3 HD は速度・ピッチ調整が非対応です。<br>コントロールバーの速度・ピッチスライダーは無効になります。</div>
     </div>
@@ -419,7 +420,6 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
     <div class="sett-section">
       <div class="sett-title">// Google Cloud TTS（高品質）</div>
       <div class="sett-sub" style="margin-bottom:10px">GoogleアカウントのAPIキーを入力すると<br>端末内蔵音声より自然な日本語音声になります。</div>
-      <div class="sett-note warn" id="bgWarnNote">⚠ <b>端末内蔵の音声では画面を消すと停止します</b><br>現在この音声で読み上げています。iPhone・Androidとも端末側の仕様のため、アプリ側では回避できません。<br>画面を消したまま聴くにはGoogle TTSの設定が必要です。</div>
       <a class="howto-link" href="https://cloud.google.com/text-to-speech" target="_blank">▶ APIキーの取得方法（Google Cloud）</a>
       <div class="api-status" id="apiStatus"></div>
       <input class="api-input" id="apiKeyInput" type="password" placeholder="AIzaSy…（APIキーを貼り付け）" autocomplete="off" autocorrect="off" spellcheck="false">
@@ -1467,7 +1467,7 @@ const CONFIGURABLE_FILTERS = [
   { key:'chaphead',  group:'basic',  label:'章・話タイトル行', desc:'第X章行を省略（話タイトルが同行なら話以降を読み上げ）。第X話/閑話/幕間/番外はサブタイトルに反映', pattern:/^第[一二三四五六七八九十百千\d]+章/ },
   { key:'postmsg',   group:'basic',  label:'投稿・更新のあいさつ文', desc:'「久しぶりの投稿」「更新が遅れ」「お久しぶりです」等の冒頭・末尾あいさつ', pattern:/久しぶりの投稿|お久しぶりです|更新が遅れ|投稿が遅|遅筆で申し訳|しばらく間が|ご無沙汰|遅くなりまし|ご覧いただき|ご覧くださり|連載|よろしくお願いいたします|評価.*よろしく|応援.*よろしく/ },
   { key:'errreport', group:'custom', label:'誤字脱字報告', desc:'「誤字」「脱字」「修正」等の報告を含む段落', pattern:/誤字|脱字|誤植|ご報告|修正しま|訂正/ },
-  { key:'divider',   group:'basic', label:'区切り記号行（◇＊ーなど）', desc:'◇◇◇ や ＊＊＊ や ─── など記号だけの行', pattern:/^[\s\u3000\u25c7\u25c6\u25a1\u25a0\u25cb\u25cf\u00d7\uff0a\u203b\u25ef\u25b3\u25b2\u25bd\u25bc\u25ce\uff5e\u301c\u30fc\u2500\u2501\u003d\uff0d\uff3f\u30fb\u2026\u2020\u2021\u2666\u2662\u2663\u2660\u2665\u2661\u2605\u2606\u25b7\u25c1\*\-\=_~]+$/ },
+  { key:'divider',   group:'basic', label:'区切り記号行（◆◇＊ーなど）', desc:'◆◆◆ や ◇◇◇ や ＊＊＊ や ─── など記号だけの行', pattern:/^[\s\u3000\u25c7\u25c6\u25a1\u25a0\u25cb\u25cf\u00d7\uff0a\u203b\u25ef\u25b3\u25b2\u25bd\u25bc\u25ce\uff5e\u301c\u30fc\u2500\u2501\u003d\uff0d\uff3f\u30fb\u2026\u2020\u2021\u2666\u2662\u2663\u2660\u2665\u2661\u2605\u2606\u25b7\u25c1\*\-\=_~]+$/ },
   { key:'ruby', group:'basic', label:'ルビ（ふりがな）', desc:'漢字のふりがなを除去して読み上げ（スライムコア等を省略）。次話読み込みから反映', pattern:null },
 ];
 function loadSkipFilters() { try{return JSON.parse(localStorage.getItem('yogatari_skip_filters')||'{}');}catch(e){return{};} }
