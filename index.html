@@ -1009,11 +1009,11 @@ let _navGeneration=0;
 let _startupCheckRunning=false;
 let _resumeActive=false;
 const PROXIES = [
-  { build: u=>'https://yogatari-proxy.burneycherry.workers.dev/?url='+encodeURIComponent(u), isJson:false, ms:8000 },
+  { build: u=>'https://yogatari-proxy.burneycherry.workers.dev/?url='+encodeURIComponent(u), isJson:false, own:true, ms:8000 },
   // Second own proxy, on Deno Deploy rather than Cloudflare. Kakuyomu serves its work pages to the
   // Cloudflare Worker but answers its episode pages with 403 there, so this one covers the reading
   // pages. It retries a blocked page on its side, hence the longer budget.
-  { build: u=>'https://wise-bluebird-8764.burneycherry.deno.net/?url='+encodeURIComponent(u), isJson:false, ms:12000 },
+  { build: u=>'https://wise-bluebird-8764.burneycherry.deno.net/?url='+encodeURIComponent(u), isJson:false, own:true, ms:12000 },
   // Placed right after the two own proxies rather than at the end: the public ones below it are
   // mostly unreachable, so a working fallback would otherwise wait behind them. This one answers
   // for both Syosetu and Kakuyomu episode pages, which keeps Kakuyomu off a single proxy.
@@ -1086,7 +1086,7 @@ async function fetchHtml(url) {
   const entries = [];
   PROXIES.forEach((p, i) => { if (!(sjis && p.isJson)) entries.push({ p: p, i: i }); });
   return new Promise((resolve, reject) => {
-    let settled = false, failCount = 0;
+    let settled = false, failCount = 0, own404 = false;
     const errors = [];
     entries.forEach(({ p, i }) => {
       // One proxy at a time. Every proxy fetches the novel site itself, so a wave of two doubled
@@ -1104,12 +1104,18 @@ async function fetchHtml(url) {
           if (!settled) { settled = true; setProxyCacheIdx(hostKey, i); resolve(html); }
         }).catch(e => {
           errors.push(label + ': ' + e.message);
+          // Only the own proxies hand back the novel site's own status, so a 404 from one of them
+          // means the page is gone. A public proxy can answer 404 about itself, which says nothing
+          // about the page, so its 404 is not evidence of a missing chapter.
+          if (p.own && e.message === 'HTTP 404') own404 = true;
           if (i === cachedIdx) clearProxyCacheIdx(hostKey);
           failCount += 1;
           if (failCount === entries.length && !settled) {
             settled = true;
             const isKakuyomu = url.includes('kakuyomu.jp');
-            reject(new Error('ページ取得失敗。' + (isKakuyomu ? 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。' : 'なろう等は直接取得できない場合があります。') + '\n📋 ' + errors.join(' ／ ')));
+            const err = new Error('ページ取得失敗。' + (isKakuyomu ? 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。' : 'なろう等は直接取得できない場合があります。') + '\n📋 ' + errors.join(' ／ '));
+            err.own404 = own404;
+            reject(err);
           }
         });
       }, delay);
@@ -1771,12 +1777,16 @@ function clearNextChapterCache(){_prefetchGeneration += 1;_nextHtmlCache=null;_n
 // A prefetch already found out why the next page cannot be read, so reuse that verdict rather than
 // fetching the same missing page a second time. Only errors that a retry cannot change count, and
 // only while the verdict is recent: the author may publish the next episode mid-chapter.
-const PREFETCH_ERR_TTL_MS=600000;
-function isFinalErrMsg(msg){const t=String(msg==null?'':msg);return t.indexOf('最終話の可能性')>=0||t.indexOf('HTTP 404')>=0;}
+const PREFETCH_ERR_TTL_MS=1800000;
+function isFinalErr(e){
+  if(!e)return false;
+  if(String(e.message||'').indexOf('最終話の可能性')>=0)return true;
+  return e.own404===true;
+}
 function freshPrefetchErr(url){
   if(!_nextErrCache||_nextErrCache.url!==url)return null;
   if(Date.now()-_nextErrCache.at>PREFETCH_ERR_TTL_MS)return null;
-  return isFinalErrMsg(_nextErrCache.error&&_nextErrCache.error.message)?_nextErrCache.error:null;
+  return isFinalErr(_nextErrCache.error)?_nextErrCache.error:null;
 }
 function hasGoogleKey(){return _gApiKey.trim().length>10;}
 function useGoogleTts(){return _ttsEngine==='google'&&hasGoogleKey();}
@@ -2118,7 +2128,7 @@ async function _goNextImpl(autoPlay=true){
     await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){
     const msg=e.message||'';
-    const isTrulyFinal=isFinalErrMsg(msg);
+    const isTrulyFinal=isFinalErr(e);
     const isNetErr=msg.includes('取得失敗')||msg.includes('HTTP')||msg.includes('Load failed')||msg.includes('全プロキシ');
     if(isTrulyFinal){nextUrl=null;clearNextChapterCache();document.getElementById('bNext').disabled=true;showFetch('err','📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');}
     else if(isNetErr){
