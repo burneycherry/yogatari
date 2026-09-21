@@ -1,0 +1,268 @@
+{
+  "version": "v177",
+  "date": "2026-09-21",
+  "files": [
+    {
+      "path": "index.html",
+      "description": "UIおよびメインロジック（英語記述）。CSS・HTML・JavaScript全体を1ファイルに収録。",
+      "status": "implemented"
+    },
+    {
+      "path": "manifest.json",
+      "description": "PWAマニフェスト設定。theme_color・background_colorを#000000（OLEDピュアブラック）に変更済み。",
+      "status": "implemented"
+    },
+    {
+      "path": "icon-192.png",
+      "description": "PWAホーム画面アイコン（192x192）。夜空・三日月・星・「夜」文字デザイン。",
+      "status": "implemented"
+    },
+    {
+      "path": "icon-512.png",
+      "description": "PWAスプラッシュ・ストア向けアイコン（512x512）。同上デザイン。",
+      "status": "implemented"
+    },
+    {
+      "path": "CLAUDE.md",
+      "description": "Claude Code向けプロジェクト作業指針。バージョン管理プロトコル・コーディングルール等。",
+      "status": "implemented"
+    }
+  ],
+  "features": [
+    {
+      "name": "Web Speech API 読み上げ",
+      "status": "implemented",
+      "details": "speechSynthesisを使用。日本語音声を優先選択し、speakIdx()で文単位再生。v172の実機検証により、iOS・Androidいずれもバックグラウンド再生は不可であることが確定（中断の有無に関係なく画面消灯で停止）。iOSはエンジンが無言で凍結し復帰時に未読部分を破棄、Androidは約30ms後にerror: interruptedで打ち切られる。端末側の仕様でありアプリ側では回避できないため、設定タブとヘルプに明記した。 v173でAPIキーの有無と再生エンジンの判定を分離し、APIキーを保存したままでも端末内蔵音声を選べるようにした。"
+    },
+    {
+      "name": "Google Cloud TTS 読み上げ",
+      "status": "implemented",
+      "details": "APIキー必須。fetchGoogleAudio()で音声取得、_prefetchCacheにキャッシュ、<audio id=\"gAudioEl\">で再生。APIキーはx-goog-api-keyヘッダーで送信（URLクエリ不使用）。 v173で再生に使うかどうかの判定をhasGoogleKey()からuseGoogleTts()へ変更。APIキーが保存済みでもエンジン選択がdeviceならGoogle TTSは呼ばれない。"
+    },
+    {
+      "name": "再生音声エンジンの選択",
+      "status": "implemented",
+      "details": "設定タブの「// 再生音声を選ぶ」セレクトに端末内蔵音声（Web Speech API）のoptgroupを追加し、Google音声と同一のセレクトから選択できるようにした。従来はhasGoogleKey()が再生エンジンの判定を兼ねていたため、端末内蔵音声に戻すにはAPIキーのクリアが必須だった。選択状態をlocalStorageキー yogatari_engine（'google' / 'device'）に分離し、再生経路の判定をuseGoogleTts()へ置換した。未設定時はAPIキーの有無から導出するため既存ユーザーの挙動は変わらない。新規キーの追加のみでマイグレーションは不要。APIキーが無い状態でGoogle音声を選んだ場合は選択を保持したうえで警告ノートとトーストで案内し、実再生は端末内蔵音声にフォールバックする。isChirp3()もuseGoogleTts()を前提とし、端末内蔵音声選択中に速度・ピッチのステッパーが無効化されないようにした。"
+    },
+    {
+      "name": "コントロールバーの音声表示",
+      "status": "implemented",
+      "details": "音声の選択を設定タブに集約したため、コントロールバーにあった端末内蔵音声のセレクト（voiceSel）を削除し、Google TTSと共通の読み取り専用バッジ1つ（voiceModeRow / voiceModeBadge）に統一した。バッジは選択中のエンジンに応じてGoogle音声名（mode-badge google）と端末内蔵音声名（mode-badge）を出し分ける。未使用になったonVoice()とloadVoices()内のセレクト構築処理を削除した。"
+    },
+    {
+      "name": "小説家になろう 対応",
+      "status": "implemented",
+      "details": "parseSyosetuToc()で目次解析。ncode.syosetu.comのURLに対応。フォールバック解析（主要セレクタ不一致時）は同一ホスト・同一ncodeの\"/ncode/数字/\"形式のリンクのみに限定し、書籍化告知に含まれるAmazon・楽天・ヨドバシカメラ等の広告リンク（ISBN等の数字で終わるURL）を話として誤カウントしないよう修正。"
+    },
+    {
+      "name": "カクヨム 対応",
+      "status": "implemented",
+      "details": "parseKakuyomuToc()で目次解析。kakuyomu.jpのURLに対応。カクヨムの話ページ取得は自前Cloudflare Workersプロキシ・公開プロキシとも失敗することがあり(カクヨム側または各プロキシ側のレート制限/ブロックが濃厚)、根本対策は見送り現状維持。 v176でカクヨム対応を全面的に見直した。(1)目次: 作品ページはリンクとしては開いている章の先頭7話分しか描画しないが、__NEXT_DATA__のApolloストアには全話分（実測138話）のEpisode:<id>（title/publishedAt）が入っている。kakuyomuApolloState()/kakuyomuTocFromState()でここから構築する。並び順はストアのキー順ではなく参照リスト（章の一覧→各章が参照する話）から取る（キー順は章の表示順と一致しないため）。publishedAtが未来の話は載せない。(2)作品ID: canonical/og:url/現在の話へのリンクからページ自身が名乗るIDを取る（kakuyomuWorkIdOf()）。アドレス欄のIDに話IDを連結すると必ず404になる経路があった。(3)話ページには__NEXT_DATA__が無く、目次は作品ページからしか取得できない。(4)本文ページはCloudflare Workers経由では403（nginx）を返す。ブラウザ相当のヘッダー・Cookie付与・再取得はいずれも無効であることを実証済みで、Deno Deploy経由でのみ取得できる。 v177（2026-09-21）の再検証では、同じ本文ページをCloudflare Workers経由でstatus 200 / attempts 1で取得できた。同日、api.allorigins.winとapi.cors.lolも同じ本文ページを取得できている。上記の403は経路そのものに対する恒久的な拒否ではなく、カクヨム側のIP単位の制限が続いていた状態だった可能性がある。ただし200の観測は1回のみで403が再発しない保証はないため、CLAUDE.mdには両方の記述を残してある。"
+    },
+    {
+      "name": "エブリスタ 対応",
+      "status": "implemented",
+      "details": "v174で新規対応。本文セレクタは .mainBody .content。章扉ページには .content が無いため、見出しを含む .mainBody .body をフォールバックとして併記する。rule.bodyのカンマ区切りを優先順位リストとして順に試すよう変更した（querySelector()は文書順で最初の要素を返すため、親要素である .body が先に選ばれ話タイトルが本文の先頭に重複していた）。本文の最小文字数をサイトごとに指定できるようSITE_RULESにminTextを追加し、エブリスタは2とした（「序章」等の短い章扉に対応）。作品タイトルはビューアページのtitle「【本文】<作品名>｜<N>ページ - 小説投稿エブリスタ」から抽出する。chapNumFromUrl()が ?page= から話数を読む。inferTocUrl()が /viewer?page=N を落として目次URLを導出する。話URLから読み込む運用で、目次ページからの話選択には非対応。 v175で話数カウントの単位をページに統一した。chapNumFromUrl()が返す?page=は作品全体の通しページ番号であり、目次の「全NNエピソード」とは単位が異なるため。履歴・再開バナーの表記は「第Nページ」となる。"
+    },
+    {
+      "name": "青空文庫 対応",
+      "status": "implemented",
+      "details": "v174で新規対応。本文セレクタは .main_text。青空文庫のXHTMLはShift_JISで配信されるが、Response.text()は常にUTF-8としてデコードするため全文が文字化けしていた。needsSjisDecode()が対象ホストを判定し、arrayBuffer()をTextDecoder('shift_jis')でデコードする。ルビは既存のrubyフィルターがrtのテキストを採用するため、そのまま機能する。1作品1ファイルのため章間ナビゲーションは無く、本文ファイル（/files/〜.html）のURLを指定する。図書カードのページには本文が無い。"
+    },
+    {
+      "name": "アルファポリス 対応",
+      "status": "not_implemented",
+      "details": "実機検証の結果、非対応として確定した。プロキシ経由でのHTML取得自体は成功するが、本文コンテナ <div id=\"novelBody\"> は空で、本文はページ表示後にJavaScriptが別途取得して埋める構造のため、静的HTMLからは本文を得られない。1話がさらに18ページ程度に分割される。またcontent-viewer.jsがコピー・選択・右クリックの禁止、フォーカス喪失時の本文非表示、スクリーンショット阻止といったコンテンツ保護を実装しており、これを迂回する実装は行わない方針とした。"
+    },
+    {
+      "name": "ハーメルン 対応",
+      "status": "not_implemented",
+      "details": "実機検証の結果、非対応として確定した。公開プロキシ経由でページ自体には到達するが、返るのはCloudflareのチャレンジページであり、tryProxy()のブロック検出が働く。自前Workerのホワイトリストにも追加していない。"
+    },
+    {
+      "name": "章間ナビゲーション（前話/次話ボタン）",
+      "status": "implemented",
+      "details": "次話→は従来通りページ内の次へリンク・URL連番等からセッション履歴に関係なく次話URLを解決。v171でextractPage()に次話と対称の前話URL抽出処理を追加（サイトルールのprevセレクタ・PREV_TEXTSでのリンクテキスト一致・link[rel=\"prev\"]・なろうのURL連番デクリメント・カクヨムの__NEXT_DATA__のpreviousEpisode）。これによりURL直接入力・履歴再開・前話移動直後など、セッション内の遷移記録が無い場合でも前話ボタンが有効になる。なろうの連番デクリメントは1話目(N=1)では前話URLを生成しないようガード。displayPage()のprevUrlフォールバックからcurrentChapterUrl（直前に表示していた別の小説の章である可能性がある）を削除し、小説をまたいで誤った前話へ飛ぶ不具合を修正。前話・次話ボタン押下時（ハードウェアの前/次トラックボタン含む）は章読み込み後に自動再生せず待機中のまま止まり、再生ボタン押下で開始するよう修正（章末カウントダウンによる自動進行時のみ従来通り自動再生継続）。 v176でカクヨムの次話・前話URLの解決を修正。従来は話IDをページ内データから取りながら作品IDをアドレス欄のURLから取って文字列連結していたため、保存済み・貼り付けURLの作品IDがカクヨム側と異なると必ず404になっていた。kakuyomuEpisodeUrl()で、対象の話IDを含むリンクがページにあればそのhrefをそのまま使い、無い場合のみページ自身の作品IDで組み立てる。rel=next/prev・__NEXT_DATA__・リンク文言（「次のエピソード」等）による検出もすべてこの作品IDで照合する。"
+    },
+    {
+      "name": "次話取得のエラー分類",
+      "status": "implemented",
+      "details": "次話取得失敗時、HTTP 404（エピソードが存在しない＝最新話に到達）を「取得失敗・次話で再試行できます」という誤解を招くネットワークエラー表示ではなく、「📖 最終話まで読み終わりました」という最終話到達メッセージに分類するよう修正。 v176で取得失敗（プロキシ全滅）時に4秒後、1回だけ自動で再取得する処理を追加した。公開プロキシはレート制限・タイムアウトでまとめて失敗することがあり、手動で押し直すと成功する状態だったため。本文が取れない・最終話等のエラーは従来どおり即座に表示する。失敗メッセージにはプロキシごとの理由（📋以降）を併記する。 v177で最終話の判定を作り直した。(1)先読み（prefetchNextChapter）はcatch(()=>null)で失敗理由を捨てていたため、「次話→」押下時にpageが偽値のまま再取得のループに入り、存在しないページをプロキシ経由でもう一度まるごと取得していた。最終話メッセージが出るまで待たされる原因はこれで、小説サイトへの無駄なアクセスも1回発生していた。先読みの失敗理由を_nextErrCacheに保持し、再取得しても変わらない確定的なエラーであれば取得せず即座に結果を出す。一時的なプロキシ失敗は従来どおり再取得する。(2)読んでいる間に次話が公開される場合があるため、先読みの判定はPREFETCH_ERR_TTL_MS（30分）だけ有効とし、それより古い場合は取得し直す。キャッシュは章の移動で必ず破棄されるため、影響は同じ章に留まっている間に限られる。(3)確定的なエラーの判定をisFinalErr()に集約した。「HTTP 404」を含むかどうかの文字列照合は、HTTP <番号>を投げるのがtryProxy()の1か所だけで必ずfetchHtml()に集約される都合上、通信障害で全滅したときのメッセージにも一致していた（どれか1つのプロキシが自分自身について404を返しただけで最終話と判定されうる）。サイトの状態をそのまま返す自前プロキシからの404（own404）のみを根拠とするよう改めた。"
+    },
+    {
+      "name": "CORSプロキシ フォールバック",
+      "status": "implemented",
+      "details": "PROXIES配列に複数サービスを定義。fetchHtml()がローテーションしながらsessionStorageにキャッシュ。自前のCloudflare Workersプロキシ（yogatari-proxy.burneycherry.workers.dev、ホワイトリスト方式）を最優先プロキシとして使用し、v174でestar.jp・www.aozora.gr.jp・アルファポリスの各ホストを許可対象に追加した（Worker側はリポジトリ外で管理）。Workerは本文をResponse.text()でデコードせずバイトのまま転送し、元のContent-Typeを引き継ぐ。これによりShift_JISのページがUTF-8として解釈されて壊れることがなくなった。アプリ側ではneedsSjisDecode()が真のとき、JSONで包むプロキシ（allorigins /get）を対象から外す。UTF-8デコード済みの文字列しか返さず復元不能なため。既存の公開プロキシはフォールバックとして温存。 v176で自前プロキシを2系統（Cloudflare Workers / Deno Deploy）にした。カクヨムの本文ページがCloudflare Workers経由では403になるため、Deno Deployの経路を追加してPROXIESの2番目に置いた。両系統は同一コードで、エントリポイントのみ両方（Deno.serve と export default { fetch }）を用意している。プロキシはアプリのオリジンからのリクエストのみ受け付け（ALLOWED_ORIGINS）、?debug=1 / ?probe=1 は本文を返さないため対象外。取得の制御も見直した: プロキシは1件ずつ500ms間隔で起動し、ホストごとに記憶した成功プロキシがある場合は他の開始を1.5秒遅らせる（1ページあたりのサイトへのアクセスが1回で済む）。HOST_MIN_INTERVAL_MSによりカクヨムは最小2秒間隔。次話の先読みはカクヨムのみ12秒後（他サイトは3秒後）。APIキー必須化で恒久的に401を返すcorsproxy.ioはPROXIESから削除した。 v177でPROXIESを7件に整理した。(1)api.cors.lolを自前2件の直後（index 2）に追加。なろう・カクヨムの本文ページとも取得できることを実機で確認済みで、カクヨム本文がDeno Deploy単独依存になる状態を解消した。末尾ではなくこの位置に置いたのは、以降の公開プロキシが到達不能なものばかりで、末尾では起動まで待たされるため。(2)yacdn.orgとthingproxy.freeboard.ioを削除。いずれもDNSが解決せず（ドメイン消滅）回復の見込みがない。cors.eu.org（運営者のCloudflare Workers無料枠の上限に達しError 1027）とapi.codetabs.com（サーバー停止中で522）はDNS・CDNの層までは生きており復旧しうるため残置した。(3)自前プロキシにown:trueを付与し、fetchHtml()はこの2件から404を受けた場合のみエラーにown404を立てる（最終話判定に使用）。なお、fetchHtml()自体はキャッシュを行わない。sessionStorage（yogatari_pc_*）へのページキャッシュを読み書きするのはresumeFrom()（履歴からの再開）だけで、通常の読込・章送り・先読みは毎回取得する。v176以前の本項の記述は誤りであった。"
+    },
+    {
+      "name": "しおり・履歴保存",
+      "status": "implemented",
+      "details": "localStorageキー yogatari_bk に小説・章・セグメントインデックスを保存。5段落ごとに自動保存。履歴の🔗（目次ページへのリンク）は章URLから素のTOC URL（クエリなし）を再導出して生成するよう修正し、目次ページを直接読み込んで章を選択した場合に発生していた「常に同じページに固定される」不具合を解消。"
+    },
+    {
+      "name": "履歴のサイトマーク",
+      "status": "implemented",
+      "details": "v175で新規追加。履歴一覧の📖絵文字（全作品で同じ表示で情報を持たなかった）を、取得元サイトが一目でわかるマークに置き換えた。SITE_MARKS配列とsiteMarkOf()がホスト名の部分一致で判定する（syosetu.comはハーメルンのsyosetu.orgには一致しない）。マークは各サイトのロゴを簡略化した36×36のインラインSVGで、画像ファイルは追加せずindex.html内で完結する。なろうは白地に水色の明朝体「なろう」と下端の帯、カクヨムは青地に白の鉤括弧、エブリスタは白地に青枠と吹き出しの円、青空文庫は紺地に白の外枠と縦罫線・明朝体の2列組。描画は.hist-thumb-icon.site-logoが担い、既存の枠線・背景を消してSVGを角丸6pxで切り抜く。判定できないURLは従来どおり📖と枠付きタイルを表示する。各社ロゴを似せた図柄であり公式ロゴ画像の複製ではない。"
+    },
+    {
+      "name": "履歴のNEW話数バッジ",
+      "status": "implemented",
+      "details": "最新の総話数(bk.totalChap)と現在の既読話数(bk.chapterNum)の差分を描画のたびに算出する方式。1話読んでも未読が残っていればバッジが消えずに残数を表示し続ける。最新総話数はapi.syosetu.comのnovelapi（失敗時はHTML目次解析＋ページネーション最終ページ参照によるフォールバック）で取得し、既知の値より小さい場合は上書きしない安全策を実装。 v174でエブリスタに対応。_checkNewChapterImpl()に分岐を追加し、目次ページの「全NNエピソード」から総話数を取得する。 v175でエブリスタの誤表示を修正。総数の取得元を目次の「全NNエピソード」からページ数「2648ページ」へ変更し、?page=と単位を揃えた。chapUnitOf()がエブリスタのときだけ表記を「ページ」に切り替える。既存のMath.maxガードにより保存済みtotalChapは次回チェック時にページ数へ更新されるため、マイグレーションは不要。 v176でカクヨムの総話数を修正。目次がApolloストアから全話取得できるようになったため件数が正確になった。加えてkakuyomuTotalFromToc()で章ごとの「N話」ラベルの合計または「全N話」からも総話数を取得する。bkSetToc()は既知の総話数を小さい値で上書きしないようにした（目次が実際より少ない件数を返す場合があるため）。"
+    },
+    {
+      "name": "読書統計",
+      "status": "implemented",
+      "details": "localStorageキー yogatari_stats に読書日数・作品数・話数・秒数を記録。設定タブの読書統計セクションにリセットボタン列の見出しラベル「リセット」を追加。"
+    },
+    {
+      "name": "スキップフィルター",
+      "status": "implemented",
+      "details": "yogatari_skip_filters および yogatari_custom_words に基づき、条件一致段落を読み上げからスキップ。基本フィルターに「広告ラベル行」(adlabel)と「飾り記号」(decosym)を含む。v174でsplitText()に安全弁を追加。フィルター後に1段落も残らなかった場合に限りフィルター前の行を返す。エブリスタの章扉ページは見出し1行のみで構成され、既定ONのchaphead（章・話タイトル行）に一致して全段落が消え、セグメント0件となり再生できなかったため。影響は全行がフィルターに一致するページのみで、通常の話の省略挙動は変わらない。 v176でsplitText()の話タイトル抽出（_pendingEpTitle）を先頭3行までに限定した。本文の途中・末尾にある「第一話読んでくださりありがとうございます！」のようなあいさつ文が^第[一二三…]+話に一致し、サイト側が持つ正しい話タイトルを上書きしていたため。章見出し行からの抽出・省略挙動は変更していない。"
+    },
+    {
+      "name": "飾り記号の除去",
+      "status": "implemented",
+      "details": "省略設定の基本フィルターに decosym を追加（既定ON）。行頭・行末の飾り記号（◆◇■□●○◎◯★☆▲△▼▽▷◁♦♢♣♠♥♡※＊*†‡❖◈）をstripDecoSym()で除去する。カクヨム等で話タイトルの先頭に付く◆が「くろひしがた」と読み上げられ、タイトル表示・履歴・Media Sessionの曲名にもそのまま出ていた問題への対応。splitText()の各行先頭とextractPage()内のextractTitle()の結果の両方に適用する。除去は両端のみで行内は対象外のため、長音符・三点リーダ・中点・波ダッシュ・乗算記号など本文の意味を持つ文字には影響しない。行全体が飾り記号の場合は空文字となり既存のフィルターで除外される。行全体が記号のみの行を落とす区切り記号行フィルター（divider）とは対象が異なるため別項目とした。"
+    },
+    {
+      "name": "スリープタイマー",
+      "status": "implemented",
+      "details": "15・30・60分の選択式。タイマー終了時に再生停止・画面フェード。v172でstopSilentAudio()がsrcを空にしていた問題を修正（空srcの読み込み失敗が無音ループのデコード判定に届き、方式が誤って切り替わる潜在不具合があった）。"
+    },
+    {
+      "name": "バックグラウンド再生（iOS）",
+      "status": "implemented",
+      "details": "v172で実機ログに基づき全面的に見直した。実測でオーディオセッションを保持しているのはgAudioEl単独であり、silentLoopElはiOSがバックグラウンド移行時に必ず一時停止するためアンカーではないことが判明。これに伴いv171のAudioContext\"interrupted\"判定によるリロード復帰（markBgSessionBroken）は一度も発火しないことが確認されたため削除。中断時のAudioContextの状態は実測では\"suspended\"であった。着信・他アプリ音声による中断後、iOSはバックグラウンド再生を拒否するがJavaScriptからは観測できない（play()はresolveしイベントも発火、errorは出ずreadyStateは4のまま、currentTimeのみ進まない）。checkAudioProgress()が2秒ごとに再生位置を監視し、4秒以上進まない場合にmarkAudioSessionLost()でしおり保存・停止を行う。▶押下時（ユーザー操作の内側）にrebuildAudioElements()が音声要素を作り直してセッションを取り直す。"
+    },
+    {
+      "name": "章キュー再生",
+      "status": "implemented",
+      "details": "queue配列に章URLを積み、章末に3秒カウントダウン後自動進行。"
+    },
+    {
+      "name": "音声プリフェッチ",
+      "status": "implemented",
+      "details": "prefetchNext()が次セグメントのGoogle TTS音声をバックグラウンドで事前取得。isOverLimit()時はスキップ。"
+    },
+    {
+      "name": "PWA manifest",
+      "status": "implemented",
+      "details": "manifest.jsonを追加。purpose any/maskableを別エントリに分割。start_url・scopeを相対パス（./）に変更しGitHub Pagesサブディレクトリ配信に対応。"
+    },
+    {
+      "name": "PWA アイコン",
+      "status": "implemented",
+      "details": "icon-192.png・icon-512.pngを配置。apple-touch-iconにsizes=\"180x180\"を追加。manifest・index.htmlのパスを相対パスに統一。"
+    },
+    {
+      "name": "PWA ホーム画面追加",
+      "status": "partial",
+      "details": "manifest.json・アイコン・メタタグが揃いインストール要件を満たす。Service Worker未実装のためオフライン非対応。"
+    },
+    {
+      "name": "データ管理（バックアップ／リストア）",
+      "status": "implemented",
+      "details": "backupData()でyogatari_*キー（yogatari_gkey除く）をJSONファイルにエクスポート。restoreData()でファイルからインポートしてリロード。APIキーはセキュリティ上バックアップに含めない。"
+    },
+    {
+      "name": "Google TTS 使用量カウンター",
+      "status": "implemented",
+      "details": "Standard/WaveNetを同一SKU（9D01-5995-B545）として1カテゴリに統合。Neural2・Chirp3HDを別カテゴリで管理（合計3カテゴリ・600万文字）。98%到達でKyoko自動切替・バッジ表示変更。90%で警告。画面下部の持続的警告バーで常時表示。"
+    },
+    {
+      "name": "98%超過時の端末内蔵音声への自動切替",
+      "status": "implemented",
+      "details": "isOverLimit()がtrueの場合、speakIdx()はGoogle TTSをスキップして端末内蔵音声（Web Speech API）に直接フォールバック。v172で設定タブの表記を「Kyoko」から「端末内蔵音声」へ統一（KyokoはiOSの音声名でありAndroidでは一致しないため）。 v173でisOverLimit()の前提をuseGoogleTts()に変更したため、端末内蔵音声を選択中は常にfalseとなる。Google音声選択時のフォールバック挙動は従来どおり。"
+    },
+    {
+      "name": "読み間違い辞書",
+      "status": "implemented",
+      "details": "localStorageキー yogatari_reading_dict に登録語を保存。yogatari_rdict_on でON/OFF管理。applyReadingDict()で長い語から優先適用。Google TTS・Kyoko両方に対応。"
+    },
+    {
+      "name": "省略単語モーダル",
+      "status": "implemented",
+      "details": "設定タブの「管理 →」ボタンからボトムシートモーダルで管理。"
+    },
+    {
+      "name": "会話文ピッチ・速度変更（SSML）",
+      "status": "implemented",
+      "details": "「」内テキストをSSML prosodyタグで設定速度-0.1・設定ピッチ+0.2（×6st）で読む。Chirp3 HD非対応・5000文字超でプレーンテキストフォールバック。localStorageキー yogatari_ssml_dialogue で管理。"
+    },
+    {
+      "name": "読み上げWatchdog",
+      "status": "implemented",
+      "details": "startWatchdog()が音声再生の無応答を検知し同一セグメントを再取得。タイムアウト上限180秒。"
+    },
+    {
+      "name": "手動再生開始",
+      "status": "implemented",
+      "details": "目次URLの章選択・章URL直接読み込み・しおりからの再開・前話/次話ボタン（ハードウェアの前/次トラックボタン含む）のいずれも、本文表示後は▶ボタン押下を起点に読み上げを開始する。v172でリロードによる自動復帰経路を削除したため、自動再生は章末カウントダウンによる章間の自動進行のみとなった。"
+    },
+    {
+      "name": "OLEDピュアブラック",
+      "status": "implemented",
+      "details": "全背景色を#000000に統一。manifest.jsonのtheme_color・background_colorも#000000に変更。"
+    },
+    {
+      "name": "夜空アニメーション半透明UI",
+      "status": "implemented",
+      "details": "startBgEffect()でcanvasを表示するとともに、topbar・tab-bar・ctrl-bar・novelTextを半透明化。localStorageキー yogatari_bg で管理。"
+    },
+    {
+      "name": "Chirp3 HD「too long」エラー時スキップ",
+      "status": "implemented",
+      "details": "Google TTS APIが「too long」エラーを返した場合、無限リトライせず次セグメントへ自動スキップ。"
+    },
+    {
+      "name": "タブ切り替え時のスクロール位置記憶",
+      "status": "implemented",
+      "details": "読む/履歴/設定の3タブは共通の.scroll-area内でdisplay切り替えのみを行っており、スクロール位置がタブ間で共有されていたため、読む中の自動スクロール分だけ履歴・設定タブが下にずれて表示される不具合があった。switchTab()にタブごとのスクロール位置記憶・復元処理を追加し、各タブは離れる直前の自分の位置に復元されるよう修正。"
+    },
+    {
+      "name": "設定タブのレイアウト",
+      "status": "implemented",
+      "details": "セクション順を 読書統計→今月の使用量→再生音声を選ぶ→使用量・請求確認→Google Cloud TTS→読み上げ演出→省略設定→読み間違い辞書→背景エフェクト→データ管理 に整理。v173で「Google音声を選ぶ」を「再生音声を選ぶ」に改称して常時表示とし、バックグラウンド再生の警告（bgWarnNote）をGoogle Cloud TTSセクションから試聴ボタン直下へ移動した。"
+    },
+    {
+      "name": "ロック画面・通知からの再生／一時停止",
+      "status": "implemented",
+      "details": "v172で両OSとも動作するよう修正。一時停止時に無音ループを止めずにいたため、ページは音を出し続けている扱いとなりメディアセッションが再生中のままで、ロック画面のボタンは見た目が▶でも実体は一時停止のままpauseハンドラが呼ばれ再生できなかった。またstopGoogleAudioFull()がgAudioElのsrcを空にしており、セッションを保持している要素が空になることでiOSがNow Playingの対象から外し、再生操作がページに届かなかった。一時停止ではstopGoogleAudio()で要素を停止するのみとし読み込み済み音声を保持、あわせて無音ループも停止する。再開時は従来どおり段落の先頭から読み直す。"
+    },
+    {
+      "name": "音声セッション断絶の検知と復旧",
+      "status": "implemented",
+      "details": "checkAudioProgress()が2秒ごとにgAudioElの再生位置を監視し、_busyでなくreadyStateが3以上かつ4秒以上進まない場合に断絶と判定する（再生位置の停止が唯一の観測可能な兆候であるため）。markAudioSessionLost()がしおりを保存して停止し、バッジを「⚠ 中断 ▶で再開」に変更する。この表示は_audioSessionLostから導出されるため以降のsetBadge(false)で消えず、▶を押すまで残る。▶押下時にrebuildAudioElements()が音声要素を作り直す。復旧はiOSでは有効だがAndroidでは効かない（Androidの問題はフォーカスであり要素ではないため）。Web Speechモードではこの検知は動作しない（誤検知もしない）。 v173でcheckAudioProgress()の先頭にuseGoogleTts()ガードを追加した。再生中にエンジンを切り替えるとgAudioElが読み込み済みのまま一時停止し、凍結したcurrentTimeを断絶と誤検知する経路があったため。"
+    },
+    {
+      "name": "デバッグモード（計測ログ）",
+      "status": "implemented",
+      "details": "設定タブ最下部のトグルで切り替え、既定はOFF。ONのときだけ音声要素のplay/pauseラッパー・メディアイベント購読・計測タイマーを生成するため、OFF時は再生経路に計測処理が一切入らない。ONにするとトップバーのバージョン表記のタップで計測ログ画面を開閉できる。再生位置の進行、アプリ起点の操作とプラットフォーム起点のイベントの区別、Media Sessionの各ハンドラ呼び出しを記録し、コピー／クリアが可能。localStorageキー yogatari_debug_mode / yogatari_debug_hud / yogatari_debug_log で管理。"
+    },
+    {
+      "name": "取得エラーの詳細表示の切り替え",
+      "status": "implemented",
+      "details": "v177で追加。ページ取得に失敗したときのプロキシごとの理由（📋以降）を表示するかどうかを設定タブで切り替える。localStorageキー yogatari_err_detail、既定OFF。事情を知らない利用者にはコードの羅列が不具合の表示に見えるため既定では隠し、不具合の切り分け時にONにする。デバッグモード（音声の計測ログ）とは独立したトグルにしてあり、再生経路に計測処理を入れずに詳細だけを表示できる。フィルターは各throw側ではなくshowFetch()に置き、📋以降を落とす方式としたため、目次取得の失敗・話ページ読込の失敗・章送り中の失敗のすべてが同じスイッチで覆われる。あわせて失敗理由の打ち切りを解消した。従来はfetchHtml()が6件までに制限し、章送り側がさらに160文字で切っていたため、PROXIESが増えた状態では理由の一部が見えなかった。errorsは応答順に積まれるため、どれが欠けたかも特定できなかった。"
+    },
+    {
+      "name": "バックグラウンド再生（Android）",
+      "status": "implemented",
+      "details": "v172でGoogle TTSモードに対応。原因はChromiumが5秒以下の音声をkTransient（通知音と同じ一時音）に分類し完全なオーディオフォーカスを与えない仕様（media/base/media_content_type.cc の kMinimumContentDurationSecs=5）。段落ごとに別音声を再生する本アプリでは段落ごとにフォーカス要求が発生し、5秒以下の段落が多いため画面消灯から15.5〜17.7秒で停止していた。対策としてsilentLoopElの音源を、MP3のデコードに失敗した環境でのみ実行時生成の6秒無音WAV（silentWavSrc）へ切り替える。WAVはPCMのためコーデック不要。判定はUA判定ではなくデコード失敗の検知で行うためiOSは従来どおりMP3を使用し挙動は変わらない。対策後は停止せず、章をまたぐ自動進行も動作し、Chromeのメディア通知が表示される。"
+    },
+    {
+      "name": "SSMLポーズ最適化",
+      "status": "not_implemented",
+      "details": "v165で実装後、v166で削除。復活予定なし。"
+    },
+    {
+      "name": "オフライン動作",
+      "status": "not_implemented",
+      "details": "Service Worker不使用（CLAUDE.mdで禁止）。リアルタイム取得が前提のため対応予定なし。"
+    },
+    {
+      "name": "ヘルプ（使い方）",
+      "status": "implemented",
+      "details": "v174で全面的に見直した。見出しを「夜語り — 使い方」から「使い方」へ変更。▶を1回押すだけで済むようになったためiOS向けの注意書きを削除し、読むタブの同趣旨のヒント（iosHint）も削除した（unlockAudio()の解除用play()は直後のstopGoogleAudioFull()で必ず中断されるため非表示処理が走らず、常時表示のまま残っていた）。セクション順を 基本の使い方→Google TTS→バックグラウンド再生→再生コントロール→睡眠タイマー→しおり・履歴→新着話の自動検出→対応サイト→非対応サイト に変更。端末内蔵音声になる条件を「APIキー未設定のとき」から「再生音声の選択が端末内蔵音声のとき」へ修正し、タップシークの説明を実装に合わせた（5秒単位で動くのはGoogle音声のときのみ、端末内蔵音声では1段落単位、画面中央と下部は反応しない）。旧称「Kyoko」の表記を「端末内蔵音声」へ統一した（ヘルプ・読み間違い辞書モーダル・使用量警告バー）。 v175で「新着話の自動検出」に、エブリスタは作品全体のページ番号で位置を数えるため「第Nページ」「NEW +Nページ」と表示される旨の1項目を追記した。"
+    }
+  ]
+}
