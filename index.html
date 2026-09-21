@@ -1751,11 +1751,12 @@ function unlockAudio(){
   el.play().then(()=>{_audioUnlocked=true;el.pause();el.src='';}).catch(()=>{}).finally(()=>{el.volume=1;});
 }
 const _prefetchCache=new Map();
-let _nextHtmlCache=null, _nextPageCache=null, _prefetchGeneration=0;
+let _nextHtmlCache=null, _nextPageCache=null, _nextErrCache=null, _prefetchGeneration=0;
 function prefetchNextChapter(url){
   if(!url)return;
   if(_nextHtmlCache&&_nextHtmlCache.url===url)return;
   const myGeneration=(_prefetchGeneration = _prefetchGeneration + 1);
+  _nextErrCache=null;
   _nextHtmlCache={url,promise:fetchHtml(url).then(html=>{
     if(myGeneration!==_prefetchGeneration)return null;
     const page=extractPage(html,url);
@@ -1763,10 +1764,20 @@ function prefetchNextChapter(url){
     if(myGeneration===_prefetchGeneration&&(!nextUrl||nextUrl!==url)){nextUrl=url;const bNextEl=document.getElementById('bNext');if(bNextEl)bNextEl.disabled=false;}
     if(useGoogleTts()&&page.text){const nextSegs=splitText(page.text);if(nextSegs.length>0){_nextAudioCache=[];for(let k=0;k<Math.min(2,nextSegs.length);k++){_nextAudioCache.push({idx:k,promise:fetchGoogleAudio(nextSegs[k])});}}}
     return page;
-  }).catch(()=>null)};
+  }).catch(e=>{if(myGeneration===_prefetchGeneration)_nextErrCache={url,error:e,at:Date.now()};return null;})};
 }
 let _nextAudioCache=[];
-function clearNextChapterCache(){_prefetchGeneration += 1;_nextHtmlCache=null;_nextPageCache=null;_nextAudioCache=[];}
+function clearNextChapterCache(){_prefetchGeneration += 1;_nextHtmlCache=null;_nextPageCache=null;_nextErrCache=null;_nextAudioCache=[];}
+// A prefetch already found out why the next page cannot be read, so reuse that verdict rather than
+// fetching the same missing page a second time. Only errors that a retry cannot change count, and
+// only while the verdict is recent: the author may publish the next episode mid-chapter.
+const PREFETCH_ERR_TTL_MS=600000;
+function isFinalErrMsg(msg){const t=String(msg==null?'':msg);return t.indexOf('最終話の可能性')>=0||t.indexOf('HTTP 404')>=0;}
+function freshPrefetchErr(url){
+  if(!_nextErrCache||_nextErrCache.url!==url)return null;
+  if(Date.now()-_nextErrCache.at>PREFETCH_ERR_TTL_MS)return null;
+  return isFinalErrMsg(_nextErrCache.error&&_nextErrCache.error.message)?_nextErrCache.error:null;
+}
 function hasGoogleKey(){return _gApiKey.trim().length>10;}
 function useGoogleTts(){return _ttsEngine==='google'&&hasGoogleKey();}
 function setTtsEngine(mode){
@@ -2087,6 +2098,7 @@ async function _goNextImpl(autoPlay=true){
     if(_nextPageCache&&_nextPageCache.url===url){page=_nextPageCache.page;showFetch('load','✓ 先読み済み — 即開始');await new Promise(r=>setTimeout(r,300));}
     else{
       if(_nextHtmlCache&&_nextHtmlCache.url===url){showFetch('load','先読み中… しばらくお待ちください');page=await _nextHtmlCache.promise;}
+      if(!page){const _pe=freshPrefetchErr(url);if(_pe)throw _pe;}
       // The public CORS proxies fail in bursts (rate limits, timeouts), and pressing 次話 again a
       // moment later succeeds. Retry once here so the reader does not have to.
       for(var _try=0;_try<2&&!page;_try++){
@@ -2106,7 +2118,7 @@ async function _goNextImpl(autoPlay=true){
     await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){
     const msg=e.message||'';
-    const isTrulyFinal=msg.includes('最終話の可能性')||msg.includes('HTTP 404');
+    const isTrulyFinal=isFinalErrMsg(msg);
     const isNetErr=msg.includes('取得失敗')||msg.includes('HTTP')||msg.includes('Load failed')||msg.includes('全プロキシ');
     if(isTrulyFinal){nextUrl=null;clearNextChapterCache();document.getElementById('bNext').disabled=true;showFetch('err','📖 最終話まで読み終わりました。続きは作者の更新をお待ちください');}
     else if(isNetErr){
