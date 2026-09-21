@@ -196,7 +196,9 @@ const int kMinimumContentDurationSecs = 5;
 
 ### CORSプロキシシステム
 
-`PROXIES` 配列に複数のフォールバックサービスを列挙（実数はコード内の `PROXIES` 配列を参照）。`tryProxy(proxy, url)` はタイムアウト付きfetchをラップ。`fetchHtml(url)` はプロキシをローテーションしながら結果を `sessionStorage` にキャッシュする。プロキシ選択履歴は `localStorage` キー `yogatari_proxy_hist` に保存。
+`PROXIES` 配列に複数のフォールバックサービスを列挙（実数はコード内の `PROXIES` 配列を参照）。`tryProxy(proxy, url)` はタイムアウト付きfetchをラップ。`fetchHtml(url)` はプロキシをローテーションして取得する。プロキシ選択履歴は `localStorage` キー `yogatari_proxy_hist` に保存。
+
+**`fetchHtml()` 自体はキャッシュしない。** `sessionStorage` へのページキャッシュ（`yogatari_pc_*`）を読み書きするのは `resumeFrom()`（履歴からの再開）だけである。通常の「読込」・章送り・先読みは毎回取得する。**「キャッシュがあるはず」という前提で不具合を切り分けないこと。**
 
 **自前プロキシは2系統ある。いずれもコードはこのリポジトリの管理外**であり、新しいサイトに対応する際は両方のホワイトリストへの追加が必要になる。
 
@@ -210,6 +212,8 @@ const int kMinimumContentDurationSecs = 5;
 **プロキシはアプリのオリジンからのリクエストのみを受け付ける**（`ALLOWED_ORIGINS`、現在は `https://burneycherry.github.io` と localhost）。`Origin`（無ければ `Referer`）が一致しない場合は `403 Origin not allowed` を返す。**アプリの配信元を変更する場合は `ALLOWED_ORIGINS` への追加が必須**で、忘れると全サイトの取得が失敗する。`file://` で直接開いた場合も同様に取得できない。`?debug=1` / `?probe=1` はページ本文を返さないためオリジン制限の対象外とし、ブラウザから状態を確認できるようにしてある。
 
 **ホワイトリストは2系統で必ず同じ内容に保つこと。** 片方だけ更新すると「どちらのプロキシが応答したかで成功したりしなかったりする」再現困難な不具合になる。`api.syosetu.com`（なろうの新着チェックAPI）も対象に含める。
+
+**自前プロキシが404を返す条件は、アプリの最終話判定に直結する。** `fetchHtml()` は `PROXIES` で `own: true` を付けた自前プロキシから `HTTP 404` を受けた場合にのみ、エラーオブジェクトに `own404` を立てる。`isFinalErr()` はこれを「次話が存在しない＝最終話」の根拠として使い、取得をやり直さずに最終話と表示する。公開プロキシの404はプロキシ自身についての応答でページの有無を示さないため対象外としている。**プロキシ側を改修する際、リクエストの不備など「ページの不在以外」の理由で404を返すようにしてはならない。** 最終話の誤判定を引き起こす。
 
 どちらも同じインターフェースを持つ: `?url=<encoded>` でページ取得、`?debug=1` で結果をJSON（status・attempts・cache）で返す。**`?debug=1` は `url` と併用する**（`?debug=1&url=<encoded>`）。単体で叩くと `Missing url param` を返す（2026-09-21 実機確認）。本文はデコードせずバイトのまま転送し、元の `Content-Type` を引き継ぐ。403・429・5xxを受けた場合はプロキシ側で間隔を空けて最大3回取得し直し、取得済みページは3分間メモリに保持する。
 
@@ -253,7 +257,7 @@ const int kMinimumContentDurationSecs = 5;
 
 | キー | 内容 |
 |------|------|
-| `yogatari_pc_<hash>` | `fetchHtml()` によるページHTMLキャッシュ。キーは `makePageCacheKey()` が生成するURLハッシュ |
+| `yogatari_pc_<hash>` | 履歴からの再開（`resumeFrom()`）で保存するページHTMLキャッシュ。キーは `makePageCacheKey()` が生成するURLハッシュ。最大3件・1件600KBまで |
 
 > ※ sessionStorageはタブセッション中のみ有効。ページを閉じると消去される。
 
