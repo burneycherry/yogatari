@@ -2105,7 +2105,7 @@ async function _goNextImpl(autoPlay=true){
     else if(isNetErr){
       clearNextChapterCache();
       // Keep the per-proxy reason visible: it is the only way to tell a rate limit from a timeout.
-      const detail=(msg.split('📋')[1]||'').trim().slice(0,160);
+      const detail=(msg.split('📋')[1]||'').trim();
       showFetch('err','⚠ ページ取得に失敗しました。「次話→」で再試行できます'+(detail?' ／ 📋 '+detail:''));
       document.getElementById('bNext').disabled=!nextUrl;
     }
