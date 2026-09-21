@@ -1009,6 +1009,10 @@ const PROXIES = [
   // Cloudflare Worker but answers its episode pages with 403 there, so this one covers the reading
   // pages. It retries a blocked page on its side, hence the longer budget.
   { build: u=>'https://wise-bluebird-8764.burneycherry.deno.net/?url='+encodeURIComponent(u), isJson:false, ms:12000 },
+  // Placed right after the two own proxies rather than at the end: the public ones below it are
+  // mostly unreachable, so a working fallback would otherwise wait behind them. This one answers
+  // for both Syosetu and Kakuyomu episode pages, which keeps Kakuyomu off a single proxy.
+  { build: u=>'https://api.cors.lol/?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/raw?url='+encodeURIComponent(u), isJson:false, ms:8000 },
   { build: u=>'https://api.allorigins.win/get?url='+encodeURIComponent(u), isJson:true, field:'contents', ms:8000 },
   { build: u=>'https://cors.eu.org/'+u, isJson:false, ms:7000 },
