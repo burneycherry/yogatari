@@ -1104,7 +1104,7 @@ async function fetchHtml(url) {
           if (failCount === entries.length && !settled) {
             settled = true;
             const isKakuyomu = url.includes('kakuyomu.jp');
-            reject(new Error('ページ取得失敗。' + (isKakuyomu ? 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。' : 'なろう等は直接取得できない場合があります。') + '\n📋 ' + errors.slice(0,6).join(' ／ ')));
+            reject(new Error('ページ取得失敗。' + (isKakuyomu ? 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。' : 'なろう等は直接取得できない場合があります。') + '\n📋 ' + errors.join(' ／ ')));
           }
         });
       }, delay);
