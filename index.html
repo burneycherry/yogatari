@@ -1525,7 +1525,8 @@ async function go() {
       const errMsg = e.message || '';
       const isKakuyomuUrl = url.includes('kakuyomu.jp');
       const isNetFail = errMsg.includes('取得失敗') || errMsg.includes('Load failed') || errMsg.includes('HTTP 4');
-      if (isKakuyomuUrl && isNetFail) showFetch('err', 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。');
+      const detail = errDetailOf(errMsg);
+      if (isKakuyomuUrl && isNetFail) showFetch('err', 'カクヨムは連続読み込み後にプロキシ制限がかかる場合があります。しばらく時間をおいてから再試行してください。' + (detail ? '\n📋 ' + detail : ''));
       else showFetch('err', errMsg);
     }
     disable(false); return;
@@ -2111,7 +2112,7 @@ async function _goNextImpl(autoPlay=true){
     else if(isNetErr){
       clearNextChapterCache();
       // Keep the per-proxy reason visible: it is the only way to tell a rate limit from a timeout.
-      const detail=(msg.split('📋')[1]||'').trim();
+      const detail=errDetailOf(msg);
       showFetch('err','⚠ ページ取得に失敗しました。「次話→」で再試行できます'+(detail?' ／ 📋 '+detail:''));
       document.getElementById('bNext').disabled=!nextUrl;
     }
@@ -2457,6 +2458,7 @@ function toggleErrDetail(){
   updErrDetailBtn();
   toast(next?'取得エラーの詳細を表示します':'取得エラーの詳細を隠します');
 }
+function errDetailOf(msg){const t=String(msg==null?'':msg);return (t.split('📋')[1]||'').trim();}
 function stripErrDetail(msg){
   const t=String(msg==null?'':msg);
   if(isErrDetail()||t.indexOf('📋')<0)return t;
