@@ -232,6 +232,23 @@ const int kMinimumContentDurationSecs = 5;
 - Cloudflare Workers の `TextDecoder` はUTF-8（とWindows-1252）しか保証されないため、Shift_JISの変換はWorker側ではなくクライアント側で行う
 - **この経路を知らずに `tryProxy()` / `fetchHtml()` を変更すると青空文庫が壊れる。**
 
+#### 削除済みで再追加してはならないプロキシ
+
+Web上のCORSプロキシ一覧・GitHubのREADMEには掲載され続けているが、以下は調査済みで使用できない。**一覧に載っていることを根拠に再追加しないこと。**
+
+| プロキシ | 確認日 | 理由 |
+|---|---|---|
+| `yacdn.org` | 2026-09-21 | DNSが解決しない（ドメイン消滅）。関連リポジトリの更新も2020年頃で停止 |
+| `thingproxy.freeboard.io` | 2026-09-21 | DNSが解決しない（ドメイン消滅）。証明書切れのissueが放置されたまま |
+| `corsproxy.io` | 2026-09-21 | APIキー必須化（401を返す） |
+| `cors.x2u.in` | — | 404、または別サイトへ遷移 |
+| `corsproxy.org` | — | CORSプロキシではなくVPNの宣伝ページ |
+| `cors-anywhere.herokuapp.com` | — | 利用のたびに手動でデモを有効化する必要があり、PWAでは実用できない |
+
+一方、`cors.eu.org`（運営者のCloudflare Workers無料枠が上限に達し `Error 1027` を返す）と `api.codetabs.com`（サーバー停止中で `522`）は**配列に残してある**。DNS・CDNの層までは生きており復旧しうるため削除しない。**一時的な失敗を理由に削除しないこと。**
+
+> ※ 個々のプロキシの速度・混雑状況は変動が激しいためここには記録しない。記録するのは「構造的に戻らない事実」（ドメインの消滅・APIキー必須化など）に限る。
+
 ### localStorageキー一覧
 
 | キー | 内容 |
