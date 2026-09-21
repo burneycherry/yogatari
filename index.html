@@ -477,6 +477,11 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <button class="sett-btn" id="dbgModeBtn" onclick="toggleDbgMode()">OFF</button>
       </div>
       <div class="sett-sub" style="margin-bottom:4px">ONにすると、画面左上の<b>バージョン表記</b>をタップして計測ログを開けます。再生が止まる・音が出ないなどを調べるための機能です。<br>OFFの間は計測処理そのものが動かないため、通常はOFFのままで構いません。</div>
+      <div class="sett-row">
+        <span class="sett-label">取得エラーの詳細</span>
+        <button class="sett-btn" id="errDetailBtn" onclick="toggleErrDetail()">OFF</button>
+      </div>
+      <div class="sett-sub">ONにすると、ページの取得に失敗したときに<b>どのプロキシがどう失敗したか</b>を続けて表示します。不具合を報告するときに役立ちます。<br>OFFの間は失敗した案内だけを表示します。通常はOFFのままで構いません。</div>
     </div>
   </div>
 </div>
@@ -1932,6 +1937,7 @@ function nextSegFull(){nextSeg();}
 function initSettings(){
   renderSkipFilters();
   updDbgModeBtn();
+  updErrDetailBtn();
   (function(){
     var _lcw=function(){try{return JSON.parse(localStorage.getItem('yogatari_custom_words')||'[]');}catch(e){return[];}};
     var _scw=function(a){try{localStorage.setItem('yogatari_custom_words',JSON.stringify(a));}catch(e){}};
@@ -2434,7 +2440,29 @@ function setBadge(on){
 }
 function ctrlEnable(on){['bPlay','bPrev','bFwd'].forEach(id=>{document.getElementById(id).disabled=!on;});document.getElementById('bNext').disabled=!(on&&nextUrl);document.getElementById('bPrev2').disabled=!(on&&prevUrl);}
 function disable(on){document.getElementById('btnGo').disabled=on;}
-function showFetch(type,msg){const b=document.getElementById('fetchBox');document.getElementById('fetchMsg').textContent=msg;b.classList.remove('err');if(type==='err'){b.classList.add('err');document.getElementById('spin').style.display='none';}else{document.getElementById('spin').style.display='';}b.classList.add('show');}
+// The per-proxy reasons tell a rate limit from a timeout, but they read as a crash to anyone not
+// looking for them, so they stay hidden unless the setting is on. Filtering here rather than at
+// each throw keeps every error path, present and future, covered by the one switch.
+const ERR_DETAIL_KEY='yogatari_err_detail';
+function isErrDetail(){try{return localStorage.getItem(ERR_DETAIL_KEY)==='1';}catch(e){return false;}}
+function updErrDetailBtn(){
+  const b=document.getElementById('errDetailBtn');if(!b)return;
+  const on=isErrDetail();
+  b.textContent=on?'ON':'OFF';
+  b.className='sett-btn'+(on?' sett-btn-save':'');
+}
+function toggleErrDetail(){
+  const next=!isErrDetail();
+  try{localStorage.setItem(ERR_DETAIL_KEY,next?'1':'0');}catch(e){}
+  updErrDetailBtn();
+  toast(next?'取得エラーの詳細を表示します':'取得エラーの詳細を隠します');
+}
+function stripErrDetail(msg){
+  const t=String(msg==null?'':msg);
+  if(isErrDetail()||t.indexOf('📋')<0)return t;
+  return t.split('📋')[0].replace(/[\s／]+$/,'');
+}
+function showFetch(type,msg){const b=document.getElementById('fetchBox');document.getElementById('fetchMsg').textContent=(type==='err')?stripErrDetail(msg):msg;b.classList.remove('err');if(type==='err'){b.classList.add('err');document.getElementById('spin').style.display='none';}else{document.getElementById('spin').style.display='';}b.classList.add('show');}
 function hideFetch(){document.getElementById('fetchBox').classList.remove('show');}
 function resetAll(){stop();stopSilentAudio();document.getElementById('urlIn').value='';hideFetch();hideResumeBanner();document.getElementById('chapInfo').classList.remove('show');document.getElementById('progWrap').classList.remove('show');document.getElementById('novelText').classList.remove('show');queue=[];qi=0;nextUrl=null;prevUrl=null;renderQueue();ctrlEnable(false);}
 function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
