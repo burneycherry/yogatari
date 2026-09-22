@@ -2530,8 +2530,8 @@ let _bgLastFrame=0;
 const bgCv=document.getElementById('bgCanvas');
 const bgCtx=bgCv?bgCv.getContext('2d'):null;
 let _stars=[],_clouds=[],_drops=[],_flakes=[],_shootings=[],_auroras=[];
-let _bgW=0,_bgH=0,_bgFrame=0,_lightning=0;
-let _skyCv=null,_moonCv=null,_moonD=0,_starSprites=[],_cloudSprites=[],_auCv=null,_auDpr=1;
+let _bgW=0,_bgH=0,_bgFrame=0,_lightning=0,_bolt=null;
+let _skyCv=null,_moonCv=null,_moonD=0,_moonHazeCv=null,_moonHazeD=0,_starSprites=[],_cloudSprites=[],_auCv=null,_auDpr=1;
 let _bgBase=null,_bgBaseCond='',_bgBaseDpr=1;
 function bgResize(){if(!bgCv)return;const dpr=window.devicePixelRatio||1;_bgW=window.innerWidth;_bgH=window.innerHeight;bgCv.width=_bgW*dpr;bgCv.height=_bgH*dpr;bgCtx.setTransform(dpr,0,0,dpr,0,0);_bgBaseCond='';}
 // Star tints run from hot blue-white to cool orange, as real spectral classes do.
@@ -2671,7 +2671,9 @@ function makeAuroraSprite(hue){
   return cv;
 }
 function initAuroras(n){_auroras=Array.from({length:n},()=>{const hue=105+Math.random()*70;return{y:_bgH*(0.10+Math.random()*0.22),h:_bgH*(0.22+Math.random()*0.24),amp:_bgH*(0.030+Math.random()*0.050),freq:0.7+Math.random()*1.0,ph:Math.random()*Math.PI*2,spd:0.6+Math.random()*1.0,hue:hue,a:0.13+Math.random()*0.09,amin:0.07,amax:0.27,da:(Math.random()<0.5?-1:1)*0.0014,cv:makeAuroraSprite(hue)};});}
-const WEATHER_LIST=['clear','clear','clear','cloudy','rain','snow','aurora'];
+// Rain and thunderstorm are the fully overcast states: no stars, no galaxy band.
+function isOvercast(cond){return cond==='rain'||cond==='storm';}
+const WEATHER_LIST=['clear','clear','clear','cloudy','rain','storm','snow','aurora'];
 function pickRandomCond(){return WEATHER_LIST[Math.floor(Math.random()*WEATHER_LIST.length)];}
 function getMoonPhase(){const knownNew=new Date(2000,0,6,18,14,0);const lunarCycle=29.53058867;const diff=(Date.now()-knownNew)/86400000;return((diff%lunarCycle)+lunarCycle)%lunarCycle/lunarCycle;}
 function getMoonPosition(){const h=new Date().getHours()+new Date().getMinutes()/60;const t=h<6?h+24:h;const progress=Math.max(0,Math.min(1,(t-20)/10));const angle=Math.PI*progress;return{x:0.85-Math.sin(angle)*0.65,y:0.36-Math.sin(angle)*0.22};}
@@ -2730,24 +2732,43 @@ function initMoon(){
   const es=Math.max(0,0.5-Math.abs(ph-0.5))*0.16;
   if(es>0.01){c.globalCompositeOperation='destination-over';c.fillStyle='rgba(120,132,160,'+es.toFixed(3)+')';c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.fill();}
   c.globalCompositeOperation='source-over';
+  // Overcast copy: many faint offset copies blur the disc into the diffuse patch
+  // a moon makes behind cloud. Built once here, never per frame.
+  const hd=Math.ceil(d*2.0);_moonHazeD=hd;
+  _moonHazeCv=document.createElement('canvas');_moonHazeCv.width=hd*ss;_moonHazeCv.height=hd*ss;
+  const h=_moonHazeCv.getContext('2d');h.setTransform(ss,0,0,ss,0,0);
+  h.globalCompositeOperation='lighter';
+  const RINGS=[[1,0,1.0],[8,r*0.16,0.85],[10,r*0.34,0.62],[12,r*0.56,0.34]];
+  let tot=0;RINGS.forEach(g=>{tot+=g[0]*g[2];});
+  RINGS.forEach((g,gi)=>{
+    for(let i=0;i<g[0];i++){
+      const ang=(i/g[0])*Math.PI*2+gi*0.7;
+      h.globalAlpha=g[2]/tot;
+      h.drawImage(_moonCv,hd/2-d/2+Math.cos(ang)*g[1],hd/2-d/2+Math.sin(ang)*g[1],d,d);
+    }
+  });
+  h.globalAlpha=1;h.globalCompositeOperation='source-over';
 }
 function drawMoon(ctx,W,H,cond){
   if(!_moonCv)return;
   const mp=getMoonPosition(),mx=W*mp.x,my=H*mp.y,r=_moonD/2;
   const fullness=1-Math.abs(getMoonPhase()-0.5)*2;
-  const dim=cond==='cloudy'?0.45:cond==='snow'?0.62:1;
-  // Layered halo: a tight bloom inside a wide, very soft glow.
-  const gr=r*(3.2+fullness*2.2);
+  const wet=isOvercast(cond),hazy=wet&&_moonHazeCv;
+  const dim=cond==='cloudy'?0.45:cond==='snow'?0.62:cond==='storm'?0.42:cond==='rain'?0.66:1;
+  // Layered halo: a tight bloom inside a wide, very soft glow. Under cloud the
+  // halo is the larger part of what is seen, so it widens and the disc fades.
+  const gr=r*(wet?5.4+fullness*2.4:3.2+fullness*2.2);
   const g=ctx.createRadialGradient(mx,my,r*0.7,mx,my,gr);
-  g.addColorStop(0,'rgba(255,248,214,'+(0.20*dim*(0.5+fullness*0.5)).toFixed(3)+')');
-  g.addColorStop(0.22,'rgba(240,238,220,'+(0.075*dim).toFixed(3)+')');
-  g.addColorStop(0.55,'rgba(190,210,255,'+(0.028*dim).toFixed(3)+')');
+  g.addColorStop(0,'rgba(255,248,214,'+((wet?0.26:0.20)*dim*(0.5+fullness*0.5)).toFixed(3)+')');
+  g.addColorStop(0.22,'rgba(240,238,220,'+((wet?0.105:0.075)*dim).toFixed(3)+')');
+  g.addColorStop(0.55,'rgba(190,210,255,'+((wet?0.040:0.028)*dim).toFixed(3)+')');
   g.addColorStop(1,'rgba(170,200,255,0)');
   ctx.save();ctx.globalCompositeOperation='lighter';
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(mx,my,gr,0,Math.PI*2);ctx.fill();
   ctx.restore();
   ctx.globalAlpha=dim;
-  ctx.drawImage(_moonCv,mx-r,my-r,_moonD,_moonD);
+  if(hazy)ctx.drawImage(_moonHazeCv,mx-_moonHazeD/2,my-_moonHazeD/2,_moonHazeD,_moonHazeD);
+  else ctx.drawImage(_moonCv,mx-r,my-r,_moonD,_moonD);
   ctx.globalAlpha=1;
 }
 function maybeShoot(){
@@ -2776,6 +2797,27 @@ function drawShootings(ctx){
     hg.addColorStop(1,'hsla('+s.hue+',90%,70%,0)');
     ctx.fillStyle=hg;ctx.beginPath();ctx.arc(s.x,s.y,hr,0,Math.PI*2);ctx.fill();
     return true;
+  });
+  ctx.restore();
+}
+// A strike is generated once and then redrawn for the few frames the flash lasts.
+function makeBolt(W,H){
+  const steps=9+Math.floor(Math.random()*5),dy=(H*(0.34+Math.random()*0.26))/steps;
+  const main=[];let x=W*(0.15+Math.random()*0.7),y=-8;
+  main.push([x,y]);
+  for(let i=0;i<steps;i++){x+=(Math.random()-0.5)*W*0.13;y+=dy*(0.7+Math.random()*0.6);main.push([x,y]);}
+  const bi=2+Math.floor(Math.random()*Math.max(1,main.length-4)),branch=[main[bi].slice()];
+  let bx=main[bi][0],by=main[bi][1];
+  for(let i=0;i<4;i++){bx+=(Math.random()-0.3)*W*0.12;by+=dy*(0.6+Math.random()*0.5);branch.push([bx,by]);}
+  return {main:main,branch:branch};
+}
+function drawBolt(ctx,b,a){
+  ctx.save();ctx.globalCompositeOperation='lighter';ctx.lineCap='round';ctx.lineJoin='round';
+  [[b.main,2.0],[b.branch,1.1]].forEach(seg=>{
+    const pts=seg[0],w=seg[1];
+    const path=()=>{ctx.beginPath();pts.forEach((q,i)=>{if(i)ctx.lineTo(q[0],q[1]);else ctx.moveTo(q[0],q[1]);});ctx.stroke();};
+    ctx.strokeStyle='rgba(180,208,255,'+(a*0.30).toFixed(3)+')';ctx.lineWidth=w*4.5;path();
+    ctx.strokeStyle='rgba(246,250,255,'+(a*0.85).toFixed(3)+')';ctx.lineWidth=w;path();
   });
   ctx.restore();
 }
@@ -2823,8 +2865,8 @@ function drawCrystal(ctx,x,y,r,rot){
   }
   ctx.restore();
 }
-const BG_SKY={clear:['#01030a','#03070f','#050b16','#08111f'],cloudy:['#04070f','#070c18','#0b1120','#0f1628'],rain:['#04080f','#070d18','#0a1420','#0e1b28'],snow:['#060a14','#0a0f1c','#101626','#161d2e'],aurora:['#010308','#01060c','#020b10','#04101a']};
-const BG_HORIZON={clear:'70,104,160',cloudy:'74,92,130',rain:'62,80,110',snow:'96,116,158',aurora:'60,140,120'};
+const BG_SKY={clear:['#01030a','#03070f','#050b16','#08111f'],cloudy:['#04070f','#070c18','#0b1120','#0f1628'],rain:['#04080f','#070d18','#0a1420','#0e1b28'],storm:['#02050b','#050911','#080f1a','#0b1520'],snow:['#060a14','#0a0f1c','#101626','#161d2e'],aurora:['#010308','#01060c','#020b10','#04101a']};
+const BG_HORIZON={clear:'70,104,160',cloudy:'74,92,130',rain:'62,80,110',storm:'52,66,96',snow:'96,116,158',aurora:'60,140,120'};
 function bgGrad(c,cond){
   const cs=BG_SKY[cond]||BG_SKY.clear,g=c.createLinearGradient(0,0,0,_bgH);
   g.addColorStop(0,cs[0]);g.addColorStop(0.42,cs[1]);g.addColorStop(0.75,cs[2]);g.addColorStop(1,cs[3]);
@@ -2851,7 +2893,7 @@ function buildBgBase(cond){
   c.globalCompositeOperation='source-over';c.globalAlpha=1;
   c.fillStyle=bgGrad(c,cond);c.fillRect(0,0,_bgW,_bgH);
   c.fillStyle=bgGlow(c,cond);c.fillRect(0,_bgH*0.5,_bgW,_bgH*0.5);
-  if(_skyCv&&cond!=='rain'){
+  if(_skyCv&&!isOvercast(cond)){
     c.globalCompositeOperation='lighter';
     c.globalAlpha=cond==='cloudy'?0.30:cond==='snow'?0.45:cond==='aurora'?0.70:1;
     c.drawImage(_skyCv,0,0,_bgW,_bgH);
@@ -2863,12 +2905,12 @@ function drawBg(){
   if(!bgCtx||!_bgW)return;
   const W=_bgW,H=_bgH,cond=_bgCond;
   _bgFrame++;_bgCondTimer+=1;
-  if(_bgCondTimer>60*(30+Math.random()*60)){_bgCond=pickRandomCond();_bgCondTimer=0;}
+  if(_bgCondTimer>60*(30+Math.random()*60)){_bgCond=pickRandomCond();_bgCondTimer=0;_lightning=0;_bolt=null;}
   if(_bgBaseCond!==cond||!_bgBase)buildBgBase(cond);
   bgCtx.drawImage(_bgBase,0,0,W,H);
   if(cond==='aurora')drawAurora(bgCtx,W,H);
-  if(cond!=='rain'){
-    drawMoon(bgCtx,W,H,cond);
+  drawMoon(bgCtx,W,H,cond);
+  if(!isOvercast(cond)){
     const sa=cond==='cloudy'?0.30:cond==='aurora'?0.55:cond==='snow'?0.50:1;
     bgCtx.save();bgCtx.globalCompositeOperation='lighter';
     _stars.forEach(s=>{
@@ -2880,8 +2922,8 @@ function drawBg(){
     bgCtx.restore();
     if(cond==='clear'||cond==='aurora'){maybeShoot();drawShootings(bgCtx);}
   }
-  if(cond==='cloudy'||cond==='rain'||cond==='snow'){
-    const ca=cond==='cloudy'?1.5:cond==='rain'?1.3:0.85,off=cond==='rain'?3:0;
+  if(cond==='cloudy'||cond==='rain'||cond==='storm'||cond==='snow'){
+    const ca=cond==='cloudy'?1.5:cond==='rain'?1.3:cond==='storm'?1.75:0.85,off=isOvercast(cond)?3:0;
     _clouds.forEach(c=>{
       c.x+=c.spd;if(c.x-c.w/2>W)c.x=-c.w/2;
       bgCtx.globalAlpha=Math.min(1,c.a*ca);
@@ -2889,31 +2931,41 @@ function drawBg(){
     });
     bgCtx.globalAlpha=1;
   }
-  if(cond==='rain'){
-    // Distant lightning: two short pulses, kept dim so it never glares at night.
-    if(_lightning<=0&&Math.random()<0.0016)_lightning=1.35;
-    if(_lightning>0){
-      _lightning-=0.075;
-      const f=_lightning>1?(_lightning-1)*2:_lightning*Math.max(0,Math.sin(_lightning*7.5));
-      if(f>0){
-        const lg=bgCtx.createLinearGradient(0,0,0,H*0.7);
-        lg.addColorStop(0,'rgba(150,175,215,'+Math.min(0.14,f*0.14).toFixed(3)+')');
-        lg.addColorStop(1,'rgba(120,150,200,0)');
-        bgCtx.fillStyle=lg;bgCtx.fillRect(0,0,W,H*0.7);
+  if(isOvercast(cond)){
+    const storm=cond==='storm';
+    // The flash sits above the clouds so it lights them, and below the rain.
+    if(storm){
+      if(_lightning<=0&&Math.random()<0.004){_lightning=1.4;_bolt=Math.random()<0.55?makeBolt(W,H):null;}
+      if(_lightning>0){
+        _lightning-=0.075;
+        // Main stroke, one return stroke, then a short afterglow.
+        const t=1.4-_lightning;
+        let f=0;
+        if(t<0.22)f=1-t/0.22;
+        else if(t>0.34&&t<0.62)f=0.55*(1-Math.abs(t-0.48)/0.14);
+        else if(t>=0.62)f=Math.max(0,0.16*(1-(t-0.62)/0.55));
+        if(f>0.002){
+          const lg=bgCtx.createLinearGradient(0,0,0,H*0.78);
+          lg.addColorStop(0,'rgba(160,186,228,'+(f*0.26).toFixed(3)+')');
+          lg.addColorStop(1,'rgba(120,150,200,0)');
+          bgCtx.fillStyle=lg;bgCtx.fillRect(0,0,W,H*0.78);
+          if(_bolt&&f>0.32)drawBolt(bgCtx,_bolt,f);
+        }
       }
     }
-    const tilt=2.0+Math.sin(_bgFrame*0.0045)*1.5;
+    const tilt=(2.0+Math.sin(_bgFrame*0.0045)*1.5)*(storm?1.5:1);
+    const spd=storm?1.35:1,n=storm?_drops.length:Math.round(_drops.length*0.66);
     bgCtx.lineCap='butt';
-    _drops.forEach(d=>{
-      const dx=tilt*(d.near?1.3:0.8);
-      d.y+=d.spd;d.x+=dx;
+    for(let i=0;i<n;i++){
+      const d=_drops[i],dx=tilt*(d.near?1.3:0.8);
+      d.y+=d.spd*spd;d.x+=dx;
       if(d.y>H){d.y=-d.len;d.x=Math.random()*W;}
       if(d.x>W+20)d.x=-20;if(d.x<-20)d.x=W+20;
-      bgCtx.globalAlpha=d.a;
+      bgCtx.globalAlpha=Math.min(1,d.a*(storm?1.25:1));
       bgCtx.strokeStyle=d.near?'rgba(176,200,235,0.9)':'rgba(130,158,200,0.75)';
       bgCtx.lineWidth=d.w;
       bgCtx.beginPath();bgCtx.moveTo(d.x,d.y);bgCtx.lineTo(d.x+dx*0.9,d.y+d.len);bgCtx.stroke();
-    });
+    }
     bgCtx.globalAlpha=1;
   }
   if(cond==='snow'){
@@ -2929,7 +2981,7 @@ function drawBg(){
   }
 }
 function bgLoop(timestamp){if(!_bgOn)return;if(timestamp-_bgLastFrame>=BG_FRAME_INTERVAL){_bgLastFrame=timestamp;drawBg();}_bgRaf=requestAnimationFrame(bgLoop);}
-function initBgScene(){bgResize();initStars(340);initClouds(7);initRain(150);initSnow(110);initAuroras(3);initAuroraBuffer();initMoon();initSky();buildBgBase(_bgCond);}
+function initBgScene(){bgResize();initStars(340);initClouds(7);initRain(220);initSnow(110);initAuroras(3);initAuroraBuffer();initMoon();initSky();buildBgBase(_bgCond);}
 function startBgEffect(){if(!bgCv||!bgCtx)return;_bgCond=pickRandomCond();initBgScene();bgCv.style.opacity='0.93';document.body.style.background='transparent';const _tp=document.querySelector('.topbar');if(_tp)_tp.style.background='rgba(0,0,0,0.55)';const _tb=document.querySelector('.tab-bar');if(_tb)_tb.style.background='rgba(0,0,0,0.45)';const _cb=document.querySelector('.ctrl-bar');if(_cb)_cb.style.background='rgba(0,0,0,0.55)';const _nt=document.getElementById('novelText');if(_nt)_nt.style.background='rgba(0,0,0,0.60)';_bgLastFrame=0;_bgRaf=requestAnimationFrame(bgLoop);}
 function stopBgEffect(){if(_bgRaf){cancelAnimationFrame(_bgRaf);_bgRaf=null;}if(bgCv)bgCv.style.opacity='0';document.body.style.background='#000000';const _tp=document.querySelector('.topbar');if(_tp)_tp.style.background='#000000';const _tb=document.querySelector('.tab-bar');if(_tb)_tb.style.background='#000000';const _cb=document.querySelector('.ctrl-bar');if(_cb)_cb.style.background='#000000';const _nt=document.getElementById('novelText');if(_nt)_nt.style.background='#000000';}
 function toggleBgEffect(){_bgOn=!_bgOn;localStorage.setItem('yogatari_bg',_bgOn?'1':'0');const btn=document.getElementById('bgToggleBtn');const st=document.getElementById('bgStatusTxt');if(btn){btn.textContent=_bgOn?'ON':'OFF';btn.className=_bgOn?'sett-btn sett-btn-save':'sett-btn';}if(st)st.textContent=_bgOn?'天の川・月齢・星・流れ星・オーロラ・ランダム天気':'';if(_bgOn)startBgEffect();else stopBgEffect();}
