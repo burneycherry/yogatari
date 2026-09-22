@@ -881,13 +881,15 @@ setTimeout(() => {
   }catch(e){}
 })();
 setTimeout(() => { startupNewCheck().catch(function(){}); }, 3000);
-(function recordToday(){
+// Counted from startPlay(), so a day is recorded only when something was
+// actually played, matching how the other three figures are counted.
+function recordToday(){
   var st = loadStats();
   if (!st.days) st.days = {};
   var today = new Date().toISOString().slice(0,10);
   st.days[today] = true;
   saveStats(st);
-})();
+}
 (function cleanLegacyCache() {
   try {
     Object.keys(sessionStorage).filter(k => k.startsWith('yogatari_pc_')).forEach(k => sessionStorage.removeItem(k));
@@ -1932,7 +1934,7 @@ function startWatchdog(rate,isGoogle=false){
 }
 function clearWatchdog(){if(watchdog){clearTimeout(watchdog);watchdog=null;}}
 function startPlay(){
-  if(playing)return;unlockAudio();startSilentAudio();resumeAudioContext();_playStartTime=Date.now();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(useGoogleTts()&&!isOverLimit())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
+  if(playing)return;unlockAudio();startSilentAudio();resumeAudioContext();_playStartTime=Date.now();recordToday();_liveCpm=0;playing=true;_busy=false;updBtn();setBadge(true);SS.cancel();stopGoogleAudioFull();clearPrefetchCache();if(useGoogleTts()&&!isOverLimit())getAudioCached(idx);msInit();msSetMetadata();msSetState('playing');setTimeout(()=>speakIdx(idx),100);
 }
 function togglePlay(){
   if(!segs.length)return;
@@ -2337,8 +2339,8 @@ function recordEpisode(chapUrl){
 function recordTime(seconds){if(seconds<1)return;var st=loadStats();st.seconds=(st.seconds||0)+seconds;saveStats(st);}
 function updStatsDisplay(){
   var st=loadStats();var days=Object.keys(st.days||{}).length;var novels=Object.keys(st.novels||{}).length;var eps=st.episodes||0;var totalSec=st.seconds||0;
-  var h=Math.floor(totalSec/3600);var m=Math.floor((totalSec%3600)/60);var timeStr=h>0?h+'h'+(m>0?m+'m':''):(m>0?m+'m':'0m');
-  var el;el=document.getElementById('statsDays');if(el)el.textContent=days;el=document.getElementById('statsNovels');if(el)el.textContent=novels;el=document.getElementById('statsEps');if(el)el.textContent=eps;el=document.getElementById('statsHours');if(el)el.textContent=timeStr;
+  var h=Math.floor(totalSec/3600);var m=Math.floor((totalSec%3600)/60);var timeStr=h>0?h.toLocaleString()+'h'+(m>0?m+'m':''):(m>0?m+'m':'0m');
+  var el;el=document.getElementById('statsDays');if(el)el.textContent=days.toLocaleString();el=document.getElementById('statsNovels');if(el)el.textContent=novels.toLocaleString();el=document.getElementById('statsEps');if(el)el.textContent=eps.toLocaleString();el=document.getElementById('statsHours');if(el)el.textContent=timeStr;
 }
 function resetStatItem(key){
   var names={days:'読書日数',novels:'作品数',episodes:'話数',seconds:'時間'};
