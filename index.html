@@ -2291,7 +2291,14 @@ async function resumeFrom(novelId){
   // 待たずに、読み始めたタイミングで最新話数を確認しNEWバッジに反映する
   checkNewChapter(bk).catch(()=>{});
 }
-function delHist(novelId){bkDel(novelId);renderHistList();toast('削除しました');}
+function delHist(novelId){
+  const bk=bkGet(novelId);
+  let name=(bk&&(bk.novelTitle||bk.chapterTitle))||'この作品';
+  if(name.length>28)name=name.slice(0,27)+'…';
+  openConfirm('履歴を削除','「'+name+'」の履歴を削除しますか？',function(){
+    bkDel(novelId);renderHistList();toast('削除しました');
+  });
+}
 function urlHash(str){let h=5381;for(let i=0;i<str.length;i++){h=((h<<5)+h)^str.charCodeAt(i);h=h>>>0;}return h.toString(16).padStart(8,'0');}
 function makePageCacheKey(url){return SS_PAGE_CACHE_PREFIX+urlHash(url)+'_'+urlHash(url.split('').reverse().join(''));}
 const SS_PAGE_CACHE_PREFIX='yogatari_pc_';
