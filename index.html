@@ -1609,6 +1609,7 @@ function displayPage(page, url, startSeg = 0, prevUrlHint) {
   // would send "前話" to the wrong novel's chapter.
   prevUrl = prevUrlHint || page.prevUrl || null;
   currentChapterUrl = url;
+  recordEpisode(url);
   nextUrl = page.nextUrl || null;
   document.getElementById('chapTitle').textContent = page.title || url;
   const lnk = document.getElementById('chapLink'); lnk.textContent = url; lnk.href = url;
@@ -2121,7 +2122,7 @@ async function _goNextImpl(autoPlay=true){
     const nextTitleNum=(page.title||'').match(/^第(\d+)話/);
     currentChapterNum=chapNumFromUrl(url)||(nextTitleNum?parseInt(nextTitleNum[1]):0)||(currentChapterNum>0?currentChapterNum+1:1);
     if(_nextAudioCache.length>0&&useGoogleTts()){clearPrefetchCache();_nextAudioCache.forEach(({idx:k,promise})=>_prefetchCache.set(k,promise));_nextAudioCache=[];}
-    const prevUrlForNext=currentChapterUrl;recordEpisode();displayPage(page,url,0,prevUrlForNext);hideFetch();
+    const prevUrlForNext=currentChapterUrl;displayPage(page,url,0,prevUrlForNext);hideFetch();
     await resumeAudioContext();
     await new Promise(r=>setTimeout(r,200));_busy=false;if(!playing&&autoPlay)startPlay();
   }catch(e){
@@ -2322,7 +2323,17 @@ function dismissSleepOverlay(){var _ov=document.getElementById('sleepOverlay');i
 function statsKey(){var d=new Date();return 'yogatari_stats_'+d.getFullYear()+'_'+(d.getMonth()+1);}
 function loadStats(){try{return JSON.parse(localStorage.getItem('yogatari_stats')||'{}');}catch(e){return{};}}
 function saveStats(data){try{localStorage.setItem('yogatari_stats',JSON.stringify(data));}catch(e){}}
-function recordEpisode(){var st=loadStats();if(!st.novels)st.novels={};if(currentNovelId)st.novels[currentNovelId]=true;st.episodes=(st.episodes||0)+1;saveStats(st);}
+// Chapters already counted in this session, so re-opening one or stepping back
+// does not inflate the total. Called from displayPage(), which every route to a
+// chapter passes through.
+var _countedChaps={};
+function recordEpisode(chapUrl){
+  var st=loadStats();
+  if(!st.novels)st.novels={};
+  if(currentNovelId)st.novels[currentNovelId]=true;
+  if(chapUrl&&!_countedChaps[chapUrl]){_countedChaps[chapUrl]=true;st.episodes=(st.episodes||0)+1;}
+  saveStats(st);
+}
 function recordTime(seconds){if(seconds<1)return;var st=loadStats();st.seconds=(st.seconds||0)+seconds;saveStats(st);}
 function updStatsDisplay(){
   var st=loadStats();var days=Object.keys(st.days||{}).length;var novels=Object.keys(st.novels||{}).length;var eps=st.episodes||0;var totalSec=st.seconds||0;
