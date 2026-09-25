@@ -37,6 +37,7 @@
 | `index.html` | アプリ全体（`<head>` のPWAメタタグ / インライン `<style>` / 3タブ構成「読む・履歴・設定」の本体 / インライン `<script>`） |
 | `manifest.json` | PWAマニフェスト |
 | `icon-192.png` / `icon-512.png` | PWAアイコン（`purpose: any maskable`） |
+| `README.md` | 利用者向けの説明（概要・使い方・対応サイト・開発方法） |
 | `docs/guide/*.md` | 詳細資料（上表） |
 | `docs/versions/vXXX/` | バージョン記録（`structure.json` + `notes.md`）。「バージョン管理プロトコル」実行時のみ操作する |
 | `CLAUDE.md` | 本ファイル |
@@ -104,8 +105,8 @@
 ### ファイル構成
 
 - ロジック(JS)・スタイル(CSS)・マークアップ(HTML)はすべて `index.html` 内に完結させる
-- 新規作成を許可するファイルは次のみ：PWA動作に必要な `manifest.json`、バージョン管理プロトコルによる `/docs/versions/` 配下、`docs/guide/` 配下の詳細資料。サービスワーカー（`sw.js`）は作らない
-- 詳細資料の事実が変わった場合は、同じコミットで `docs/guide/` の該当資料も更新する
+- 新規作成を許可するファイルは次のみ：PWA動作に必要な `manifest.json`、バージョン管理プロトコルによる `/docs/versions/` 配下、`docs/guide/` 配下の詳細資料、`README.md`。サービスワーカー（`sw.js`）は作らない
+- 詳細資料の事実が変わった場合は、同じコミットで `docs/guide/` の該当資料も更新する。対応サイト・使い方など利用者向けの内容が変わった場合は `README.md` も更新する
 
 ### 後方互換性
 
