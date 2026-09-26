@@ -17,7 +17,6 @@
 | `yogatari_proxy_hist` | プロキシ選択履歴 |
 | `yogatari_rate` / `yogatari_pitch` | 読み上げ速度・ピッチ |
 | `yogatari_reading_dict` / `yogatari_rdict_on` | 読み間違い辞書とそのON/OFF |
-| `yogatari_ssml_dialogue` | 会話文ピッチ（SSML）のON/OFF |
 | `yogatari_bg` | 背景エフェクトのON/OFF |
 | `yogatari_debug_mode` | デバッグモードのON/OFF（既定OFF） |
 | `yogatari_debug_hud` | 計測ログ画面の開閉状態 |

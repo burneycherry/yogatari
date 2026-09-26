@@ -426,14 +426,6 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
         <button class="sett-btn sett-btn-clear" onclick="clearApiKey()">クリア</button>
       </div>
     </div>
-    <div class="sett-section" id="ssmlOptsSection" style="display:none">
-      <div class="sett-title">// 読み上げ演出（Google TTS）</div>
-      <div class="sett-row">
-        <span class="sett-label">会話文の速度・ピッチ変更<br><span class="sett-sub">「」内を設定速度-0.1・設定ピッチ+0.2で読む</span></span>
-        <button class="sett-btn" id="ssmlDialogueBtn" onclick="toggleSsmlDialogue()">OFF</button>
-      </div>
-      <div class="sett-sub" style="margin-top:4px">Chirp3 HD は非対応。5000文字超のセグメントは自動でフォールバック。<br>⚠ ONにするとSSMLタグ分の文字数が上乗せされ、TTS使用量カウントが増えます。節約したい場合はOFF推奨。</div>
-    </div>
     <div class="sett-section">
       <div class="sett-title">// 省略設定</div>
       <div class="sett-note">
@@ -1807,20 +1799,10 @@ function saveRdict(a){try{localStorage.setItem('yogatari_reading_dict',JSON.stri
 function isRdictOn(){return localStorage.getItem('yogatari_rdict_on')!=='0';}
 function toggleRdictOn(){const next=!isRdictOn();localStorage.setItem('yogatari_rdict_on',next?'1':'0');const btn=document.getElementById('rdictToggleBtn');if(btn){btn.textContent=next?'ON':'OFF';btn.className='sett-btn'+(next?' sett-btn-save':'');}toast((next?'ON: ':'OFF: ')+'読み間違い辞書');}
 function applyReadingDict(text){if(!isRdictOn())return text;const dict=loadRdict();dict.sort((a,b)=>(b.from||'').length-(a.from||'').length);let r=text;for(const e of dict){if(e.from&&e.to!==undefined)r=r.split(e.from).join(e.to);}return r;}
-// SSML helpers
-function isSsmlDialogueOn(){return localStorage.getItem('yogatari_ssml_dialogue')==='1';}
-function toggleSsmlDialogue(){const next=!isSsmlDialogueOn();localStorage.setItem('yogatari_ssml_dialogue',next?'1':'0');const btn=document.getElementById('ssmlDialogueBtn');if(btn){btn.textContent=next?'ON':'OFF';btn.className='sett-btn'+(next?' sett-btn-save':'');}clearPrefetchCache();toast((next?'ON: ':'OFF: ')+'会話文ピッチ');}
-function updSsmlSection(){const el=document.getElementById('ssmlOptsSection');if(el)el.style.display=useGoogleTts()?'block':'none';}
-function toSsml(text){
-  let s=text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  if(isSsmlDialogueOn()){const _dr=Math.max(0.25,Math.min(4.0,getRate()-0.1)).toFixed(2);const _dp=(0.2*6).toFixed(1);s=s.replace(/「([^」]*)」/g,'「<prosody rate="'+_dr+'" pitch="+'+_dp+'st">$1</prosody>」');}
-  return '<speak>'+s+'</speak>';
-}
 // Reading dictionary UI
 function renderRdictList(){const el=document.getElementById('rdictList');if(!el)return;const arr=loadRdict();if(!arr.length){el.innerHTML='<span class="custom-word-empty">まだ登録されていません</span>';return;}el.innerHTML=arr.map((e,i)=>'<span class="custom-word-tag">'+esc(e.from)+' → '+esc(e.to)+'<button class="custom-word-del" data-idx="'+i+'">×</button></span>').join('');}
 function initRdict(){
   const on=isRdictOn();const btn=document.getElementById('rdictToggleBtn');if(btn){btn.textContent=on?'ON':'OFF';btn.className='sett-btn'+(on?' sett-btn-save':'');}
-  const db=document.getElementById('ssmlDialogueBtn');if(db){const d=isSsmlDialogueOn();db.textContent=d?'ON':'OFF';db.className='sett-btn'+(d?' sett-btn-save':'');}
   const fromInp=document.getElementById('rdictFrom');const toInp=document.getElementById('rdictTo');
   const doAdd=function(){const f=fromInp?fromInp.value.trim():'';const t=toInp?toInp.value.trim():'';if(!f){toast('原文を入力してください');return;}if(!t){toast('読みを入力してください');return;}const arr=loadRdict();if(arr.some(e=>e.from===f)){toast('すでに登録済みです');return;}arr.push({from:f,to:t});saveRdict(arr);if(fromInp)fromInp.value='';if(toInp)toInp.value='';renderRdictList();toast('「'+f+'」を登録しました');};
   const addBtn=document.getElementById('rdictAddBtn');if(addBtn)addBtn.onclick=doAdd;
@@ -1835,11 +1817,7 @@ async function fetchGoogleAudio(text){
   const cat=voiceCategory();
   const voice=currentGVoice();
   const chirp3=voice.includes('Chirp3');
-  let input;let billedChars;
-  // Google bills every character in the actual request string (all SSML tags count except <mark>),
-  // so track the length of what is actually sent, not the plain source text.
-  if(!chirp3&&isSsmlDialogueOn()){const ssml=toSsml(text);if(ssml.length<=4900){input={ssml};billedChars=ssml.length;}else{input={text};billedChars=text.length;}}
-  else{input={text};billedChars=text.length;}
+  const input={text};const billedChars=text.length;
   const body={input,voice:{languageCode:'ja-JP',name:voice},audioConfig:Object.assign({audioEncoding:'MP3'},chirp3?{}:{speakingRate:Math.max(0.25,Math.min(4.0,getRate())),pitch:Math.max(-20,Math.min(20,(getPitch()-1.0)*6))})};
   const res=await fetch('https://texttospeech.googleapis.com/v1/text:synthesize',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':_gApiKey.trim()},body:JSON.stringify(body),signal:typeof AbortSignal.timeout==='function'?AbortSignal.timeout(15000):undefined});
   if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||'HTTP '+res.status);}
@@ -1993,7 +1971,7 @@ function initSettings(){
     _rcw();
   })();
   if(_gApiKey){document.getElementById('apiKeyInput').value=_gApiKey;}
-  initRdict();updSsmlSection();
+  initRdict();
   syncVoiceSelect();updModeDisplay();updStepperState();updUsageDisplay();
   _voiceUiReady=true;
 }
@@ -2019,7 +1997,6 @@ function saveApiKey(){
   setTtsEngine('google');
   localStorage.setItem('yogatari_gkey',_gApiKey);localStorage.setItem('yogatari_gvoice',_gVoice);
   syncVoiceSelect();
-  updSsmlSection();
   showApiStatus('ok','✓ 保存しました — Google TTS が有効です');updModeDisplay();updStepperState();updUsageWarnBar();toast('Google TTSを設定しました');
   var _xhrKey=_gApiKey.trim();var _xhr=new XMLHttpRequest();
   _xhr.open('GET','https://texttospeech.googleapis.com/v1/voices?languageCode=ja-JP');
@@ -2041,7 +2018,7 @@ function saveApiKey(){
 function clearApiKey(){
   _gApiKey='';localStorage.removeItem('yogatari_gkey');document.getElementById('apiKeyInput').value='';
   clearPrefetchCache();
-  setTtsEngine('device');syncVoiceSelect();updSsmlSection();showApiStatus('ng','クリアしました — 端末内蔵音声に戻ります');updModeDisplay();updUsageWarnBar();toast('端末内蔵音声に戻しました');
+  setTtsEngine('device');syncVoiceSelect();showApiStatus('ng','クリアしました — 端末内蔵音声に戻ります');updModeDisplay();updUsageWarnBar();toast('端末内蔵音声に戻しました');
 }
 function showApiStatus(type,msg){const el=document.getElementById('apiStatus');el.textContent=msg;el.className='api-status show '+type;}
 function friendlyVoiceName(v){const mc=v.match(/-Chirp3-[A-Z]+-([A-Za-z]+)$/);if(mc)return 'Chirp3-'+mc[1];const m=v.match(/-(Wavenet|Standard|Neural2)-([A-Z])$/i);if(m){const type=m[1].charAt(0).toUpperCase()+m[1].slice(1).toLowerCase();return type+'-'+m[2];}return v;}
@@ -2058,7 +2035,6 @@ function updModeDisplay(){
   if(useGoogleTts()){const fname=friendlyVoiceName(_gVoice);const lim=(USAGE_LIMIT()/10000).toFixed(0)+'万文字/月無料';if(isOverLimit()){if(el)el.innerHTML='<span class="mode-badge">🔊 '+esc(dname)+'（制限中フォールバック）</span>';if(badge){badge.textContent='🔊 '+dname+'（制限中）';badge.className='mode-badge';}}else{if(el)el.innerHTML='<span class="mode-badge google">🎙 '+fname+'<br><span style="font-size:9px;opacity:0.7">'+lim+'</span></span>';if(badge){badge.textContent='🎙 '+fname;badge.className='mode-badge google';}}}
   else{if(el)el.innerHTML='<span class="mode-badge">🔊 '+esc(dname)+'</span>';if(badge){badge.textContent='🔊 '+dname;badge.className='mode-badge';}}
   if(rowV)rowV.style.display='flex';
-  updSsmlSection();
 }
 function saveBookmarkCurrent(segIdx){
   if(!currentNovelId)return;
