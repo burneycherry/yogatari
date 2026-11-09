@@ -27,7 +27,9 @@
 この検出と復旧は `checkAudioProgress()` / `markAudioSessionLost()` / `rebuildAudioElements()` が担う。復旧は音声要素を作り直してセッションを取り直す方式で、▶ 押下時（ユーザー操作の内側）にのみ実行する。
 
 - **拒否状態は再生していない間にも起こり、▶ の時点では検出できない。** 実機ログで確認した症状：アプリを開いたまま放置した後に再生すると、フォアグラウンドでも、画面消灯後の段落送りでも正常に鳴る。しかし章送りで `gAudioEl` が空になり（`src=''` による `G:error code4`）、バックグラウンドで鳴らし直した最初の段落で `currentTime` が `0.00` のまま凍結する。リロード後、または一度中断を検知した後の ▶（作り直し後）では再発しない
-- このため画面の ▶ で再生を始めるときは、`_audioSessionLost` の有無に関わらず毎回 `rebuildAudioElements()` を実行する（`togglePlay()`）。Media Sessionの再生ハンドラはユーザー操作の内側ではないため対象外
+- このためGoogle TTSモード（`useGoogleTts()`）では、画面の ▶ で再生を始めるたびに `_audioSessionLost` の有無に関わらず `rebuildAudioElements()` を実行する（`togglePlay()`）。Web Speechモードは `gAudioEl` を使わないため、従来どおり中断検知後のみ作り直す
+- 作り直しはユーザー操作の内側でのみ行う。Media Sessionの再生ハンドラ、キューのチップ（`jumpQ()`、取得の `await` 後に `startPlay()`）、章送りの自動再生は対象外。ユーザー操作の外で作った要素はiOSで `play()` を拒否されるため、ここで作り直すと逆に再生できなくなる
+- 作り直した要素では `play()` の連続失敗回数（`_playFailCount`）も0に戻す。前の要素での失敗が残ると、新しい要素の最初の1回の失敗で即座に中断扱いになるため
 
 ### Web Speech APIのバックグラウンド挙動（実測）
 

@@ -745,7 +745,7 @@ function rebuildAudioElements() {
   } catch(e) {}
   _gAudio = null; _silentOn = false; _audioUnlocked = false;
   if (_actx) { try { _actx.close(); } catch(e) {} _actx = null; }
-  _audioSessionLost = false; _progressTime = -1; _progressAt = 0;
+  _audioSessionLost = false; _progressTime = -1; _progressAt = 0; _playFailCount = 0;
   if (typeof dbgAttach === 'function') dbgAttach();
 }
 setInterval(checkAudioProgress, 2000);
@@ -1926,10 +1926,11 @@ function togglePlay(){
   // never reaches this page. The silent loop must stop though — while it plays the page
   // still counts as sounding and the platform's control sends pause instead of play.
   if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudio();stopSilentAudio();updBtn();setBadge(false);msSetState('paused');}
-  // Rebuild on every on-screen start, not only after a detected loss: a session iOS stopped
-  // honouring while idle still plays in the foreground and through segment changes, and only
-  // shows up when the emptied element is restarted in the background at the next chapter.
-  else{rebuildAudioElements();startPlay();}
+  // In Google TTS mode, rebuild on every on-screen start, not only after a detected loss: a
+  // session iOS stopped honouring while idle still plays in the foreground and through segment
+  // changes, and only shows up when the emptied element is restarted in the background at the
+  // next chapter. Web Speech never plays through gAudioEl, so it keeps the loss-only rebuild.
+  else{if(_audioSessionLost||useGoogleTts())rebuildAudioElements();startPlay();}
 }
 function stop(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
@@ -3134,7 +3135,8 @@ function dbgAttach(){
   document.addEventListener('resume',()=>dbgLog('resume',true));
   setInterval(dbgPoll,2000);
   setInterval(()=>{
-    if(!_dbgCtxHooked&&_actx){_dbgCtxHooked=true;try{_actx.addEventListener('statechange',()=>dbgLog('CTX '+_actx.state));}catch(e){}}
+    // rebuildAudioElements() replaces the context on every start, so hook each new one.
+    if(_actx&&_dbgCtxHooked!==_actx){const ctx=_actx;_dbgCtxHooked=ctx;try{ctx.addEventListener('statechange',()=>dbgLog('CTX '+ctx.state));}catch(e){}}
   },1000);
   try{const saved=localStorage.getItem(DBG_LOG_KEY);if(saved)_dbgLines=JSON.parse(saved)||[];}catch(e){_dbgLines=[];}
   dbgLog('--- attach --- mode='+(useGoogleTts()?'google':'webspeech')+' '+navigator.userAgent.slice(0,110),true);
