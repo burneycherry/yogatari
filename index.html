@@ -1926,7 +1926,10 @@ function togglePlay(){
   // never reaches this page. The silent loop must stop though — while it plays the page
   // still counts as sounding and the platform's control sends pause instead of play.
   if(playing){if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}playing=false;_busy=false;clearWatchdog();SS.cancel();stopGoogleAudio();stopSilentAudio();updBtn();setBadge(false);msSetState('paused');}
-  else{if(_audioSessionLost)rebuildAudioElements();startPlay();}
+  // Rebuild on every on-screen start, not only after a detected loss: a session iOS stopped
+  // honouring while idle still plays in the foreground and through segment changes, and only
+  // shows up when the emptied element is restarted in the background at the next chapter.
+  else{rebuildAudioElements();startPlay();}
 }
 function stop(){
   if(_playStartTime>0){recordTime(Math.floor((Date.now()-_playStartTime)/1000));_playStartTime=0;}
