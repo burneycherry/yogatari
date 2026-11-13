@@ -1799,6 +1799,15 @@ function saveRdict(a){try{localStorage.setItem('yogatari_reading_dict',JSON.stri
 function isRdictOn(){return localStorage.getItem('yogatari_rdict_on')!=='0';}
 function toggleRdictOn(){const next=!isRdictOn();localStorage.setItem('yogatari_rdict_on',next?'1':'0');const btn=document.getElementById('rdictToggleBtn');if(btn){btn.textContent=next?'ON':'OFF';btn.className='sett-btn'+(next?' sett-btn-save':'');}toast((next?'ON: ':'OFF: ')+'読み間違い辞書');}
 function applyReadingDict(text){if(!isRdictOn())return text;const dict=loadRdict();dict.sort((a,b)=>(b.from||'').length-(a.from||'').length);let r=text;for(const e of dict){if(e.from&&e.to!==undefined)r=r.split(e.from).join(e.to);}return r;}
+// Normalize "!" / "?" runs so TTS engines do not read them aloud as symbol names (e.g. "感嘆符疑問符").
+// A run containing a question mark becomes a single "？", a run of exclamation marks a single "！".
+// Text made only of symbols (e.g. a "！？" line) becomes "。" so nothing is read but playback still advances.
+function normalizeSpeechMarks(text){
+  let r=String(text).replace(/[!！‼❗❕⁉⁈?？⁇❓❔]+/g,function(m){return /[?？⁇❓❔⁉⁈]/.test(m)?'？':'！';});
+  if(!/[0-9A-Za-z぀-ヿ㐀-鿿豈-﫿０-９Ａ-Ｚａ-ｚｦ-ﾟ]/.test(r))return '。';
+  return r;
+}
+function toSpeechText(text){return normalizeSpeechMarks(applyReadingDict(text));}
 // Reading dictionary UI
 function renderRdictList(){const el=document.getElementById('rdictList');if(!el)return;const arr=loadRdict();if(!arr.length){el.innerHTML='<span class="custom-word-empty">まだ登録されていません</span>';return;}el.innerHTML=arr.map((e,i)=>'<span class="custom-word-tag">'+esc(e.from)+' → '+esc(e.to)+'<button class="custom-word-del" data-idx="'+i+'">×</button></span>').join('');}
 function initRdict(){
@@ -1813,7 +1822,7 @@ function initRdict(){
 }
 async function fetchGoogleAudio(text){
   if(isOverLimit())throw new Error('月間使用量が98%に達しました。設定タブでリセットを。');
-  text=applyReadingDict(text);
+  text=toSpeechText(text);
   const cat=voiceCategory();
   const voice=currentGVoice();
   const chirp3=voice.includes('Chirp3');
@@ -1849,7 +1858,8 @@ function showSkipLabel(text){
 function splitSentences(text){
   const normalized=text.replace(/…+/g,'…');
   const result=[];let buf='';
-  for(let i=0;i<normalized.length;i++){buf+=normalized[i];if('。！？…」』.!?'.includes(normalized[i])&&buf.trim().length>0){result.push(buf);buf='';}}
+  const ends='。！？…」』.!?‼⁉⁈';
+  for(let i=0;i<normalized.length;i++){buf+=normalized[i];if(ends.includes(normalized[i])&&buf.trim().length>0){while(i+1<normalized.length&&ends.includes(normalized[i+1])){i++;buf+=normalized[i];}result.push(buf);buf='';}}
   if(buf.trim().length>0)result.push(buf);
   const filtered=result.filter(s=>s.trim().length>0);
   return filtered.length>0?filtered:[text];
@@ -1861,7 +1871,7 @@ function playSentence(si){
   const sents=splitSentences(segs[idx]);if(!sents[si])return;
   _busy=false;clearWatchdog();SS.cancel();stopGoogleAudio();
   if(useGoogleTts()){_busy=true;const el=getAudioEl();fetchGoogleAudio(sents[si]).then(src=>{_busy=false;if(!playing)return;el.onended=()=>{clearWatchdog();if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};el.src=src;el.play().catch(()=>{_busy=false;});}).catch(()=>{_busy=false;});}
-  else{const utt=new SpeechSynthesisUtterance(applyReadingDict(sents[si]));if(selVoice)utt.voice=selVoice;utt.rate=getRate();utt.pitch=getPitch();utt.lang='ja-JP';utt.onend=()=>{if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};SS.speak(utt);}
+  else{const utt=new SpeechSynthesisUtterance(toSpeechText(sents[si]));if(selVoice)utt.voice=selVoice;utt.rate=getRate();utt.pitch=getPitch();utt.lang='ja-JP';utt.onend=()=>{if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};SS.speak(utt);}
 }
 function speakIdx(i){
   if(_busy)return;_sentIdx=-1;clearWatchdog();
@@ -1900,7 +1910,7 @@ function speakIdx(i){
       else setTimeout(()=>{if(playing)speakIdx(idx);},2000);
     });
   } else {
-    stopGoogleAudio();const utt=new SpeechSynthesisUtterance(applyReadingDict(segs[i]));if(selVoice)utt.voice=selVoice;
+    stopGoogleAudio();const utt=new SpeechSynthesisUtterance(toSpeechText(segs[i]));if(selVoice)utt.voice=selVoice;
     utt.rate=getRate();utt.volume=1.0;utt.pitch=getPitch();utt.lang='ja-JP';
     utt.onstart=()=>startWatchdog(getRate(),false);
     utt.onend=()=>{clearWatchdog();if(playing)speakIdx(idx+1);};
