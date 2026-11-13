@@ -1799,15 +1799,22 @@ function saveRdict(a){try{localStorage.setItem('yogatari_reading_dict',JSON.stri
 function isRdictOn(){return localStorage.getItem('yogatari_rdict_on')!=='0';}
 function toggleRdictOn(){const next=!isRdictOn();localStorage.setItem('yogatari_rdict_on',next?'1':'0');const btn=document.getElementById('rdictToggleBtn');if(btn){btn.textContent=next?'ON':'OFF';btn.className='sett-btn'+(next?' sett-btn-save':'');}toast((next?'ON: ':'OFF: ')+'読み間違い辞書');}
 function applyReadingDict(text){if(!isRdictOn())return text;const dict=loadRdict();dict.sort((a,b)=>(b.from||'').length-(a.from||'').length);let r=text;for(const e of dict){if(e.from&&e.to!==undefined)r=r.split(e.from).join(e.to);}return r;}
-// Normalize "!" / "?" runs so TTS engines do not read them aloud as symbol names (e.g. "感嘆符疑問符").
+// Collapse "!" / "?" runs so TTS engines do not read them aloud as symbol names (e.g. "感嘆符疑問符").
 // A run containing a question mark becomes a single "？", a run of exclamation marks a single "！".
-// Text made only of symbols (e.g. a "！？" line) becomes "。" so nothing is read but playback still advances.
-function normalizeSpeechMarks(text){
-  let r=String(text).replace(/[!！‼❗❕⁉⁈?？⁇❓❔]+/g,function(m){return /[?？⁇❓❔⁉⁈]/.test(m)?'？':'！';});
-  if(!/[0-9A-Za-z぀-ヿ㐀-鿿豈-﫿０-９Ａ-Ｚａ-ｚｦ-ﾟ]/.test(r))return '。';
+// Emoji variation selectors attached to the marks are swallowed with them.
+const SPEECH_MARK_RUN=/(?:[!?！？‼⁇⁈⁉❓❔❕❗﹖﹗][︎️]?)+/g;
+const SPEECH_QMARK=/[?？⁇⁈⁉❓❔﹖]/;
+// Characters a voice actually reads (letters, digits, kana, kanji). Excludes symbols such as ー・…「」.
+const SPEECH_READABLE=/[0-9A-Za-zÀ-ɏͰ-ϿЀ-ӿ〇ぁ-ゖァ-ヺㇰ-ㇿ㐀-䶿一-鿿豈-﫿\ud840-\ud87f０-９Ａ-Ｚａ-ｚｦ-ｯｱ-ﾝ]/;
+function normalizeSpeechMarks(text,isDevice){
+  let hit=false;
+  const r=String(text).replace(SPEECH_MARK_RUN,function(m){hit=true;return SPEECH_QMARK.test(m)?'？':'！';});
+  // Device voices may read a marks-only line (e.g. "「！？」") as symbol names; send a bare full stop so playback still advances.
+  // Lines without marks and the Google TTS path keep their text as before.
+  if(isDevice&&hit&&!SPEECH_READABLE.test(r))return '。';
   return r;
 }
-function toSpeechText(text){return normalizeSpeechMarks(applyReadingDict(text));}
+function toSpeechText(text,isDevice){return normalizeSpeechMarks(applyReadingDict(text),isDevice);}
 // Reading dictionary UI
 function renderRdictList(){const el=document.getElementById('rdictList');if(!el)return;const arr=loadRdict();if(!arr.length){el.innerHTML='<span class="custom-word-empty">まだ登録されていません</span>';return;}el.innerHTML=arr.map((e,i)=>'<span class="custom-word-tag">'+esc(e.from)+' → '+esc(e.to)+'<button class="custom-word-del" data-idx="'+i+'">×</button></span>').join('');}
 function initRdict(){
@@ -1858,8 +1865,8 @@ function showSkipLabel(text){
 function splitSentences(text){
   const normalized=text.replace(/…+/g,'…');
   const result=[];let buf='';
-  const ends='。！？…」』.!?‼⁉⁈';
-  for(let i=0;i<normalized.length;i++){buf+=normalized[i];if(ends.includes(normalized[i])&&buf.trim().length>0){while(i+1<normalized.length&&ends.includes(normalized[i+1])){i++;buf+=normalized[i];}result.push(buf);buf='';}}
+  const ends='。！？…」』.!?\u203c\u2047\u2048\u2049\u2753\u2754\u2755\u2757\ufe56\ufe57';const tail=ends+'\ufe0e\ufe0f';
+  for(let i=0;i<normalized.length;i++){buf+=normalized[i];if(ends.includes(normalized[i])&&buf.trim().length>0){while(i+1<normalized.length&&tail.includes(normalized[i+1])){i++;buf+=normalized[i];}result.push(buf);buf='';}}
   if(buf.trim().length>0)result.push(buf);
   const filtered=result.filter(s=>s.trim().length>0);
   return filtered.length>0?filtered:[text];
@@ -1871,7 +1878,7 @@ function playSentence(si){
   const sents=splitSentences(segs[idx]);if(!sents[si])return;
   _busy=false;clearWatchdog();SS.cancel();stopGoogleAudio();
   if(useGoogleTts()){_busy=true;const el=getAudioEl();fetchGoogleAudio(sents[si]).then(src=>{_busy=false;if(!playing)return;el.onended=()=>{clearWatchdog();if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};el.src=src;el.play().catch(()=>{_busy=false;});}).catch(()=>{_busy=false;});}
-  else{const utt=new SpeechSynthesisUtterance(toSpeechText(sents[si]));if(selVoice)utt.voice=selVoice;utt.rate=getRate();utt.pitch=getPitch();utt.lang='ja-JP';utt.onend=()=>{if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};SS.speak(utt);}
+  else{const utt=new SpeechSynthesisUtterance(toSpeechText(sents[si],true));if(selVoice)utt.voice=selVoice;utt.rate=getRate();utt.pitch=getPitch();utt.lang='ja-JP';utt.onend=()=>{if(!playing)return;_sentIdx += 1;if(_sentIdx>=sents.length){_sentIdx=-1;speakIdx(idx+1);}else playSentence(_sentIdx);};SS.speak(utt);}
 }
 function speakIdx(i){
   if(_busy)return;_sentIdx=-1;clearWatchdog();
@@ -1910,7 +1917,7 @@ function speakIdx(i){
       else setTimeout(()=>{if(playing)speakIdx(idx);},2000);
     });
   } else {
-    stopGoogleAudio();const utt=new SpeechSynthesisUtterance(toSpeechText(segs[i]));if(selVoice)utt.voice=selVoice;
+    stopGoogleAudio();const utt=new SpeechSynthesisUtterance(toSpeechText(segs[i],true));if(selVoice)utt.voice=selVoice;
     utt.rate=getRate();utt.volume=1.0;utt.pitch=getPitch();utt.lang='ja-JP';
     utt.onstart=()=>startWatchdog(getRate(),false);
     utt.onend=()=>{clearWatchdog();if(playing)speakIdx(idx+1);};
