@@ -121,6 +121,14 @@ audio { width: 100%; margin-top: 8px; }
       <option value="1">読点ごとに短く（メモリ節約）</option>
     </select>
   </div>
+  <div class="row">
+    <label for="selReset">再生成</label>
+    <select id="selReset" autocomplete="off">
+      <option value="0">しない</option>
+      <option value="5" selected>5回生成ごとにモデルを作り直す</option>
+      <option value="3">3回生成ごとにモデルを作り直す</option>
+    </select>
+  </div>
   <label class="chk"><input type="checkbox" id="chkPre"> 全文を生成し終えてから再生する（画面を消した状態の試験用）</label>
   <div class="row">
     <button class="btn btn-main" id="btnPlay" disabled>生成して再生</button>
@@ -352,7 +360,7 @@ var JaG2P = (function () {
 // G2P_END
 
 // ===== Worker: kuromoji + Kokoro run here so the page stays responsive =====
-var tts = null, jaTok = null;
+var tts = null, jaTok = null, kokoroMod = null, loadOpts = null, synthCount = 0;
 function post(o, tr) { self.postMessage(o, tr || []); }
 function wlog(msg, cls) { post({ type: 'log', msg: msg, cls: cls }); }
 function sec(t) { return ((performance.now() - t) / 1000).toFixed(1) + 's'; }
@@ -452,6 +460,8 @@ self.onmessage = async function (e) {
       post({ type: 'stage', msg: 'kokoro-js を読み込み中…', pct: 8 });
       var t1 = performance.now();
       var mod = await import(m.kokoroUrl);
+      kokoroMod = mod;
+      loadOpts = { modelId: m.modelId, dtype: m.dtype, device: m.device };
       wlog('kokoro-js 読み込み ' + sec(t1));
       if (m.device === 'webgpu') {
         if (!self.navigator.gpu) wlog('Worker内に navigator.gpu がありません', 'err');
@@ -506,6 +516,16 @@ self.onmessage = async function (e) {
       post({ id: m.id, chunks: m.sentences.map(function (x) { return phonChunks(x, m.maxLen); }) });
 
     } else if (m.type === 'synth') {
+      // Release and recreate the session every N runs to drop GPU buffers cached per input shape
+      if (m.resetEvery > 0 && synthCount >= m.resetEvery) {
+        var tr = performance.now();
+        await tts.model.dispose();
+        tts = null;
+        tts = await kokoroMod.KokoroTTS.from_pretrained(loadOpts.modelId, { dtype: loadOpts.dtype, device: loadOpts.device });
+        synthCount = 0;
+        wlog('  モデル再生成 ' + sec(tr));
+      }
+      synthCount++;
       var ts = performance.now();
       var enc = tts.tokenizer(m.ph, { truncation: true });
       var raw = await tts.generate_from_ids(enc.input_ids, { voice: m.voice, speed: m.speed });
@@ -789,7 +809,7 @@ async function runPlayback() {
   revokeAll();
   $('btnPlay').disabled = true;
   $('btnStop').disabled = false;
-  var voice = $('selVoice').value, speed = +$('rngSpeed').value, pre = $('chkPre').checked;
+  var voice = $('selVoice').value, speed = +$('rngSpeed').value, pre = $('chkPre').checked, resetEvery = +$('selReset').value;
   var sentences = splitSentences($('txt').value);
   var jobs = [];
   try {
@@ -800,7 +820,7 @@ async function runPlayback() {
     });
   } catch (e) { log('音素変換失敗: ' + e.message, 'err'); }
   if (!jobs.length) { $('playStatus').textContent = 'テキストがありません'; $('btnPlay').disabled = false; $('btnStop').disabled = true; return; }
-  log('生成開始: ' + jobs.length + '件 voice=' + voice + ' speed=' + speed + ' 区切り=' + $('selChunk').value + (pre ? '（全文生成後に再生）' : ''));
+  log('生成開始: ' + jobs.length + '件 voice=' + voice + ' speed=' + speed + ' 区切り=' + $('selChunk').value + ' 再生成=' + resetEvery + (pre ? '（全文生成後に再生）' : ''));
 
   var ready = [], genDone = false, totalGen = 0, totalSec = 0, firstAt = 0, t0 = performance.now();
   var pendingParts = [], pendingRate = SAMPLE_RATE;
@@ -812,7 +832,7 @@ async function runPlayback() {
       if (myRun !== runId) return;
       log('#' + (i + 1) + ' 生成開始（音素 ' + jobs[i].ph.length + '文字）');
       try {
-        var r = await call('synth', { ph: jobs[i].ph, voice: voice, speed: speed });
+        var r = await call('synth', { ph: jobs[i].ph, voice: voice, speed: speed, resetEvery: resetEvery });
         var g = r.ms / 1000, s = r.audio.length / r.rate;
         totalGen += g; totalSec += s;
         if (!firstAt) firstAt = (performance.now() - t0) / 1000;
