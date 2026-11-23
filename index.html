@@ -1714,14 +1714,20 @@ function splitText(t) {
   // An afterword request ("ブックマーク・☆評価をお願いします") closes the page, and the short
   // sign-off lines after it ("よろしくお願いします！") are part of it, so drop everything from
   // that line on. Only near the very end, so a mention inside the story never cuts the text.
+  // Dialogue lines are skipped ("「お待ちしておりました」" matches the review filter), and the
+  // line is tested with its edge ornaments removed so a "★★★" scene break, which matches the
+  // rating filter while decosym is OFF, never cuts the epilogue after it. Line 0 never triggers:
+  // cutting there leaves nothing and the safety valve below would restore the unfiltered page.
   var _tailKeys = ['bookmark', 'review', 'rating', 'activity'];
   var _tailMax = 5;
   var _body = _raw;
-  for (var _ti = Math.max(0, _raw.length - 1 - _tailMax); _ti < _raw.length; _ti++) {
+  for (var _ti = Math.max(1, _raw.length - 1 - _tailMax); _ti < _raw.length; _ti++) {
+    if (_raw[_ti].charAt(0) === '「') continue;
+    var _ts = stripDecoSym(_raw[_ti]);
     var _hit = false;
     for (var _tk = 0; _tk < CONFIGURABLE_FILTERS.length; _tk++) {
       var _tf = CONFIGURABLE_FILTERS[_tk];
-      if (_tailKeys.indexOf(_tf.key) >= 0 && isFilterOn(_tf.key) && _tf.pattern.test(_raw[_ti])) { _hit = true; break; }
+      if (_tailKeys.indexOf(_tf.key) >= 0 && isFilterOn(_tf.key) && _tf.pattern.test(_ts)) { _hit = true; break; }
     }
     if (_hit) { _body = _raw.slice(0, _ti); break; }
   }
