@@ -1678,7 +1678,7 @@ const CONFIGURABLE_FILTERS = [
 var DECO_SYM_RE = /^[\s\u3000\u25c6\u25c7\u25a0\u25a1\u25cb\u25cf\u25ce\u25ef\u2605\u2606\u25b2\u25b3\u25bc\u25bd\u25b7\u25c1\u2666\u2662\u2663\u2660\u2665\u2661\u203b\uff0a\u2020\u2021\u2756\u25c8\*]+|[\s\u3000\u25c6\u25c7\u25a0\u25a1\u25cb\u25cf\u25ce\u25ef\u2605\u2606\u25b2\u25b3\u25bc\u25bd\u25b7\u25c1\u2666\u2662\u2663\u2660\u2665\u2661\u203b\uff0a\u2020\u2021\u2756\u25c8\*]+$/g;
 // Phrases that mark the start of an author's afterword. splitText() drops the matching line and
 // everything after it, so only wording that story text practically never uses belongs here.
-var AFTERWORD_RE = /(?:お読み|読んで|ご覧)(?:いただ|頂|くださ|下さ)|ご愛読|ブックマーク(?:登録|や|・|、|と|お願い|して(?:いただ|頂|くださ|下さ))|お気に入り(?:登録|追加)|[☆★]{3,}|評価(?:を|して|や|・|、)?(?:いただ|頂|くださ|下さ|お願い|ポイント|ボタン|欄|よろしく)|感想(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い|よろしく)|レビュー(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い)|誤字(?:脱字)?(?:報告|の?ご?指摘)|活動報告|書籍化|コミカライズ|単行本|文庫化|書籍版|web版|カバーイラスト|書影|特典SS|予約受付|好評発売|本作|^(?:あとがき|後書き|作者より|作者から)/i;
+var AFTERWORD_RE = /お読み(?:いただ|頂|くださ|下さ)|ご覧(?:いただ|頂)き|読んで(?:いただ|頂|くださ|下さ|くれ)[^。]{0,4}(?:ありがと|有難|有り難|感謝|嬉し|うれし|幸い)|ご愛読|ブックマーク(?:登録|や|・|、|お願い|して(?:いただ|頂|くださ|下さ))|お気に入り(?:登録|追加)|☆{3,}[^☆★]{0,6}★{3,}|(?:評価|応援)(?:を|して|や|・|、)?(?:いただ|頂|くださ|下さ|お願い|よろしく)|評価(?:ポイント|ボタン|欄)|感想(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い|よろしく)|レビュー(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い)|誤字(?:脱字)?(?:報告|の?ご?指摘)|活動報告(?:にて|に(?:て|も|書|載|お知らせ|告知|詳細|掲載)|でも?(?:告知|お知らせ)|を更新)|書籍化|コミカライズ|単行本|文庫化|書籍版|(?:web|ウェブ)版|カバーイラスト|書影|特典SS|予約受付(?:中|を?開始)|好評発売|(?:^|[^一-鿿])本作(?![戦業り成])|^[【\[(（]?(?:あとがき|後書き)[】\])）]?$|^作者(?:より|から)(?:[：:、。\s一]|$)/i;
 function stripDecoSym(s) { return s.replace(DECO_SYM_RE, '').trim(); }
 function loadSkipFilters() { try{return JSON.parse(localStorage.getItem('yogatari_skip_filters')||'{}');}catch(e){return{};} }
 function saveSkipFilters(data) { try{localStorage.setItem('yogatari_skip_filters',JSON.stringify(data));}catch(e){} }
@@ -1718,8 +1718,8 @@ function splitText(t) {
   // Once the author's afterword starts, nothing after it is story text, whatever it says (book
   // announcements, sign-offs), so drop everything from its first recognisable line on. Only the
   // second half of the page (by characters) may start it, so a preface or a mention early in the
-  // story never cuts the text. Dialogue lines are skipped, and the line is tested with its edge
-  // ornaments removed so a "★★★" scene break never counts as a rating request.
+  // story never cuts the text. Quoted speech is ignored ("「読んでくださいね」" is story), and the
+  // line is tested with its edge ornaments removed so a decorated heading never counts.
   var _body = _raw;
   if (isFilterOn('afterword')) {
     var _total = 0;
@@ -1727,7 +1727,12 @@ function splitText(t) {
     var _pos = 0;
     for (var _ti = 0; _ti < _raw.length; _ti++) {
       var _line = _raw[_ti];
-      if (_ti > 0 && _pos * 2 >= _total && _line.charAt(0) !== '\u300c' && AFTERWORD_RE.test(stripDecoSym(_line))) { _body = _raw.slice(0, _ti); break; }
+      if (_ti > 0 && _pos * 2 >= _total) {
+        // Drop quoted speech, including a quote left open at the line end and the closing part of
+        // one opened on an earlier line, so only narration and the author's own words are tested.
+        var _ts = _line.replace(/\u300c[^\u300d]*(?:\u300d|$)/g, '').replace(/^[^\u300c\u300d]*\u300d/, '');
+        if (AFTERWORD_RE.test(stripDecoSym(_ts))) { _body = _raw.slice(0, _ti); break; }
+      }
       _pos += _line.length;
     }
   }
