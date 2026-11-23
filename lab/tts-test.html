@@ -112,6 +112,13 @@ audio { width: 100%; margin-top: 8px; }
 　「こんな時間に、誰かいるのかしら」
 　彼女はそっと扉を押した。きしむ音が、静まり返った廊下に響く。
 　棚の奥から、かすかにページをめくる音が聞こえてきた。</textarea>
+  <div class="row">
+    <label for="selChunk">区切り</label>
+    <select id="selChunk" autocomplete="off">
+      <option value="400">文ごと（標準）</option>
+      <option value="1">読点ごとに短く（メモリ節約）</option>
+    </select>
+  </div>
   <label class="chk"><input type="checkbox" id="chkPre"> 全文を生成し終えてから再生する（画面を消した状態の試験用）</label>
   <div class="row">
     <button class="btn btn-main" id="btnPlay" disabled>生成して再生</button>
@@ -379,12 +386,13 @@ async function loadKuromoji(scriptUrl, dics) {
 }
 
 // Kokoro accepts up to 510 tokens; split long phoneme strings at commas
-function phonChunks(sentence) {
+function phonChunks(sentence, maxLen) {
+  maxLen = maxLen || 400;
   var p = JaG2P.phonemize(jaTok, sentence);
-  if (p.length <= 400) return p ? [p] : [];
-  var parts = p.split(/(?<=,) /), res = [], cur = '';
+  if (p.length <= maxLen) return p ? [p] : [];
+  var parts = p.split(/(?<=[,!?.]) /), res = [], cur = '';
   parts.forEach(function (x) {
-    if ((cur + ' ' + x).length > 400 && cur) { res.push(cur); cur = x; }
+    if ((cur + ' ' + x).length > maxLen && cur) { res.push(cur); cur = x; }
     else cur = cur ? cur + ' ' + x : x;
   });
   if (cur) res.push(cur);
@@ -425,7 +433,18 @@ self.onmessage = async function (e) {
       var t1 = performance.now();
       var mod = await import(m.kokoroUrl);
       wlog('kokoro-js 読み込み ' + sec(t1));
-      if (m.device === 'webgpu' && !self.navigator.gpu) wlog('Worker内に navigator.gpu がありません', 'err');
+      if (m.device === 'webgpu') {
+        if (!self.navigator.gpu) wlog('Worker内に navigator.gpu がありません', 'err');
+        else {
+          try {
+            var ad = await self.navigator.gpu.requestAdapter();
+            if (!ad) wlog('Worker内で WebGPU adapter を取得できず', 'err');
+            else wlog('GPU: shader-f16=' + (ad.features.has('shader-f16') ? '対応' : '非対応') +
+              ' / maxBufferSize=' + (ad.limits.maxBufferSize / 1048576).toFixed(0) + 'MB' +
+              ' / maxStorageBufferBindingSize=' + (ad.limits.maxStorageBufferBindingSize / 1048576).toFixed(0) + 'MB');
+          } catch (ge) { wlog('GPU情報の取得失敗: ' + errText(ge), 'err'); }
+        }
+      }
 
       var files = {}, lastPct = -1, t2 = performance.now(), fetched = false;
       var base = 'https://huggingface.co/' + m.modelId + '/resolve/main/';
@@ -464,7 +483,7 @@ self.onmessage = async function (e) {
       post({ id: m.id, total: sec(t) });
 
     } else if (m.type === 'phon') {
-      post({ id: m.id, chunks: m.sentences.map(phonChunks) });
+      post({ id: m.id, chunks: m.sentences.map(function (x) { return phonChunks(x, m.maxLen); }) });
 
     } else if (m.type === 'synth') {
       var ts = performance.now();
@@ -707,7 +726,7 @@ $('rngSpeed').addEventListener('input', function () { $('speedVal').textContent 
 $('btnPhon').addEventListener('click', async function () {
   var ss = splitSentences($('txt').value);
   try {
-    var r = await call('phon', { sentences: ss });
+    var r = await call('phon', { sentences: ss, maxLen: +$('selChunk').value });
     ss.forEach(function (s, i) { log(s); log('  → ' + r.chunks[i].join(' | ')); });
   } catch (e) { log('音素変換失敗: ' + e.message, 'err'); }
 });
@@ -737,11 +756,11 @@ async function runPlayback() {
   var sentences = splitSentences($('txt').value);
   var jobs = [];
   try {
-    var pr = await call('phon', { sentences: sentences });
+    var pr = await call('phon', { sentences: sentences, maxLen: +$('selChunk').value });
     sentences.forEach(function (s, i) { pr.chunks[i].forEach(function (p) { jobs.push({ text: s, ph: p }); }); });
   } catch (e) { log('音素変換失敗: ' + e.message, 'err'); }
   if (!jobs.length) { $('playStatus').textContent = 'テキストがありません'; $('btnPlay').disabled = false; $('btnStop').disabled = true; return; }
-  log('生成開始: ' + jobs.length + '件 voice=' + voice + ' speed=' + speed + (pre ? '（全文生成後に再生）' : ''));
+  log('生成開始: ' + jobs.length + '件 voice=' + voice + ' speed=' + speed + ' 区切り=' + $('selChunk').value + (pre ? '（全文生成後に再生）' : ''));
 
   var ready = [], genDone = false, totalGen = 0, totalSec = 0, firstAt = 0, t0 = performance.now();
   var waiter = null;
@@ -750,6 +769,7 @@ async function runPlayback() {
   (async function generate() {
     for (var i = 0; i < jobs.length; i++) {
       if (myRun !== runId) return;
+      log('#' + (i + 1) + ' 生成開始（音素 ' + jobs[i].ph.length + '文字）');
       try {
         var r = await call('synth', { ph: jobs[i].ph, voice: voice, speed: speed });
         var g = r.ms / 1000, s = r.audio.length / r.rate;
