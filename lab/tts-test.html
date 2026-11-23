@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0908">
+<title>Kokoro TTS 試験</title>
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #0a0908; color: #e8e2d6; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  font-size: 15px; line-height: 1.6;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 24px);
+  -webkit-text-size-adjust: 100%;
+}
+h1 { font-size: 18px; margin: 0 0 4px; }
+.sub { color: #9a9284; font-size: 12px; margin: 0 0 16px; }
+.card { background: #16130f; border: 1px solid #2a251e; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.card h2 { font-size: 14px; margin: 0 0 8px; color: #d9a441; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px; }
+.row-top { margin-top: 8px; }
+.row label { min-width: 72px; color: #b8b0a2; font-size: 13px; }
+select, textarea, input[type=range] { font-size: 16px; }
+select, textarea {
+  background: #0f0d0a; color: #e8e2d6; border: 1px solid #3a3328; border-radius: 8px; padding: 6px 8px;
+}
+select { flex: 1; min-width: 0; }
+textarea { width: 100%; min-height: 140px; resize: vertical; line-height: 1.6; }
+input[type=range] { flex: 1; min-width: 0; }
+.btn {
+  appearance: none; -webkit-appearance: none; border: 1px solid #4a4134; background: #221d17; color: #e8e2d6;
+  border-radius: 10px; padding: 10px 14px; font-size: 15px; flex: 1; min-width: 0;
+}
+.btn:disabled { opacity: 0.4; }
+.btn-main { background: #d9a441; border-color: #d9a441; color: #1a140a; font-weight: 600; }
+.chk { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #b8b0a2; margin-bottom: 8px; }
+.note { color: #9a9284; font-size: 12px; margin: 4px 0 0; }
+.status { font-size: 13px; white-space: pre-wrap; word-break: break-all; }
+.bar { height: 6px; background: #2a251e; border-radius: 3px; overflow: hidden; margin-top: 6px; }
+.bar-in { height: 100%; width: 0; background: #d9a441; transition: width 0.2s; }
+.log {
+  font-family: ui-monospace, Menlo, monospace; font-size: 11px; line-height: 1.5;
+  max-height: 320px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+  background: #0f0d0a; border-radius: 8px; padding: 8px; color: #c8c0b2;
+}
+.err { color: #ff8a7a; }
+.ok { color: #9fd49a; }
+audio { width: 100%; margin-top: 8px; }
+</style>
+</head>
+<body>
+<h1>Kokoro-82M 読み上げ試験</h1>
+<p class="sub">端末内（ブラウザ内）で音声を生成する試験ページ。夜語り本体とは独立している。</p>
+
+<div class="card">
+  <h2>1. モデル</h2>
+  <div class="row">
+    <label for="selDevice">実行方式</label>
+    <select id="selDevice">
+      <option value="wasm">WASM（CPU・安定）</option>
+      <option value="webgpu">WebGPU（GPU・高速だが不安定な場合あり）</option>
+    </select>
+  </div>
+  <div class="row">
+    <label for="selDtype">精度</label>
+    <select id="selDtype">
+      <option value="q8">q8（約92MB・WASM推奨）</option>
+      <option value="q4">q4（約305MB）</option>
+      <option value="q4f16">q4f16（約155MB）</option>
+      <option value="fp16">fp16（約163MB）</option>
+      <option value="fp32">fp32（約326MB・WebGPU推奨）</option>
+    </select>
+  </div>
+  <div class="row">
+    <button class="btn btn-main" id="btnLoad">モデルを読み込む</button>
+  </div>
+  <div class="status" id="loadStatus">未読み込み</div>
+  <div class="bar"><div class="bar-in" id="loadBar"></div></div>
+  <p class="note" id="envInfo"></p>
+</div>
+
+<div class="card">
+  <h2>2. 読み上げ</h2>
+  <div class="row">
+    <label for="selVoice">声</label>
+    <select id="selVoice">
+      <option value="jf_alpha">jf_alpha（女性）</option>
+      <option value="jf_gongitsune">jf_gongitsune（女性）</option>
+      <option value="jf_nezumi">jf_nezumi（女性）</option>
+      <option value="jf_tebukuro">jf_tebukuro（女性）</option>
+      <option value="jm_kumo">jm_kumo（男性）</option>
+    </select>
+  </div>
+  <div class="row">
+    <label for="rngSpeed">速度 <span id="speedVal">1.0</span></label>
+    <input type="range" id="rngSpeed" min="0.6" max="1.6" step="0.1" value="1.0">
+  </div>
+  <textarea id="txt">　その夜、町はずれの古い図書館には、まだ灯りがともっていた。
+　「こんな時間に、誰かいるのかしら」
+　彼女はそっと扉を押した。きしむ音が、静まり返った廊下に響く。
+　棚の奥から、かすかにページをめくる音が聞こえてきた。</textarea>
+  <label class="chk"><input type="checkbox" id="chkPre"> 全文を生成し終えてから再生する（画面を消した状態の試験用）</label>
+  <div class="row">
+    <button class="btn btn-main" id="btnPlay" disabled>生成して再生</button>
+    <button class="btn" id="btnStop" disabled>停止</button>
+  </div>
+  <div class="row">
+    <button class="btn" id="btnPhon" disabled>音素だけ表示</button>
+  </div>
+  <div class="status" id="playStatus"></div>
+  <audio id="player" controls playsinline></audio>
+</div>
+
+<div class="card">
+  <h2>ログ</h2>
+  <div class="log" id="log"></div>
+  <div class="row row-top">
+    <button class="btn" id="btnCopy">ログをコピー</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ===== Config =====
+var MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
+var KOKORO_URL = 'https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/dist/kokoro.web.js';
+var KUROMOJI_URL = 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js';
+var KUROMOJI_DICS = [
+  'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/',
+  'https://unpkg.com/kuromoji@0.1.2/dict/'
+];
+var SAMPLE_RATE = 24000;
+
+// ===== Log / UI helpers =====
+var logEl = document.getElementById('log');
+var T0 = performance.now();
+function log(msg, cls) {
+  var line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = '[' + ((performance.now() - T0) / 1000).toFixed(1) + 's] ' + msg;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+function $(id) { return document.getElementById(id); }
+function setLoad(msg, pct) {
+  $('loadStatus').textContent = msg;
+  if (typeof pct === 'number') $('loadBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+}
+window.addEventListener('error', function (e) { log('window.error: ' + e.message, 'err'); });
+window.addEventListener('unhandledrejection', function (e) {
+  log('unhandledrejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason), 'err');
+});
+
+// ===== Japanese G2P (port of misaki ja.py, cutlet-based) =====
+// G2P_BEGIN
+var JaG2P = (function () {
+  var H = {};
+  function put(s, p) { H[s] = p; }
+  var base = [
+    ['あ','a'],['い','i'],['う','ɯ'],['え','e'],['お','o'],
+    ['ぁ','a'],['ぃ','i'],['ぅ','ɯ'],['ぇ','e'],['ぉ','o'],
+    ['か','ka'],['が','ɡa'],['き','kʲi'],['ぎ','ɡʲi'],['く','kɯ'],['ぐ','ɡɯ'],['け','ke'],['げ','ɡe'],['こ','ko'],['ご','ɡo'],
+    ['さ','sa'],['ざ','ʣa'],['し','ɕi'],['じ','ʥi'],['す','sɨ'],['ず','zɨ'],['せ','se'],['ぜ','ʣe'],['そ','so'],['ぞ','ʣo'],
+    ['た','ta'],['だ','da'],['ち','ʨi'],['ぢ','ʥi'],['つ','ʦɨ'],['づ','zɨ'],['て','te'],['で','de'],['と','to'],['ど','do'],
+    ['な','na'],['に','ɲi'],['ぬ','nɯ'],['ね','ne'],['の','no'],
+    ['は','ha'],['ば','ba'],['ぱ','pa'],['ひ','çi'],['び','bʲi'],['ぴ','pʲi'],['ふ','ɸɯ'],['ぶ','bɯ'],['ぷ','pɯ'],
+    ['へ','he'],['べ','be'],['ぺ','pe'],['ほ','ho'],['ぼ','bo'],['ぽ','po'],
+    ['ま','ma'],['み','mʲi'],['む','mɯ'],['め','me'],['も','mo'],
+    ['ゃ','ja'],['や','ja'],['ゅ','jɯ'],['ゆ','jɯ'],['ょ','jo'],['よ','jo'],
+    ['ら','ɾa'],['り','ɾʲi'],['る','ɾɯ'],['れ','ɾe'],['ろ','ɾo'],
+    ['ゎ','βa'],['わ','βa'],['ゐ','i'],['ゑ','e'],['を','o'],['ゔ','vɯ'],['ゕ','ka'],['ゖ','ke'],
+    ['ヷ','va'],['ヸ','vʲi'],['ヹ','ve'],['ヺ','vo']
+  ];
+  var digraph = [
+    ['いぇ','je'],['うぃ','βi'],['うぇ','βe'],['うぉ','βo'],
+    ['きぇ','kʲe'],['きゃ','kʲa'],['きゅ','kʲɨ'],['きょ','kʲo'],
+    ['ぎゃ','ɡʲa'],['ぎゅ','ɡʲɨ'],['ぎょ','ɡʲo'],
+    ['くぁ','kᵝa'],['くぃ','kᵝi'],['くぇ','kᵝe'],['くぉ','kᵝo'],
+    ['ぐぁ','ɡᵝa'],['ぐぃ','ɡᵝi'],['ぐぇ','ɡᵝe'],['ぐぉ','ɡᵝo'],
+    ['しぇ','ɕe'],['しゃ','ɕa'],['しゅ','ɕɨ'],['しょ','ɕo'],
+    ['じぇ','ʥe'],['じゃ','ʥa'],['じゅ','ʥɨ'],['じょ','ʥo'],
+    ['ちぇ','ʨe'],['ちゃ','ʨa'],['ちゅ','ʨɨ'],['ちょ','ʨo'],
+    ['ぢゃ','ʥa'],['ぢゅ','ʥɨ'],['ぢょ','ʥo'],
+    ['つぁ','ʦa'],['つぃ','ʦʲi'],['つぇ','ʦe'],['つぉ','ʦo'],
+    ['てぃ','tʲi'],['てゅ','tʲɨ'],['でぃ','dʲi'],['でゅ','dʲɨ'],['とぅ','tɯ'],['どぅ','dɯ'],
+    ['にぇ','ɲe'],['にゃ','ɲa'],['にゅ','ɲɨ'],['にょ','ɲo'],
+    ['ひぇ','çe'],['ひゃ','ça'],['ひゅ','çɨ'],['ひょ','ço'],
+    ['びゃ','bʲa'],['びゅ','bʲɨ'],['びょ','bʲo'],
+    ['ぴゃ','pʲa'],['ぴゅ','pʲɨ'],['ぴょ','pʲo'],
+    ['ふぁ','ɸa'],['ふぃ','ɸʲi'],['ふぇ','ɸe'],['ふぉ','ɸo'],['ふゅ','ɸʲɨ'],['ふょ','ɸʲo'],
+    ['みゃ','mʲa'],['みゅ','mʲɨ'],['みょ','mʲo'],
+    ['りゃ','ɾʲa'],['りゅ','ɾʲɨ'],['りょ','ɾʲo'],
+    ['ゔぁ','va'],['ゔぃ','vʲi'],['ゔぇ','ve'],['ゔぉ','vo'],['ゔゅ','bʲɨ'],['ゔょ','bʲo']
+  ];
+  var symbols = [
+    ['。','.'],['、',','],['？','?'],['！','!'],['「','“'],['」','”'],['『','“'],['』','”'],
+    ['：',':'],['；',';'],['（','('],['）',')'],['《','('],['》',')'],['【','['],['】',']'],['・',' '],['，',','],
+    ['～','—'],['〜','—'],['—','—'],['«','“'],['»','”'],['゚',''],['゙','']
+  ];
+  base.forEach(function (a) { put(a[0], a[1]); });
+  digraph.forEach(function (a) { put(a[0], a[1]); });
+  symbols.forEach(function (a) { put(a[0], a[1]); });
+
+  var SUTEGANA = 'ゃゅょぁぃぅぇぉ';
+  var ODORI = '〃々ゝゞヽ';
+  var EXT = { 'ㇰ':'ク','ㇱ':'シ','ㇲ':'ス','ㇳ':'ト','ㇴ':'ヌ','ㇵ':'ハ','ㇶ':'ヒ','ㇷ':'フ','ㇸ':'ヘ','ㇹ':'ホ','ㇺ':'ム','ㇻ':'ラ','ㇼ':'リ','ㇽ':'ル','ㇾ':'レ','ㇿ':'ロ' };
+
+  function kata2hira(s) {
+    var out = '';
+    for (var i = 0; i < s.length; i++) {
+      var c = s.charCodeAt(i);
+      out += (c >= 0x30A1 && c <= 0x30F6) ? String.fromCharCode(c - 0x60) : s[i];
+    }
+    return out;
+  }
+  function isKana(s) { return /^[ぁ-ゟ゠-ヿ]+$/.test(s); }
+  function isAscii(s) { return /^[\x00-\x7F]*$/.test(s); }
+  function addDakuten(k) {
+    var i = 'かきくけこさしすせそたちつてとはひふへほ'.indexOf(k);
+    return i < 0 ? null : 'がぎぐげござじずぜぞだぢづでどばびぶべぼ'[i];
+  }
+
+  // Number -> hiragana reading with spaces between parts (similar to misaki num2kana)
+  var DIG = ['', 'いち', 'に', 'さん', 'よん', 'ご', 'ろく', 'なな', 'はち', 'きゅう'];
+  function under10000(n) {
+    var parts = [];
+    var th = Math.floor(n / 1000), hu = Math.floor(n / 100) % 10, te = Math.floor(n / 10) % 10, on = n % 10;
+    if (th) parts.push(th === 1 ? 'せん' : th === 3 ? 'さんぜん' : th === 8 ? 'はっせん' : DIG[th] + ' せん');
+    if (hu) parts.push(hu === 1 ? 'ひゃく' : hu === 3 ? 'さんびゃく' : hu === 6 ? 'ろっぴゃく' : hu === 8 ? 'はっぴゃく' : DIG[hu] + ' ひゃく');
+    if (te) parts.push(te === 1 ? 'じゅう' : DIG[te] + ' じゅう');
+    if (on) parts.push(DIG[on]);
+    return parts.join(' ');
+  }
+  function num2kana(str) {
+    str = str.replace(/^0+(?=\d)/, '');
+    if (str === '0') return 'ぜろ';
+    if (str.length > 16) {
+      return str.split('').map(function (d) { return d === '0' ? 'ぜろ' : DIG[+d]; }).join(' ');
+    }
+    var units = ['', 'まん', 'おく', 'ちょう'];
+    var groups = [];
+    for (var end = str.length; end > 0; end -= 4) groups.unshift(+str.slice(Math.max(0, end - 4), end));
+    var out = [];
+    for (var g = 0; g < groups.length; g++) {
+      var v = groups[g], u = units[groups.length - 1 - g];
+      if (!v) continue;
+      if (u === 'ちょう' && v === 1) { out.push('いっちょう'); continue; }
+      var r = under10000(v);
+      if (u && v >= 1000 && Math.floor(v / 1000) === 1) r = r.replace(/^せん/, 'いっせん');
+      out.push(u ? r + ' ' + u : r);
+    }
+    return out.join(' ');
+  }
+
+  function normalize(text) {
+    text = text.replace(/[〜～](?=\d)/g, 'から');
+    Object.keys(EXT).forEach(function (k) { text = text.split(k).join(EXT[k]); });
+    text = text.normalize('NFKC');
+    return text.replace(/\d+/g, function (d) { return ' ' + num2kana(d); });
+  }
+
+  function single(pk, kk, nk) {
+    if (ODORI.indexOf(kk) >= 0) {
+      if (kk === 'ゝ' || kk === 'ヽ') return pk ? pk : '';
+      if (kk === 'ゞ') {
+        if (!pk) return '';
+        var vv = addDakuten(pk);
+        return vv ? H[vv] : '';
+      }
+      return '';
+    }
+    if (pk && H[pk + kk] !== undefined) return H[pk + kk];
+    if (nk && H[kk + nk] !== undefined) return '';
+    if (nk && SUTEGANA.indexOf(nk) >= 0) {
+      if (kk === 'っ') return '';
+      var a = H[kk] || '';
+      return a.slice(0, -1) + H[nk];
+    }
+    if (SUTEGANA.indexOf(kk) >= 0) return '';
+    if (kk === 'ー') return 'ː';
+    if (kk === 'っ') return 'ʔ';
+    if (kk === 'ん') {
+      var t = nk ? H[nk] : undefined;
+      if (t) {
+        if ('mpb'.indexOf(t[0]) >= 0) return 'm';
+        if ('kɡ'.indexOf(t[0]) >= 0) return 'ŋ';
+        if (/^(ɲ|ʨ|ʥ)/.test(t)) return 'ɲ';
+        if ('ntdɾz'.indexOf(t[0]) >= 0) return 'n';
+      }
+      return 'ɴ';
+    }
+    return H[kk] !== undefined ? H[kk] : '';
+  }
+
+  function wordRoma(w) {
+    var s = w.surface;
+    if (isAscii(s)) return s;
+    if (w.symbol) {
+      var o = '';
+      for (var i = 0; i < s.length; i++) o += (H[s[i]] !== undefined ? H[s[i]] : s[i]);
+      return o;
+    }
+    if (!w.hira) return '';
+    var h = w.hira, out = '';
+    for (var k = 0; k < h.length; k++) out += single(k > 0 ? h[k - 1] : null, h[k], k < h.length - 1 ? h[k + 1] : null);
+    return out;
+  }
+
+  // IPADIC misreadings that matter for narration (surface -> hiragana)
+  var READ_FIX = { '行っ': 'いっ' };
+
+  // tokens: kuromoji tokens
+  function toWords(tokens) {
+    return tokens.map(function (t) {
+      var s = t.surface_form;
+      var symbol = t.pos === '記号';
+      var pron = (t.pronunciation && t.pronunciation !== '*') ? t.pronunciation
+        : (t.reading && t.reading !== '*') ? t.reading : null;
+      var hira = null;
+      if (!symbol) {
+        if (READ_FIX[s]) hira = READ_FIX[s];
+        else if (t.word_type === 'KNOWN' && pron) hira = kata2hira(pron);
+        else if (isKana(s)) hira = kata2hira(s);
+      }
+      if (!symbol && !hira && /^[\s　]+$/.test(s)) symbol = true;
+      return { surface: s, hira: hira, symbol: symbol };
+    });
+  }
+
+  function phonemize(tokenizer, text) {
+    if (!text) return '';
+    text = normalize(text);
+    var words = toWords(tokenizer.tokenize(text));
+    var out = [];
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i];
+      var po = out.length ? out[out.length - 1] : null;
+      var roma = wordRoma(w);
+      var tok = { s: roma, sp: false };
+      var sf = w.surface;
+      if ('「『«'.indexOf(sf) >= 0 && sf !== '' || '(['.includes(roma)) {
+        if (po) po.sp = true;
+      } else if ('」』»'.indexOf(sf) >= 0 && sf !== '' || ']).,?!:'.includes(roma)) {
+        if (po) po.sp = false;
+        tok.sp = true;
+      } else if (roma === ' ') {
+        tok.sp = false;
+      } else {
+        tok.sp = true;
+      }
+      out.push(tok);
+    }
+    var joined = out.map(function (t) { return t.s.split('っ').join('') + (t.sp ? ' ' : ''); }).join('');
+    var ps = joined.trim().replace(/\s+/g, ' ').replace(/\(/g, '«').replace(/\)/g, '»');
+    ps = ps.replace(/(?<![!",.:;?»—…”]) (?=ʔ)|(?<=ʔ) (?!["«“])/g, '');
+    return ps;
+  }
+
+  return { phonemize: phonemize, num2kana: num2kana };
+})();
+// G2P_END
+
+// ===== WAV encoding =====
+function encodeWav(f32, rate) {
+  var n = f32.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+  function str(o, s) { for (var i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); }
+  str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+  v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+  v.setUint32(24, rate, true); v.setUint32(28, rate * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+  str(36, 'data'); v.setUint32(40, n * 2, true);
+  for (var i = 0, o = 44; i < n; i++, o += 2) {
+    var x = Math.max(-1, Math.min(1, f32[i]));
+    v.setInt16(o, x < 0 ? x * 0x8000 : x * 0x7FFF, true);
+  }
+  return new Blob([buf], { type: 'audio/wav' });
+}
+var SILENT_URL = URL.createObjectURL(encodeWav(new Float32Array(2400), SAMPLE_RATE));
+
+// ===== Loading =====
+var tts = null, jaTok = null, loading = false;
+
+function loadScript(src) {
+  return new Promise(function (res, rej) {
+    var s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = function () { rej(new Error('script load failed: ' + src)); };
+    document.head.appendChild(s);
+  });
+}
+function buildKuromoji(dicPath) {
+  return new Promise(function (res, rej) {
+    window.kuromoji.builder({ dicPath: dicPath }).build(function (err, t) { if (err) rej(err); else res(t); });
+  });
+}
+async function loadKuromoji() {
+  if (jaTok) return jaTok;
+  if (!window.kuromoji) await loadScript(KUROMOJI_URL);
+  var lastErr = null;
+  for (var i = 0; i < KUROMOJI_DICS.length; i++) {
+    try {
+      log('辞書読み込み: ' + KUROMOJI_DICS[i]);
+      jaTok = await buildKuromoji(KUROMOJI_DICS[i]);
+      return jaTok;
+    } catch (e) {
+      lastErr = e;
+      log('辞書読み込み失敗: ' + (e && e.message ? e.message : e), 'err');
+    }
+  }
+  throw lastErr || new Error('kuromoji dictionary failed');
+}
+
+async function showEnv() {
+  var info = [];
+  info.push('WebGPU: ' + (navigator.gpu ? 'API有り' : '無し'));
+  info.push('crossOriginIsolated: ' + (window.crossOriginIsolated ? 'yes' : 'no（WASMは単一スレッド）'));
+  if (navigator.deviceMemory) info.push('deviceMemory: ' + navigator.deviceMemory + 'GB');
+  info.push('cores: ' + (navigator.hardwareConcurrency || '?'));
+  $('envInfo').textContent = info.join(' / ');
+  log('UA: ' + navigator.userAgent);
+  log(info.join(' / '));
+  if (navigator.gpu) {
+    try {
+      var ad = await navigator.gpu.requestAdapter();
+      log('WebGPU adapter: ' + (ad ? 'OK' : '取得できず'));
+      if (!ad) $('selDevice').querySelector('option[value=webgpu]').textContent += '（アダプタ無し）';
+    } catch (e) { log('WebGPU adapter error: ' + e.message, 'err'); }
+  }
+}
+
+$('selDevice').addEventListener('change', function () {
+  $('selDtype').value = this.value === 'webgpu' ? 'fp32' : 'q8';
+});
+
+$('btnLoad').addEventListener('click', async function () {
+  if (loading) return;
+  loading = true;
+  $('btnLoad').disabled = true;
+  var device = $('selDevice').value, dtype = $('selDtype').value;
+  var t = performance.now();
+  try {
+    setLoad('形態素解析辞書（kuromoji・約17MB）を読み込み中…', 2);
+    await loadKuromoji();
+    log('kuromoji OK (' + ((performance.now() - t) / 1000).toFixed(1) + 's)', 'ok');
+
+    setLoad('kokoro-js を読み込み中…', 8);
+    var mod = await import(KOKORO_URL);
+    var files = {};
+    var t2 = performance.now();
+    log('モデル読み込み開始: device=' + device + ' dtype=' + dtype);
+    tts = await mod.KokoroTTS.from_pretrained(MODEL_ID, {
+      dtype: dtype,
+      device: device,
+      progress_callback: function (p) {
+        if (p.status === 'progress' && p.total) {
+          files[p.file] = { loaded: p.loaded, total: p.total };
+          var L = 0, Tt = 0;
+          Object.keys(files).forEach(function (k) { L += files[k].loaded; Tt += files[k].total; });
+          setLoad('モデル取得中 ' + (L / 1048576).toFixed(1) + ' / ' + (Tt / 1048576).toFixed(1) + 'MB', 8 + 90 * L / Tt);
+        } else if (p.status === 'done') {
+          log('取得完了: ' + p.file);
+        }
+      }
+    });
+    log('モデル初期化完了 (' + ((performance.now() - t2) / 1000).toFixed(1) + 's)', 'ok');
+    setLoad('読み込み完了（' + device + ' / ' + dtype + '、合計 ' + ((performance.now() - t) / 1000).toFixed(1) + '秒）', 100);
+    $('btnPlay').disabled = false;
+    $('btnPhon').disabled = false;
+    $('selDevice').disabled = true;
+    $('selDtype').disabled = true;
+  } catch (e) {
+    log('読み込み失敗: ' + (e && e.stack ? e.stack : e), 'err');
+    setLoad('読み込み失敗: ' + (e && e.message ? e.message : e), 0);
+    $('btnLoad').disabled = false;
+  }
+  loading = false;
+});
+
+// ===== Text splitting =====
+function splitSentences(text) {
+  var out = [];
+  text.split(/\n+/).forEach(function (line) {
+    line = line.trim();
+    if (!line) return;
+    var m = line.match(/[^。！？!?]+[。！？!?]*[」』）)]*|[。！？!?」』）)]+/g) || [line];
+    m.forEach(function (s) {
+      s = s.trim();
+      if (s && /[ぁ-ヿ一-鿿㐀-䶿A-Za-z0-9０-９]/.test(s)) out.push(s);
+    });
+  });
+  return out;
+}
+// Kokoro accepts up to 510 tokens; split long phoneme strings at commas
+function phonChunks(sentence) {
+  var p = JaG2P.phonemize(jaTok, sentence);
+  if (p.length <= 400) return p ? [p] : [];
+  var parts = p.split(/(?<=,) /), res = [], cur = '';
+  parts.forEach(function (x) {
+    if ((cur + ' ' + x).length > 400 && cur) { res.push(cur); cur = x; }
+    else cur = cur ? cur + ' ' + x : x;
+  });
+  if (cur) res.push(cur);
+  return res.map(function (s) { return s.length > 500 ? s.slice(0, 500) : s; });
+}
+
+// ===== Generation / playback =====
+var player = $('player');
+var runId = 0;
+var urls = [];
+
+function revokeAll() { urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = []; }
+
+async function synth(ph, voice, speed) {
+  var enc = tts.tokenizer(ph, { truncation: true });
+  var raw = await tts.generate_from_ids(enc.input_ids, { voice: voice, speed: speed });
+  var data = raw.audio || raw.data;
+  return { blob: encodeWav(data, raw.sampling_rate || SAMPLE_RATE), sec: data.length / (raw.sampling_rate || SAMPLE_RATE) };
+}
+
+function playUrl(url, myRun) {
+  return new Promise(function (res) {
+    function done() { player.removeEventListener('ended', done); player.removeEventListener('error', onErr); res(); }
+    function onErr() { log('audio error: ' + (player.error ? player.error.code : '?'), 'err'); done(); }
+    player.addEventListener('ended', done);
+    player.addEventListener('error', onErr);
+    player.src = url;
+    player.play().catch(function (e) { log('play() rejected: ' + e.name + ' ' + e.message, 'err'); done(); });
+    if (myRun !== runId) done();
+  });
+}
+
+$('rngSpeed').addEventListener('input', function () { $('speedVal').textContent = (+this.value).toFixed(1); });
+
+$('btnPhon').addEventListener('click', function () {
+  var ss = splitSentences($('txt').value);
+  ss.forEach(function (s) { log(s); log('  → ' + phonChunks(s).join(' | ')); });
+});
+
+$('btnStop').addEventListener('click', function () {
+  runId++;
+  player.pause();
+  $('btnStop').disabled = true;
+  $('btnPlay').disabled = false;
+  $('playStatus').textContent = '停止しました';
+});
+
+$('btnPlay').addEventListener('click', function () {
+  // Unlock the audio element synchronously inside the user gesture (iOS)
+  player.src = SILENT_URL;
+  var pr = player.play();
+  if (pr && pr.catch) pr.catch(function () {});
+  runPlayback();
+});
+
+async function runPlayback() {
+  var myRun = ++runId;
+  revokeAll();
+  $('btnPlay').disabled = true;
+  $('btnStop').disabled = false;
+  var voice = $('selVoice').value, speed = +$('rngSpeed').value, pre = $('chkPre').checked;
+  var sentences = splitSentences($('txt').value);
+  var jobs = [];
+  sentences.forEach(function (s) { phonChunks(s).forEach(function (p) { jobs.push({ text: s, ph: p }); }); });
+  if (!jobs.length) { $('playStatus').textContent = 'テキストがありません'; $('btnPlay').disabled = false; return; }
+  log('生成開始: ' + jobs.length + '件 voice=' + voice + ' speed=' + speed + (pre ? '（全文生成後に再生）' : ''));
+
+  var ready = [], genDone = false, totalGen = 0, totalSec = 0, firstAt = 0, t0 = performance.now();
+  var waiter = null;
+  function notify() { if (waiter) { var w = waiter; waiter = null; w(); } }
+
+  (async function generate() {
+    for (var i = 0; i < jobs.length; i++) {
+      if (myRun !== runId) return;
+      var t = performance.now();
+      try {
+        var r = await synth(jobs[i].ph, voice, speed);
+        var g = (performance.now() - t) / 1000;
+        totalGen += g; totalSec += r.sec;
+        if (!firstAt) firstAt = (performance.now() - t0) / 1000;
+        log('#' + (i + 1) + ' 生成 ' + g.toFixed(2) + 's / 音声 ' + r.sec.toFixed(2) + 's (RTF ' + (g / r.sec).toFixed(2) + ')');
+        var u = URL.createObjectURL(r.blob);
+        urls.push(u);
+        ready.push(u);
+      } catch (e) {
+        log('#' + (i + 1) + ' 生成失敗: ' + (e && e.message ? e.message : e), 'err');
+        log('  音素: ' + jobs[i].ph);
+      }
+      $('playStatus').textContent = '生成 ' + (i + 1) + '/' + jobs.length;
+      notify();
+    }
+    genDone = true;
+    log('生成完了: 合計 ' + totalGen.toFixed(1) + 's / 音声 ' + totalSec.toFixed(1) + 's / 平均RTF ' + (totalSec ? (totalGen / totalSec).toFixed(2) : '-') + ' / 初回音声まで ' + firstAt.toFixed(1) + 's', 'ok');
+    notify();
+  })();
+
+  if (pre) {
+    while (!genDone && myRun === runId) await new Promise(function (r) { waiter = r; });
+  }
+  var played = 0;
+  while (myRun === runId) {
+    if (played < ready.length) {
+      $('playStatus').textContent = '再生 ' + (played + 1) + '/' + jobs.length + (genDone ? '' : '（生成中）');
+      await playUrl(ready[played], myRun);
+      played++;
+    } else if (genDone) {
+      break;
+    } else {
+      log('生成待ち（再生が追いついた）');
+      await new Promise(function (r) { waiter = r; });
+    }
+  }
+  if (myRun === runId) {
+    $('playStatus').textContent = '再生完了';
+    $('btnPlay').disabled = false;
+    $('btnStop').disabled = true;
+  }
+}
+
+$('btnCopy').addEventListener('click', function () {
+  var text = logEl.innerText;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function () { log('ログをコピーしました', 'ok'); }, function () { log('コピー失敗', 'err'); });
+  }
+});
+
+showEnv();
+</script>
+</body>
+</html>
