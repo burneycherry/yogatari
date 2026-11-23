@@ -66,14 +66,14 @@ audio { width: 100%; margin-top: 8px; }
   <h2>1. モデル</h2>
   <div class="row">
     <label for="selDevice">実行方式</label>
-    <select id="selDevice">
+    <select id="selDevice" autocomplete="off">
       <option value="wasm">WASM（CPU・安定）</option>
       <option value="webgpu">WebGPU（GPU・高速だが不安定な場合あり）</option>
     </select>
   </div>
   <div class="row">
     <label for="selDtype">精度</label>
-    <select id="selDtype">
+    <select id="selDtype" autocomplete="off">
       <option value="q8">q8（約92MB・WASM推奨）</option>
       <option value="q4">q4（約305MB）</option>
       <option value="q4f16">q4f16（約155MB）</option>
@@ -628,6 +628,10 @@ $('btnClearCache').addEventListener('click', async function () {
 
 $('selDevice').addEventListener('change', function () {
   $('selDtype').value = this.value === 'webgpu' ? 'fp32' : 'q8';
+  log('選択変更: 実行方式=' + $('selDevice').value + ' 精度=' + $('selDtype').value);
+});
+$('selDtype').addEventListener('change', function () {
+  log('選択変更: 実行方式=' + $('selDevice').value + ' 精度=' + $('selDtype').value);
 });
 
 // ===== Loading =====
@@ -637,6 +641,7 @@ $('btnLoad').addEventListener('click', async function () {
   loading = true;
   $('btnLoad').disabled = true;
   var device = $('selDevice').value, dtype = $('selDtype').value;
+  log('読み込みボタン: 実行方式=' + device + ' 精度=' + dtype);
   try {
     if (!worker) startWorker();
     setLoad('開始…', 1);
