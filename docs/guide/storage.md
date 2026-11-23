@@ -22,6 +22,7 @@
 | `yogatari_debug_mode` | デバッグモードのON/OFF（既定OFF） |
 | `yogatari_debug_hud` | 計測ログ画面の開閉状態 |
 | `yogatari_debug_log` | 計測ログの本文（最大220行） |
+| `yogatari_lab_tts_log` | 試験ページ `lab/tts-test.html` の直近ログ（最大300行）。フリーズ・強制終了後に再読み込みして確認する用途。本体は読まないが、同じオリジンのため本体のバックアップには含まれる |
 
 ## sessionStorageキー一覧
 

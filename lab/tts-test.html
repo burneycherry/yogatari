@@ -51,7 +51,16 @@ audio { width: 100%; margin-top: 8px; }
 </head>
 <body>
 <h1>Kokoro-82M 読み上げ試験</h1>
-<p class="sub">端末内（ブラウザ内）で音声を生成する試験ページ。夜語り本体とは独立している。</p>
+<p class="sub">端末内（ブラウザ内）で音声を生成する試験ページ。重い処理はWeb Worker（別スレッド）で実行する。夜語り本体とは独立している。</p>
+
+<div class="card" id="prevCard" hidden>
+  <h2>前回のログ（フリーズ・強制終了時の確認用）</h2>
+  <div class="log" id="prevLog"></div>
+  <div class="row row-top">
+    <button class="btn" id="btnPrevCopy">前回のログをコピー</button>
+    <button class="btn" id="btnPrevClear">消去</button>
+  </div>
+</div>
 
 <div class="card">
   <h2>1. モデル</h2>
@@ -120,40 +129,8 @@ audio { width: 100%; margin-top: 8px; }
   </div>
 </div>
 
-<script>
+<script type="text/plain" id="workerSrc">
 'use strict';
-
-// ===== Config =====
-var MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
-var KOKORO_URL = 'https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/dist/kokoro.web.js';
-var KUROMOJI_URL = 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js';
-var KUROMOJI_DICS = [
-  'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/',
-  'https://unpkg.com/kuromoji@0.1.2/dict/'
-];
-var SAMPLE_RATE = 24000;
-
-// ===== Log / UI helpers =====
-var logEl = document.getElementById('log');
-var T0 = performance.now();
-function log(msg, cls) {
-  var line = document.createElement('div');
-  if (cls) line.className = cls;
-  line.textContent = '[' + ((performance.now() - T0) / 1000).toFixed(1) + 's] ' + msg;
-  logEl.appendChild(line);
-  logEl.scrollTop = logEl.scrollHeight;
-}
-function $(id) { return document.getElementById(id); }
-function setLoad(msg, pct) {
-  $('loadStatus').textContent = msg;
-  if (typeof pct === 'number') $('loadBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
-}
-window.addEventListener('error', function (e) { log('window.error: ' + e.message, 'err'); });
-window.addEventListener('unhandledrejection', function (e) {
-  log('unhandledrejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason), 'err');
-});
-
-// ===== Japanese G2P (port of misaki ja.py, cutlet-based) =====
 // G2P_BEGIN
 var JaG2P = (function () {
   var H = {};
@@ -362,6 +339,215 @@ var JaG2P = (function () {
 })();
 // G2P_END
 
+// ===== Worker: kuromoji + Kokoro run here so the page stays responsive =====
+var tts = null, jaTok = null;
+function post(o, tr) { self.postMessage(o, tr || []); }
+function wlog(msg, cls) { post({ type: 'log', msg: msg, cls: cls }); }
+function sec(t) { return ((performance.now() - t) / 1000).toFixed(1) + 's'; }
+
+function buildKuromoji(dicPath) {
+  return new Promise(function (res, rej) {
+    self.kuromoji.builder({ dicPath: dicPath }).build(function (err, t) { if (err) rej(err); else res(t); });
+  });
+}
+async function loadKuromoji(scriptUrl, dics) {
+  if (jaTok) return;
+  if (!self.kuromoji) {
+    var t = performance.now();
+    var code = await (await fetch(scriptUrl)).text();
+    if (typeof self.window === 'undefined') self.window = self;
+    (0, eval)(code);
+    wlog('kuromoji.js 取得 ' + sec(t));
+  }
+  var lastErr = null;
+  for (var i = 0; i < dics.length; i++) {
+    var t2 = performance.now();
+    try {
+      wlog('辞書の取得と構築: ' + dics[i]);
+      jaTok = await buildKuromoji(dics[i]);
+      wlog('辞書OK ' + sec(t2), 'ok');
+      return;
+    } catch (e) {
+      lastErr = e;
+      wlog('辞書失敗: ' + (e && e.message ? e.message : e), 'err');
+    }
+  }
+  throw lastErr || new Error('kuromoji dictionary failed');
+}
+
+// Kokoro accepts up to 510 tokens; split long phoneme strings at commas
+function phonChunks(sentence) {
+  var p = JaG2P.phonemize(jaTok, sentence);
+  if (p.length <= 400) return p ? [p] : [];
+  var parts = p.split(/(?<=,) /), res = [], cur = '';
+  parts.forEach(function (x) {
+    if ((cur + ' ' + x).length > 400 && cur) { res.push(cur); cur = x; }
+    else cur = cur ? cur + ' ' + x : x;
+  });
+  if (cur) res.push(cur);
+  return res.map(function (s) { return s.length > 500 ? s.slice(0, 500) : s; });
+}
+
+self.onmessage = async function (e) {
+  var m = e.data;
+  try {
+    if (m.type === 'load') {
+      var t = performance.now();
+      post({ type: 'stage', msg: '形態素解析辞書（kuromoji・約17MB）を取得・構築中…', pct: 2 });
+      await loadKuromoji(m.kuromojiUrl, m.dics);
+
+      post({ type: 'stage', msg: 'kokoro-js を読み込み中…', pct: 8 });
+      var t1 = performance.now();
+      var mod = await import(m.kokoroUrl);
+      wlog('kokoro-js 読み込み ' + sec(t1));
+      if (m.device === 'webgpu' && !self.navigator.gpu) wlog('Worker内に navigator.gpu がありません', 'err');
+
+      var files = {}, lastPct = -1, t2 = performance.now(), fetched = false;
+      wlog('モデル読み込み開始: device=' + m.device + ' dtype=' + m.dtype);
+      tts = await mod.KokoroTTS.from_pretrained(m.modelId, {
+        dtype: m.dtype,
+        device: m.device,
+        progress_callback: function (p) {
+          if (p.status === 'progress' && p.total) {
+            files[p.file] = { loaded: p.loaded, total: p.total };
+            var L = 0, T = 0;
+            Object.keys(files).forEach(function (k) { L += files[k].loaded; T += files[k].total; });
+            var pct = Math.floor(8 + 80 * L / T);
+            if (pct !== lastPct) {
+              lastPct = pct;
+              post({ type: 'stage', msg: 'モデル取得中 ' + (L / 1048576).toFixed(1) + ' / ' + (T / 1048576).toFixed(1) + 'MB', pct: pct });
+            }
+          } else if (p.status === 'done') {
+            wlog('取得完了: ' + p.file + ' ' + sec(t2));
+            if (!fetched && /\.onnx$/.test(p.file || '')) {
+              fetched = true;
+              post({ type: 'stage', msg: 'モデルを初期化中（ここが最も重い）…', pct: 92 });
+            }
+          }
+        }
+      });
+      wlog('モデル初期化完了 ' + sec(t2), 'ok');
+
+      post({ type: 'stage', msg: '試し生成（ウォームアップ）中…', pct: 96 });
+      var t3 = performance.now();
+      var warm = tts.tokenizer('a', { truncation: true });
+      await tts.generate_from_ids(warm.input_ids, { voice: m.voice, speed: 1 });
+      wlog('ウォームアップ ' + sec(t3) + '（声データ取得を含む）', 'ok');
+      post({ id: m.id, total: sec(t) });
+
+    } else if (m.type === 'phon') {
+      post({ id: m.id, chunks: m.sentences.map(phonChunks) });
+
+    } else if (m.type === 'synth') {
+      var ts = performance.now();
+      var enc = tts.tokenizer(m.ph, { truncation: true });
+      var raw = await tts.generate_from_ids(enc.input_ids, { voice: m.voice, speed: m.speed });
+      var data = new Float32Array(raw.audio || raw.data);
+      post({ id: m.id, audio: data, rate: raw.sampling_rate || 24000, ms: performance.now() - ts }, [data.buffer]);
+    }
+  } catch (err) {
+    post({ id: m.id, error: String(err && err.stack ? err.stack : err) });
+  }
+};
+</script>
+
+<script>
+'use strict';
+
+// ===== Config =====
+var MODEL_ID = 'onnx-community/Kokoro-82M-v1.0-ONNX';
+var KOKORO_URL = 'https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/dist/kokoro.web.js';
+var KUROMOJI_URL = 'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/build/kuromoji.js';
+var KUROMOJI_DICS = [
+  'https://cdn.jsdelivr.net/npm/kuromoji@0.1.2/dict/',
+  'https://unpkg.com/kuromoji@0.1.2/dict/'
+];
+var SAMPLE_RATE = 24000;
+var LOG_KEY = 'yogatari_lab_tts_log';
+
+// ===== Log / UI helpers =====
+var logEl = document.getElementById('log');
+var T0 = performance.now();
+var logLines = [];
+function saveLog() {
+  try { localStorage.setItem(LOG_KEY, JSON.stringify({ at: new Date().toISOString(), lines: logLines.slice(-300) })); } catch (e) {}
+}
+function log(msg, cls) {
+  var text = '[' + ((performance.now() - T0) / 1000).toFixed(1) + 's] ' + msg;
+  var line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = text;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+  logLines.push(text);
+  saveLog();
+}
+function $(id) { return document.getElementById(id); }
+var stageMsg = '', stageAt = 0, tickTimer = 0;
+function setLoad(msg, pct) {
+  stageMsg = msg; stageAt = performance.now();
+  $('loadStatus').textContent = msg;
+  if (typeof pct === 'number') $('loadBar').style.width = Math.max(0, Math.min(100, pct)) + '%';
+}
+function startTick() {
+  stopTick();
+  // Elapsed counter proves the page itself is not frozen
+  tickTimer = setInterval(function () {
+    $('loadStatus').textContent = stageMsg + '（' + ((performance.now() - stageAt) / 1000).toFixed(0) + '秒）';
+  }, 1000);
+}
+function stopTick() { if (tickTimer) clearInterval(tickTimer); tickTimer = 0; }
+window.addEventListener('error', function (e) { log('window.error: ' + e.message, 'err'); });
+window.addEventListener('unhandledrejection', function (e) {
+  log('unhandledrejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason), 'err');
+});
+document.addEventListener('visibilitychange', function () { log('visibility: ' + document.visibilityState); });
+
+// Previous session log (survives a tab crash / reload)
+(function showPrevLog() {
+  var prev = null;
+  try { prev = JSON.parse(localStorage.getItem(LOG_KEY) || 'null'); } catch (e) {}
+  if (!prev || !prev.lines || !prev.lines.length) return;
+  $('prevCard').hidden = false;
+  $('prevLog').textContent = '保存日時: ' + prev.at + '\n' + prev.lines.join('\n');
+})();
+$('btnPrevCopy').addEventListener('click', function () { copyText($('prevLog').textContent); });
+$('btnPrevClear').addEventListener('click', function () {
+  try { localStorage.removeItem(LOG_KEY); } catch (e) {}
+  $('prevCard').hidden = true;
+  saveLog();
+});
+
+// ===== Worker bridge =====
+var worker = null, reqId = 0, pending = {};
+function startWorker() {
+  var src = $('workerSrc').textContent;
+  var url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+  worker = new Worker(url, { type: 'module' });
+  worker.onmessage = function (e) {
+    var m = e.data;
+    if (m.type === 'log') { log(m.msg, m.cls); return; }
+    if (m.type === 'stage') { setLoad(m.msg, m.pct); log(m.msg); return; }
+    var p = pending[m.id];
+    if (!p) return;
+    delete pending[m.id];
+    if (m.error) p.rej(new Error(m.error)); else p.res(m);
+  };
+  worker.onerror = function (e) {
+    log('worker error: ' + (e.message || '不明') + (e.lineno ? ' (line ' + e.lineno + ')' : ''), 'err');
+    Object.keys(pending).forEach(function (k) { pending[k].rej(new Error('worker error')); delete pending[k]; });
+  };
+  log('Worker 起動');
+}
+function call(type, data) {
+  return new Promise(function (res, rej) {
+    var id = ++reqId;
+    pending[id] = { res: res, rej: rej };
+    data.id = id; data.type = type;
+    worker.postMessage(data);
+  });
+}
+
 // ===== WAV encoding =====
 function encodeWav(f32, rate) {
   var n = f32.length, buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
@@ -378,38 +564,7 @@ function encodeWav(f32, rate) {
 }
 var SILENT_URL = URL.createObjectURL(encodeWav(new Float32Array(2400), SAMPLE_RATE));
 
-// ===== Loading =====
-var tts = null, jaTok = null, loading = false;
-
-function loadScript(src) {
-  return new Promise(function (res, rej) {
-    var s = document.createElement('script');
-    s.src = src; s.onload = res; s.onerror = function () { rej(new Error('script load failed: ' + src)); };
-    document.head.appendChild(s);
-  });
-}
-function buildKuromoji(dicPath) {
-  return new Promise(function (res, rej) {
-    window.kuromoji.builder({ dicPath: dicPath }).build(function (err, t) { if (err) rej(err); else res(t); });
-  });
-}
-async function loadKuromoji() {
-  if (jaTok) return jaTok;
-  if (!window.kuromoji) await loadScript(KUROMOJI_URL);
-  var lastErr = null;
-  for (var i = 0; i < KUROMOJI_DICS.length; i++) {
-    try {
-      log('辞書読み込み: ' + KUROMOJI_DICS[i]);
-      jaTok = await buildKuromoji(KUROMOJI_DICS[i]);
-      return jaTok;
-    } catch (e) {
-      lastErr = e;
-      log('辞書読み込み失敗: ' + (e && e.message ? e.message : e), 'err');
-    }
-  }
-  throw lastErr || new Error('kuromoji dictionary failed');
-}
-
+// ===== Environment =====
 async function showEnv() {
   var info = [];
   info.push('WebGPU: ' + (navigator.gpu ? 'API有り' : '無し'));
@@ -432,46 +587,35 @@ $('selDevice').addEventListener('change', function () {
   $('selDtype').value = this.value === 'webgpu' ? 'fp32' : 'q8';
 });
 
+// ===== Loading =====
+var loaded = false, loading = false;
 $('btnLoad').addEventListener('click', async function () {
   if (loading) return;
   loading = true;
   $('btnLoad').disabled = true;
   var device = $('selDevice').value, dtype = $('selDtype').value;
-  var t = performance.now();
   try {
-    setLoad('形態素解析辞書（kuromoji・約17MB）を読み込み中…', 2);
-    await loadKuromoji();
-    log('kuromoji OK (' + ((performance.now() - t) / 1000).toFixed(1) + 's)', 'ok');
-
-    setLoad('kokoro-js を読み込み中…', 8);
-    var mod = await import(KOKORO_URL);
-    var files = {};
-    var t2 = performance.now();
-    log('モデル読み込み開始: device=' + device + ' dtype=' + dtype);
-    tts = await mod.KokoroTTS.from_pretrained(MODEL_ID, {
-      dtype: dtype,
-      device: device,
-      progress_callback: function (p) {
-        if (p.status === 'progress' && p.total) {
-          files[p.file] = { loaded: p.loaded, total: p.total };
-          var L = 0, Tt = 0;
-          Object.keys(files).forEach(function (k) { L += files[k].loaded; Tt += files[k].total; });
-          setLoad('モデル取得中 ' + (L / 1048576).toFixed(1) + ' / ' + (Tt / 1048576).toFixed(1) + 'MB', 8 + 90 * L / Tt);
-        } else if (p.status === 'done') {
-          log('取得完了: ' + p.file);
-        }
-      }
+    if (!worker) startWorker();
+    setLoad('開始…', 1);
+    startTick();
+    var r = await call('load', {
+      kuromojiUrl: KUROMOJI_URL, dics: KUROMOJI_DICS, kokoroUrl: KOKORO_URL,
+      modelId: MODEL_ID, device: device, dtype: dtype, voice: $('selVoice').value
     });
-    log('モデル初期化完了 (' + ((performance.now() - t2) / 1000).toFixed(1) + 's)', 'ok');
-    setLoad('読み込み完了（' + device + ' / ' + dtype + '、合計 ' + ((performance.now() - t) / 1000).toFixed(1) + '秒）', 100);
+    stopTick();
+    loaded = true;
+    setLoad('読み込み完了（' + device + ' / ' + dtype + '、合計 ' + r.total + '）', 100);
+    log('読み込み完了 合計 ' + r.total, 'ok');
     $('btnPlay').disabled = false;
     $('btnPhon').disabled = false;
     $('selDevice').disabled = true;
     $('selDtype').disabled = true;
   } catch (e) {
-    log('読み込み失敗: ' + (e && e.stack ? e.stack : e), 'err');
-    setLoad('読み込み失敗: ' + (e && e.message ? e.message : e), 0);
+    stopTick();
+    log('読み込み失敗: ' + (e && e.message ? e.message : e), 'err');
+    setLoad('読み込み失敗（ログ参照）', 0);
     $('btnLoad').disabled = false;
+    if (worker) { worker.terminate(); worker = null; }
   }
   loading = false;
 });
@@ -490,18 +634,6 @@ function splitSentences(text) {
   });
   return out;
 }
-// Kokoro accepts up to 510 tokens; split long phoneme strings at commas
-function phonChunks(sentence) {
-  var p = JaG2P.phonemize(jaTok, sentence);
-  if (p.length <= 400) return p ? [p] : [];
-  var parts = p.split(/(?<=,) /), res = [], cur = '';
-  parts.forEach(function (x) {
-    if ((cur + ' ' + x).length > 400 && cur) { res.push(cur); cur = x; }
-    else cur = cur ? cur + ' ' + x : x;
-  });
-  if (cur) res.push(cur);
-  return res.map(function (s) { return s.length > 500 ? s.slice(0, 500) : s; });
-}
 
 // ===== Generation / playback =====
 var player = $('player');
@@ -509,13 +641,6 @@ var runId = 0;
 var urls = [];
 
 function revokeAll() { urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = []; }
-
-async function synth(ph, voice, speed) {
-  var enc = tts.tokenizer(ph, { truncation: true });
-  var raw = await tts.generate_from_ids(enc.input_ids, { voice: voice, speed: speed });
-  var data = raw.audio || raw.data;
-  return { blob: encodeWav(data, raw.sampling_rate || SAMPLE_RATE), sec: data.length / (raw.sampling_rate || SAMPLE_RATE) };
-}
 
 function playUrl(url, myRun) {
   return new Promise(function (res) {
@@ -531,9 +656,12 @@ function playUrl(url, myRun) {
 
 $('rngSpeed').addEventListener('input', function () { $('speedVal').textContent = (+this.value).toFixed(1); });
 
-$('btnPhon').addEventListener('click', function () {
+$('btnPhon').addEventListener('click', async function () {
   var ss = splitSentences($('txt').value);
-  ss.forEach(function (s) { log(s); log('  → ' + phonChunks(s).join(' | ')); });
+  try {
+    var r = await call('phon', { sentences: ss });
+    ss.forEach(function (s, i) { log(s); log('  → ' + r.chunks[i].join(' | ')); });
+  } catch (e) { log('音素変換失敗: ' + e.message, 'err'); }
 });
 
 $('btnStop').addEventListener('click', function () {
@@ -560,8 +688,11 @@ async function runPlayback() {
   var voice = $('selVoice').value, speed = +$('rngSpeed').value, pre = $('chkPre').checked;
   var sentences = splitSentences($('txt').value);
   var jobs = [];
-  sentences.forEach(function (s) { phonChunks(s).forEach(function (p) { jobs.push({ text: s, ph: p }); }); });
-  if (!jobs.length) { $('playStatus').textContent = 'テキストがありません'; $('btnPlay').disabled = false; return; }
+  try {
+    var pr = await call('phon', { sentences: sentences });
+    sentences.forEach(function (s, i) { pr.chunks[i].forEach(function (p) { jobs.push({ text: s, ph: p }); }); });
+  } catch (e) { log('音素変換失敗: ' + e.message, 'err'); }
+  if (!jobs.length) { $('playStatus').textContent = 'テキストがありません'; $('btnPlay').disabled = false; $('btnStop').disabled = true; return; }
   log('生成開始: ' + jobs.length + '件 voice=' + voice + ' speed=' + speed + (pre ? '（全文生成後に再生）' : ''));
 
   var ready = [], genDone = false, totalGen = 0, totalSec = 0, firstAt = 0, t0 = performance.now();
@@ -571,14 +702,13 @@ async function runPlayback() {
   (async function generate() {
     for (var i = 0; i < jobs.length; i++) {
       if (myRun !== runId) return;
-      var t = performance.now();
       try {
-        var r = await synth(jobs[i].ph, voice, speed);
-        var g = (performance.now() - t) / 1000;
-        totalGen += g; totalSec += r.sec;
+        var r = await call('synth', { ph: jobs[i].ph, voice: voice, speed: speed });
+        var g = r.ms / 1000, s = r.audio.length / r.rate;
+        totalGen += g; totalSec += s;
         if (!firstAt) firstAt = (performance.now() - t0) / 1000;
-        log('#' + (i + 1) + ' 生成 ' + g.toFixed(2) + 's / 音声 ' + r.sec.toFixed(2) + 's (RTF ' + (g / r.sec).toFixed(2) + ')');
-        var u = URL.createObjectURL(r.blob);
+        log('#' + (i + 1) + ' 生成 ' + g.toFixed(2) + 's / 音声 ' + s.toFixed(2) + 's (RTF ' + (g / s).toFixed(2) + ')');
+        var u = URL.createObjectURL(encodeWav(r.audio, r.rate));
         urls.push(u);
         ready.push(u);
       } catch (e) {
@@ -616,12 +746,12 @@ async function runPlayback() {
   }
 }
 
-$('btnCopy').addEventListener('click', function () {
-  var text = logEl.innerText;
+function copyText(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(function () { log('ログをコピーしました', 'ok'); }, function () { log('コピー失敗', 'err'); });
+    navigator.clipboard.writeText(text).then(function () { log('コピーしました', 'ok'); }, function () { log('コピー失敗', 'err'); });
   }
-});
+}
+$('btnCopy').addEventListener('click', function () { copyText(logEl.innerText); });
 
 showEnv();
 </script>
