@@ -111,11 +111,13 @@ audio { width: 100%; margin-top: 8px; }
   <textarea id="txt">　その夜、町はずれの古い図書館には、まだ灯りがともっていた。
 　「こんな時間に、誰かいるのかしら」
 　彼女はそっと扉を押した。きしむ音が、静まり返った廊下に響く。
-　棚の奥から、かすかにページをめくる音が聞こえてきた。</textarea>
+　棚の奥から、かすかにページをめくる音が聞こえてきた。
+　彼女は誰にも気づかれないように静かに階段を上って屋根裏部屋の古びた木製の扉の前で立ち止まり深く息を吸い込んだ。</textarea>
   <div class="row">
     <label for="selChunk">区切り</label>
     <select id="selChunk" autocomplete="off">
       <option value="400">文ごと（標準）</option>
+      <option value="60" selected>読点で区切り60音素まで詰める（推奨）</option>
       <option value="1">読点ごとに短く（メモリ節約）</option>
     </select>
   </div>
@@ -391,6 +393,21 @@ function phonChunks(sentence, maxLen) {
   var p = JaG2P.phonemize(jaTok, sentence);
   if (p.length <= maxLen) return p ? [p] : [];
   var parts = p.split(/(?<=[,!?.]) /), res = [], cur = '';
+  // Hard cap: a clause longer than the cap is split at word boundaries
+  var cap = Math.max(maxLen, 60);
+  if (maxLen < 400) {
+    var capped = [];
+    parts.forEach(function (x) {
+      if (x.length <= cap) { capped.push(x); return; }
+      var piece = '';
+      x.split(' ').forEach(function (w) {
+        if (piece && (piece + ' ' + w).length > cap) { capped.push(piece); piece = w; }
+        else piece = piece ? piece + ' ' + w : w;
+      });
+      if (piece) capped.push(piece);
+    });
+    parts = capped;
+  }
   parts.forEach(function (x) {
     if ((cur + ' ' + x).length > maxLen && cur) { res.push(cur); cur = x; }
     else cur = cur ? cur + ' ' + x : x;
