@@ -1711,7 +1711,21 @@ function splitText(t) {
   // episode title. An "第一話読んでくださりありがとうございます！" style greeting further down the
   // body matches the same pattern and used to replace the title the site itself provided.
   var _headMax = 3;
-  var _kept = _raw.map(function(s, _li){
+  // An afterword request ("ブックマーク・☆評価をお願いします") closes the page, and the short
+  // sign-off lines after it ("よろしくお願いします！") are part of it, so drop everything from
+  // that line on. Only near the very end, so a mention inside the story never cuts the text.
+  var _tailKeys = ['bookmark', 'review', 'rating', 'activity'];
+  var _tailMax = 5;
+  var _body = _raw;
+  for (var _ti = Math.max(0, _raw.length - 1 - _tailMax); _ti < _raw.length; _ti++) {
+    var _hit = false;
+    for (var _tk = 0; _tk < CONFIGURABLE_FILTERS.length; _tk++) {
+      var _tf = CONFIGURABLE_FILTERS[_tk];
+      if (_tailKeys.indexOf(_tf.key) >= 0 && isFilterOn(_tf.key) && _tf.pattern.test(_raw[_ti])) { _hit = true; break; }
+    }
+    if (_hit) { _body = _raw.slice(0, _ti); break; }
+  }
+  var _kept = _body.map(function(s, _li){
     if(isFilterOn('chaphead')&&_chapRe.test(s)){var _m=_epRe.exec(s);var _extracted=_m?_m[1]:null;if(_extracted&&!_pendingEpTitle&&_li<_headMax)_pendingEpTitle=_extracted;return _extracted||null;}
     if(isFilterOn('chaphead')&&_epHeadRe.test(s)&&s.length<=60){if(!_pendingEpTitle&&_li<_headMax)_pendingEpTitle=s;return s;}
     return s;
