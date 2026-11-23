@@ -399,11 +399,14 @@ function phonChunks(sentence, maxLen) {
     var capped = [];
     parts.forEach(function (x) {
       if (x.length <= cap) { capped.push(x); return; }
-      var piece = '';
-      x.split(' ').forEach(function (w) {
-        if (piece && (piece + ' ' + w).length > cap) { capped.push(piece); piece = w; }
-        else piece = piece ? piece + ' ' + w : w;
-      });
+      // Balanced split: n pieces of roughly equal length, cut at word boundaries
+      var words = x.split(' '), n = Math.ceil(x.length / cap), rest = x.length, piece = '';
+      for (var wi = 0; wi < words.length; wi++) {
+        var w = words[wi], target = rest / n;
+        if (piece && n > 1 && (piece + ' ' + w).length > target) {
+          capped.push(piece); rest -= piece.length + 1; n--; piece = w;
+        } else piece = piece ? piece + ' ' + w : w;
+      }
       if (piece) capped.push(piece);
     });
     parts = capped;
@@ -626,6 +629,23 @@ function encodeWav(f32, rate) {
   }
   return new Blob([buf], { type: 'audio/wav' });
 }
+// Trim near-silence at the joined edges and concatenate with a short gap
+function trimEdges(a, rate, head, tail) {
+  var th = 0.01, pad = Math.floor(rate * 0.03), st = 0, en = a.length;
+  if (head) { while (st < en && Math.abs(a[st]) < th) st++; st = Math.max(0, st - pad); }
+  if (tail) { while (en > st && Math.abs(a[en - 1]) < th) en--; en = Math.min(a.length, en + pad); }
+  return a.subarray(st, en);
+}
+function joinChunks(list, rate) {
+  if (list.length === 1) return list[0];
+  var gap = Math.floor(rate * 0.05);
+  var parts = list.map(function (a, i) { return trimEdges(a, rate, i > 0, i < list.length - 1); });
+  var total = gap * (parts.length - 1);
+  parts.forEach(function (a) { total += a.length; });
+  var out = new Float32Array(total), o = 0;
+  parts.forEach(function (a, i) { out.set(a, o); o += a.length + (i < parts.length - 1 ? gap : 0); });
+  return out;
+}
 var SILENT_URL = URL.createObjectURL(encodeWav(new Float32Array(2400), SAMPLE_RATE));
 
 // ===== Environment =====
@@ -774,12 +794,16 @@ async function runPlayback() {
   var jobs = [];
   try {
     var pr = await call('phon', { sentences: sentences, maxLen: +$('selChunk').value });
-    sentences.forEach(function (s, i) { pr.chunks[i].forEach(function (p) { jobs.push({ text: s, ph: p }); }); });
+    sentences.forEach(function (s, i) {
+      var cs = pr.chunks[i];
+      cs.forEach(function (p, k) { jobs.push({ text: s, ph: p, si: i, last: k === cs.length - 1 }); });
+    });
   } catch (e) { log('音素変換失敗: ' + e.message, 'err'); }
   if (!jobs.length) { $('playStatus').textContent = 'テキストがありません'; $('btnPlay').disabled = false; $('btnStop').disabled = true; return; }
   log('生成開始: ' + jobs.length + '件 voice=' + voice + ' speed=' + speed + ' 区切り=' + $('selChunk').value + (pre ? '（全文生成後に再生）' : ''));
 
   var ready = [], genDone = false, totalGen = 0, totalSec = 0, firstAt = 0, t0 = performance.now();
+  var pendingParts = [], pendingRate = SAMPLE_RATE;
   var waiter = null;
   function notify() { if (waiter) { var w = waiter; waiter = null; w(); } }
 
@@ -793,12 +817,19 @@ async function runPlayback() {
         totalGen += g; totalSec += s;
         if (!firstAt) firstAt = (performance.now() - t0) / 1000;
         log('#' + (i + 1) + ' 生成 ' + g.toFixed(2) + 's / 音声 ' + s.toFixed(2) + 's (RTF ' + (g / s).toFixed(2) + ')');
-        var u = URL.createObjectURL(encodeWav(r.audio, r.rate));
-        urls.push(u);
-        ready.push(u);
+        pendingParts.push(r.audio);
+        pendingRate = r.rate;
       } catch (e) {
         log('#' + (i + 1) + ' 生成失敗: ' + (e && e.message ? e.message : e), 'err');
         log('  音素: ' + jobs[i].ph);
+      }
+      // Chunks of one sentence are joined into a single clip (no src switch mid-sentence)
+      if (jobs[i].last && pendingParts.length) {
+        if (pendingParts.length > 1) log('  文' + (jobs[i].si + 1) + ': ' + pendingParts.length + '個を結合');
+        var u = URL.createObjectURL(encodeWav(joinChunks(pendingParts, pendingRate), pendingRate));
+        pendingParts = [];
+        urls.push(u);
+        ready.push(u);
       }
       $('playStatus').textContent = '生成 ' + (i + 1) + '/' + jobs.length;
       notify();
@@ -814,7 +845,7 @@ async function runPlayback() {
   var played = 0;
   while (myRun === runId) {
     if (played < ready.length) {
-      $('playStatus').textContent = '再生 ' + (played + 1) + '/' + jobs.length + (genDone ? '' : '（生成中）');
+      $('playStatus').textContent = '再生 ' + (played + 1) + '/' + sentences.length + (genDone ? '' : '（生成中）');
       await playUrl(ready[played], myRun);
       played++;
     } else if (genDone) {
