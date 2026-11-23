@@ -22,7 +22,6 @@
 | `yogatari_debug_mode` | デバッグモードのON/OFF（既定OFF） |
 | `yogatari_debug_hud` | 計測ログ画面の開閉状態 |
 | `yogatari_debug_log` | 計測ログの本文（最大220行） |
-| `yogatari_lab_tts_log` | **廃止（読み込まない）**。削除済みの試験ページ `lab/tts-test.html`（Kokoro-82Mのブラウザ内読み上げ試験）が保存していた直近ログ。同じオリジンのため既存端末に残り本体のバックアップにも含まれるが、削除はしない |
 
 ## sessionStorageキー一覧
 
