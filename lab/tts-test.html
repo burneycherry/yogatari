@@ -84,6 +84,9 @@ audio { width: 100%; margin-top: 8px; }
   <div class="row">
     <button class="btn btn-main" id="btnLoad">モデルを読み込む</button>
   </div>
+  <div class="row">
+    <button class="btn" id="btnClearCache">モデルのキャッシュを削除</button>
+  </div>
   <div class="status" id="loadStatus">未読み込み</div>
   <div class="bar"><div class="bar-in" id="loadBar"></div></div>
   <p class="note" id="envInfo"></p>
@@ -388,6 +391,28 @@ function phonChunks(sentence) {
   return res.map(function (s) { return s.length > 500 ? s.slice(0, 500) : s; });
 }
 
+// Safari's err.stack does not include the message, so always prepend name + message
+function errText(err) {
+  if (!err) return String(err);
+  var head = (err.name || 'Error') + ': ' + (err.message || '(no message)');
+  return err.stack ? head + '\n' + err.stack : head;
+}
+
+var DTYPE_SUFFIX = { fp32: '', fp16: '_fp16', q8: '_quantized', q4: '_q4', q4f16: '_q4f16' };
+// Fetch only the response headers of a file to see HTTP status / size / redirect
+async function probe(label, url) {
+  var ctl = new AbortController(), t = performance.now();
+  try {
+    var r = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
+    wlog('接続診断 ' + label + ': HTTP ' + r.status + ' ' + (r.statusText || '') +
+      ' / ' + (r.headers.get('content-length') || '?') + ' bytes / redirected=' + r.redirected +
+      ' / ' + sec(t) + '\n  ' + r.url, r.ok ? 'ok' : 'err');
+    ctl.abort();
+  } catch (e) {
+    wlog('接続診断 ' + label + ' 失敗: ' + errText(e), 'err');
+  }
+}
+
 self.onmessage = async function (e) {
   var m = e.data;
   try {
@@ -403,6 +428,9 @@ self.onmessage = async function (e) {
       if (m.device === 'webgpu' && !self.navigator.gpu) wlog('Worker内に navigator.gpu がありません', 'err');
 
       var files = {}, lastPct = -1, t2 = performance.now(), fetched = false;
+      var base = 'https://huggingface.co/' + m.modelId + '/resolve/main/';
+      await probe('model', base + 'onnx/model' + (DTYPE_SUFFIX[m.dtype] || '') + '.onnx');
+      await probe('voice', base + 'voices/' + m.voice + '.bin');
       wlog('モデル読み込み開始: device=' + m.device + ' dtype=' + m.dtype);
       tts = await mod.KokoroTTS.from_pretrained(m.modelId, {
         dtype: m.dtype,
@@ -446,7 +474,7 @@ self.onmessage = async function (e) {
       post({ id: m.id, audio: data, rate: raw.sampling_rate || 24000, ms: performance.now() - ts }, [data.buffer]);
     }
   } catch (err) {
-    post({ id: m.id, error: String(err && err.stack ? err.stack : err) });
+    post({ id: m.id, error: errText(err) });
   }
 };
 </script>
@@ -582,6 +610,21 @@ async function showEnv() {
     } catch (e) { log('WebGPU adapter error: ' + e.message, 'err'); }
   }
 }
+
+// Cache API entries written by transformers.js / kokoro-js (the main app does not use Cache API)
+$('btnClearCache').addEventListener('click', async function () {
+  if (!window.caches) { log('Cache API がありません', 'err'); return; }
+  try {
+    var names = await caches.keys();
+    log('キャッシュ一覧: ' + (names.length ? names.join(', ') : '（なし）'));
+    for (var i = 0; i < names.length; i++) {
+      if (names[i] === 'transformers-cache' || names[i] === 'kokoro-voices') {
+        await caches.delete(names[i]);
+        log('削除: ' + names[i], 'ok');
+      }
+    }
+  } catch (e) { log('キャッシュ削除失敗: ' + e.message, 'err'); }
+});
 
 $('selDevice').addEventListener('change', function () {
   $('selDtype').value = this.value === 'webgpu' ? 'fp32' : 'q8';
