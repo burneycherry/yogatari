@@ -628,7 +628,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       <button class="modal-close" onclick="closeCustomWordModal()">✕</button>
     </div>
     <div style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px">
-      <div class="filter-note" style="margin-bottom:12px">省略したい単語を登録。段落に含まれていたらスキップします。ページ末尾の3割（後書き）にあれば、その段落から最後まで省略します（「後書き以降をまとめて省略」ON時）。次話読み込みから反映。</div>
+      <div class="filter-note" style="margin-bottom:12px">省略したい単語を登録。段落に含まれていたらスキップします。ページ末尾の3割（後書き）にあれば、その段落から最後まで省略します（「後書き以降をまとめて省略」ON時）。全角・半角、英字の大文字・小文字は区別しません。次話読み込みから反映。</div>
       <div class="custom-word-input-row">
         <input class="custom-word-input" id="customWordInput" type="text" placeholder="例: ブックマーク、感想" maxlength="30">
         <button class="sett-btn sett-btn-save" id="customWordAddBtn" style="white-space:nowrap;font-size:13px;padding:9px 14px">追加</button>
@@ -1680,6 +1680,15 @@ var DECO_SYM_RE = /^[\s\u3000\u25c6\u25c7\u25a0\u25a1\u25cb\u25cf\u25ce\u25ef\u2
 // everything after it, so only wording that story text practically never uses belongs here.
 var AFTERWORD_RE = /お読み(?:いただ|頂|くださ|下さ)|ご覧(?:いただ|頂)き|読んで(?:いただ|頂|くださ|下さ|くれ)[^。]{0,4}(?:ありがと|有難|有り難|感謝|嬉し|うれし|幸い)|ご愛読|ブックマーク(?:登録|や|・|、|お願い|して(?:いただ|頂|くださ|下さ))|お気に入り(?:登録|追加)|☆{3,}[^☆★]{0,6}★{3,}|(?:評価|応援)(?:を|して|や|・|、)?(?:いただ|頂|くださ|下さ|お願い|よろしく)|評価(?:ポイント|ボタン|欄)|感想(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い|よろしく)|レビュー(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い)|誤字(?:脱字)?(?:報告|の?ご?指摘)|活動報告(?:にて|に(?:て|も|書|載|お知らせ|告知|詳細|掲載)|でも?(?:告知|お知らせ)|を更新)|書籍化|コミカライズ|単行本|文庫化|書籍版|(?:web|ウェブ)版|カバーイラスト|書影|特典(?:SS|ＳＳ)|予約受付(?:中|を?開始)|好評発売|(?:^|[^一-鿿])本作(?![戦業り成])|^[【\[(（]?(?:あとがき|後書き)[】\])）]?$|^作者(?:より|から)(?:[：:、。\s一]|$)/i;
 function stripDecoSym(s) { return s.replace(DECO_SYM_RE, '').trim(); }
+// Skip words match regardless of full/half width and letter case: authors mix "ＳＳ" and "SS",
+// "Ａｍａｚｏｎ" and "Amazon" even within one afterword. Words must already be normalised.
+function normSkipWord(s) { s = String(s); return (typeof s.normalize === 'function' ? s.normalize('NFKC') : s).toLowerCase(); }
+function hasSkipWord(s, words) {
+  if (!words.length) return false;
+  var n = normSkipWord(s);
+  for (var i = 0; i < words.length; i++) { if (n.indexOf(words[i]) >= 0) return true; }
+  return false;
+}
 function loadSkipFilters() { try{return JSON.parse(localStorage.getItem('yogatari_skip_filters')||'{}');}catch(e){return{};} }
 function saveSkipFilters(data) { try{localStorage.setItem('yogatari_skip_filters',JSON.stringify(data));}catch(e){} }
 function isFilterOn(key) { var f=loadSkipFilters(); return f[key]!==false; }
@@ -1702,6 +1711,8 @@ var _pendingEpTitle = null;
 function splitText(t) {
   _pendingEpTitle = null;
   var _cw; try { _cw = JSON.parse(localStorage.getItem('yogatari_custom_words') || '[]'); } catch(_ce) { _cw = []; }
+  if (!Array.isArray(_cw)) _cw = [];
+  _cw = _cw.filter(function(w){ return typeof w === 'string' && w.length; }).map(normSkipWord).filter(function(w){ return w.length; });
   var _chapRe = /^(?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u7ae0/;
   var _epRe   = /((?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71.*)/;
   var _epHeadRe = /^(?:(?:\u7b2c)?[\d\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\u4e07]+\u8a71|\u9592\u8a71|\u5e55\u9593|\u756a\u5916)/;
@@ -1737,7 +1748,7 @@ function splitText(t) {
         var _ts = _line.replace(/\u300c[^\u300d]*(?:\u300d|$)/g, '').replace(/^[^\u300c\u300d]*\u300d/, '');
         var _tsd = stripDecoSym(_ts);
         var _hit = AFTERWORD_RE.test(_tsd);
-        for (var _cwi = 0; !_hit && _pos * 10 >= _total * 7 && _cwi < _cw.length; _cwi++) { if (_cw[_cwi] && _tsd.indexOf(_cw[_cwi]) >= 0) _hit = true; }
+        if (!_hit && _pos * 10 >= _total * 7) _hit = hasSkipWord(_tsd, _cw);
         if (_hit) { _body = _raw.slice(0, _ti); break; }
       }
       _pos += _line.length;
@@ -1750,7 +1761,7 @@ function splitText(t) {
   }).filter(function(s){
     if(!s||!s.length)return false;
     for(var _fi=0;_fi<CONFIGURABLE_FILTERS.length;_fi++){var _f=CONFIGURABLE_FILTERS[_fi];if(_f.key==='chaphead')continue;if(isFilterOn(_f.key)&&_f.pattern&&_f.pattern.test(s))return false;}
-    for (var _ci = 0; _ci < _cw.length; _ci++) { if (s.indexOf(_cw[_ci]) >= 0) return false; }
+    if (hasSkipWord(s, _cw)) return false;
     return true;
   });
   // Safety valve: a page whose every line is filtered out leaves nothing to read, which happens
