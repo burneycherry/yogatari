@@ -436,7 +436,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
     </div>
     <div class="sett-sub" style="margin:4px 0">— カスタムフィルター</div>
     <div class="filter-item" style="border-bottom:none">
-      <div class="filter-desc"><div class="filter-label">省略単語</div><div class="filter-note">段落に含まれていたらスキップ（次話読み込みから反映）</div></div>
+      <div class="filter-desc"><div class="filter-label">省略単語</div><div class="filter-note">段落に含まれていたらスキップ。ページ後半にあれば、そこから最後まで省略（「後書き以降をまとめて省略」ON時。次話読み込みから反映）</div></div>
       <button class="sett-btn" onclick="openCustomWordModal()">管理 →</button>
     </div>
     <div class="sett-section" id="readingDictSection">
@@ -628,7 +628,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       <button class="modal-close" onclick="closeCustomWordModal()">✕</button>
     </div>
     <div style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px">
-      <div class="filter-note" style="margin-bottom:12px">省略したい単語を登録。段落に含まれていたらスキップします（次話読み込みから反映）。</div>
+      <div class="filter-note" style="margin-bottom:12px">省略したい単語を登録。段落に含まれていたらスキップします。ページ後半（後書き）にあれば、その段落から最後まで省略します（「後書き以降をまとめて省略」ON時）。次話読み込みから反映。</div>
       <div class="custom-word-input-row">
         <input class="custom-word-input" id="customWordInput" type="text" placeholder="例: ブックマーク、感想" maxlength="30">
         <button class="sett-btn sett-btn-save" id="customWordAddBtn" style="white-space:nowrap;font-size:13px;padding:9px 14px">追加</button>
@@ -1665,7 +1665,7 @@ const CONFIGURABLE_FILTERS = [
   { key:'review',    group:'custom', label:'感想・レビュー依頼', desc:'「感想をお待ちしています」「コメントお待ちしており」等の段落', pattern:/感想.*お待ち|レビュー.*お待ち|感想・レビュー|コメント.*お待ち|お待ちしており|ご感想/ },
   { key:'rating',    group:'custom', label:'評価・応援依頼（☆→★）', desc:'「☆☆☆→★★★」「続きが気になる」「応援していただけると」等', pattern:/[☆★]{2,}|続きが気になる|思っていただけたら|応援していただけると|にして応援/ },
   { key:'activity',  group:'custom', label:'活動報告', desc:'「活動報告」を含む段落', pattern:/活動報告/ },
-  { key:'afterword', group:'custom', label:'後書き以降をまとめて省略', desc:'ページ後半に「お読みいただき」「ブックマーク登録」「☆評価」「書籍化」「本作」等の後書きらしい文があれば、そこから最後まで省略（単行本の告知等も含む）', pattern:null },
+  { key:'afterword', group:'custom', label:'後書き以降をまとめて省略', desc:'ページ後半に「お読みいただき」「ブックマーク登録」「☆評価」「書籍化」「本作」等の後書きらしい文、または登録した省略単語があれば、そこから最後まで省略（単行本の告知等も含む）', pattern:null },
   { key:'chaphead',  group:'basic',  label:'章・話タイトル行', desc:'第X章行を省略（話タイトルが同行なら話以降を読み上げ）。第X話/閑話/幕間/番外はサブタイトルに反映', pattern:/^第[一二三四五六七八九十百千\d]+章/ },
   { key:'postmsg',   group:'basic',  label:'投稿・更新のあいさつ文', desc:'「久しぶりの投稿」「更新が遅れ」「お久しぶりです」等の冒頭・末尾あいさつ', pattern:/久しぶりの投稿|お久しぶりです|更新が遅れ|投稿が遅|遅筆で申し訳|しばらく間が|ご無沙汰|遅くなりまし|ご覧いただき|ご覧くださり|連載|よろしくお願いいたします|評価.*よろしく|応援.*よろしく/ },
   { key:'errreport', group:'custom', label:'誤字脱字報告', desc:'「誤字」「脱字」「修正」等の報告を含む段落', pattern:/誤字|脱字|誤植|ご報告|修正しま|訂正/ },
@@ -1678,7 +1678,7 @@ const CONFIGURABLE_FILTERS = [
 var DECO_SYM_RE = /^[\s\u3000\u25c6\u25c7\u25a0\u25a1\u25cb\u25cf\u25ce\u25ef\u2605\u2606\u25b2\u25b3\u25bc\u25bd\u25b7\u25c1\u2666\u2662\u2663\u2660\u2665\u2661\u203b\uff0a\u2020\u2021\u2756\u25c8\*]+|[\s\u3000\u25c6\u25c7\u25a0\u25a1\u25cb\u25cf\u25ce\u25ef\u2605\u2606\u25b2\u25b3\u25bc\u25bd\u25b7\u25c1\u2666\u2662\u2663\u2660\u2665\u2661\u203b\uff0a\u2020\u2021\u2756\u25c8\*]+$/g;
 // Phrases that mark the start of an author's afterword. splitText() drops the matching line and
 // everything after it, so only wording that story text practically never uses belongs here.
-var AFTERWORD_RE = /お読み(?:いただ|頂|くださ|下さ)|ご覧(?:いただ|頂)き|読んで(?:いただ|頂|くださ|下さ|くれ)[^。]{0,4}(?:ありがと|有難|有り難|感謝|嬉し|うれし|幸い)|ご愛読|ブックマーク(?:登録|や|・|、|お願い|して(?:いただ|頂|くださ|下さ))|お気に入り(?:登録|追加)|☆{3,}[^☆★]{0,6}★{3,}|(?:評価|応援)(?:を|して|や|・|、)?(?:いただ|頂|くださ|下さ|お願い|よろしく)|評価(?:ポイント|ボタン|欄)|感想(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い|よろしく)|レビュー(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い)|誤字(?:脱字)?(?:報告|の?ご?指摘)|活動報告(?:にて|に(?:て|も|書|載|お知らせ|告知|詳細|掲載)|でも?(?:告知|お知らせ)|を更新)|書籍化|コミカライズ|単行本|文庫化|書籍版|(?:web|ウェブ)版|カバーイラスト|書影|特典SS|予約受付(?:中|を?開始)|好評発売|(?:^|[^一-鿿])本作(?![戦業り成])|^[【\[(（]?(?:あとがき|後書き)[】\])）]?$|^作者(?:より|から)(?:[：:、。\s一]|$)/i;
+var AFTERWORD_RE = /お読み(?:いただ|頂|くださ|下さ)|ご覧(?:いただ|頂)き|読んで(?:いただ|頂|くださ|下さ|くれ)[^。]{0,4}(?:ありがと|有難|有り難|感謝|嬉し|うれし|幸い)|ご愛読|ブックマーク(?:登録|や|・|、|お願い|して(?:いただ|頂|くださ|下さ))|お気に入り(?:登録|追加)|☆{3,}[^☆★]{0,6}★{3,}|(?:評価|応援)(?:を|して|や|・|、)?(?:いただ|頂|くださ|下さ|お願い|よろしく)|評価(?:ポイント|ボタン|欄)|感想(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い|よろしく)|レビュー(?:を|や|・|、)?(?:いただ|頂|くださ|下さ|お待ち|お願い)|誤字(?:脱字)?(?:報告|の?ご?指摘)|活動報告(?:にて|に(?:て|も|書|載|お知らせ|告知|詳細|掲載)|でも?(?:告知|お知らせ)|を更新)|書籍化|コミカライズ|単行本|文庫化|書籍版|(?:web|ウェブ)版|カバーイラスト|書影|特典(?:SS|ＳＳ)|予約受付(?:中|を?開始)|好評発売|(?:^|[^一-鿿])本作(?![戦業り成])|^[【\[(（]?(?:あとがき|後書き)[】\])）]?$|^作者(?:より|から)(?:[：:、。\s一]|$)/i;
 function stripDecoSym(s) { return s.replace(DECO_SYM_RE, '').trim(); }
 function loadSkipFilters() { try{return JSON.parse(localStorage.getItem('yogatari_skip_filters')||'{}');}catch(e){return{};} }
 function saveSkipFilters(data) { try{localStorage.setItem('yogatari_skip_filters',JSON.stringify(data));}catch(e){} }
@@ -1720,6 +1720,8 @@ function splitText(t) {
   // second half of the page (by characters) may start it, so a preface or a mention early in the
   // story never cuts the text. Quoted speech is ignored ("「読んでくださいね」" is story), and the
   // line is tested with its edge ornaments removed so a decorated heading never counts.
+  // The user's own skip words count as afterword markers too: a word registered to skip
+  // (e.g. an announcement keyword) is usually followed by more of the same announcement.
   var _body = _raw;
   if (isFilterOn('afterword')) {
     var _total = 0;
@@ -1731,7 +1733,10 @@ function splitText(t) {
         // Drop quoted speech, including a quote left open at the line end and the closing part of
         // one opened on an earlier line, so only narration and the author's own words are tested.
         var _ts = _line.replace(/\u300c[^\u300d]*(?:\u300d|$)/g, '').replace(/^[^\u300c\u300d]*\u300d/, '');
-        if (AFTERWORD_RE.test(stripDecoSym(_ts))) { _body = _raw.slice(0, _ti); break; }
+        var _tsd = stripDecoSym(_ts);
+        var _hit = AFTERWORD_RE.test(_tsd);
+        for (var _cwi = 0; !_hit && _cwi < _cw.length; _cwi++) { if (_cw[_cwi] && _tsd.indexOf(_cw[_cwi]) >= 0) _hit = true; }
+        if (_hit) { _body = _raw.slice(0, _ti); break; }
       }
       _pos += _line.length;
     }
