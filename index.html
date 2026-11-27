@@ -436,7 +436,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
     </div>
     <div class="sett-sub" style="margin:4px 0">— カスタムフィルター</div>
     <div class="filter-item" style="border-bottom:none">
-      <div class="filter-desc"><div class="filter-label">省略単語</div><div class="filter-note">段落に含まれていたらスキップ。ページ後半にあれば、そこから最後まで省略（「後書き以降をまとめて省略」ON時。次話読み込みから反映）</div></div>
+      <div class="filter-desc"><div class="filter-label">省略単語</div><div class="filter-note">段落に含まれていたらスキップ。ページ末尾3割にあれば、そこから最後まで省略（「後書き以降をまとめて省略」ON時。次話読み込みから反映）</div></div>
       <button class="sett-btn" onclick="openCustomWordModal()">管理 →</button>
     </div>
     <div class="sett-section" id="readingDictSection">
@@ -628,7 +628,7 @@ select{flex:1;background:#0d0d0d;border:1px solid #302618;color:#ede0c6;font-fam
       <button class="modal-close" onclick="closeCustomWordModal()">✕</button>
     </div>
     <div style="overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;padding:16px 18px">
-      <div class="filter-note" style="margin-bottom:12px">省略したい単語を登録。段落に含まれていたらスキップします。ページ後半（後書き）にあれば、その段落から最後まで省略します（「後書き以降をまとめて省略」ON時）。次話読み込みから反映。</div>
+      <div class="filter-note" style="margin-bottom:12px">省略したい単語を登録。段落に含まれていたらスキップします。ページ末尾の3割（後書き）にあれば、その段落から最後まで省略します（「後書き以降をまとめて省略」ON時）。次話読み込みから反映。</div>
       <div class="custom-word-input-row">
         <input class="custom-word-input" id="customWordInput" type="text" placeholder="例: ブックマーク、感想" maxlength="30">
         <button class="sett-btn sett-btn-save" id="customWordAddBtn" style="white-space:nowrap;font-size:13px;padding:9px 14px">追加</button>
@@ -1722,6 +1722,8 @@ function splitText(t) {
   // line is tested with its edge ornaments removed so a decorated heading never counts.
   // The user's own skip words count as afterword markers too: a word registered to skip
   // (e.g. an announcement keyword) is usually followed by more of the same announcement.
+  // Any word may be registered, so they only cut from the last 30% of the page on; earlier
+  // they drop just their own paragraph as before, keeping the story's second half intact.
   var _body = _raw;
   if (isFilterOn('afterword')) {
     var _total = 0;
@@ -1735,7 +1737,7 @@ function splitText(t) {
         var _ts = _line.replace(/\u300c[^\u300d]*(?:\u300d|$)/g, '').replace(/^[^\u300c\u300d]*\u300d/, '');
         var _tsd = stripDecoSym(_ts);
         var _hit = AFTERWORD_RE.test(_tsd);
-        for (var _cwi = 0; !_hit && _cwi < _cw.length; _cwi++) { if (_cw[_cwi] && _tsd.indexOf(_cw[_cwi]) >= 0) _hit = true; }
+        for (var _cwi = 0; !_hit && _pos * 10 >= _total * 7 && _cwi < _cw.length; _cwi++) { if (_cw[_cwi] && _tsd.indexOf(_cw[_cwi]) >= 0) _hit = true; }
         if (_hit) { _body = _raw.slice(0, _ti); break; }
       }
       _pos += _line.length;
